@@ -221,9 +221,7 @@ if __name__ == '__main__' :
             plt.show()
     
 
-    print(args)
-    print(Hostrem.default_airmass_bounds,ra,dec )
-
+ 
 
 #args = parser.parse_args(sys.argv[1:])
 
