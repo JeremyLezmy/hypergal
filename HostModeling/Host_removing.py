@@ -47,15 +47,15 @@ from astropy.convolution import Box1DKernel, convolve
 import warnings
 import pyifu
 
-import SED_Fitting as sedfit
-import Panstarrs_target as ps1targ
-import sedm_target as sedtarg
-import geometry_tool as geotool
+from HostModeling import SED_Fitting as sedfit
+from HostModeling import Panstarrs_target as ps1targ
+from HostModeling import sedm_target as sedtarg
+from HostModeling import geometry_tool as geotool
 
 
 from collections import OrderedDict
-import PSF_kernel as psfker
-import intrinsec_cube as hostmodel
+from HostModeling import PSF_kernel as psfker
+from HostModeling import intrinsec_cube as hostmodel
 from iminuit import Minuit
 
 

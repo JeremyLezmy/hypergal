@@ -35,7 +35,7 @@ from pymage import panstarrs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pymage import panstarrs
-import geometry_tool as geotool
+from HostModeling import geometry_tool as geotool
 import geopandas
 import matplotlib.pyplot as plt
 
