@@ -199,25 +199,31 @@ class Intrinsec_cube():
             spec, lbda = self.spec, self.lbda
 
 
-        if apply_psf and hasattr(self, 'psfmodel'):
-
-            H,W = self.get_shape_pixelgrid()
-            
-            spec = psf_convolution( np.reshape(spec, ( H, W, len(lbda)) ), self.psfmodel, self._nb_process)
-            spec = spec.reshape(int(H*W), len(lbda))
-
         if not hasattr(self, 'adr'):
             
             print(bcolors.WARNING + " There's not any loaded adr ( self.load_adr() ), there won't be any refraction in the intrinsec cube" + bcolors.ENDC)
             adr = None
+            lbdaref = 6500
             
         elif hasattr(self,'adr') and  any(self.adr._properties[k] == None for k in self.adr._fundamental_parameters):
             
             print( bcolors.WARNING + "Some fundamentals parameters are not set in adr, there won't be any refraction in the intrinsec cube" + bcolors.ENDC)
             adr = None
+            lbdaref = 6500
 
         else:
             adr = self.adr
+            lbdaref = self.adr.lbdaref
+        
+        
+
+        if apply_psf and hasattr(self, 'psfmodel'):
+
+            H,W = self.get_shape_pixelgrid()
+            
+            spec = psf_convolution( np.reshape(spec, ( H, W, len(lbda)) ), lbda, lbdaref, self.psfmodel, self._nb_process)
+            spec = spec.reshape(int(H*W), len(lbda))
+
 
 
             
@@ -381,7 +387,7 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
     return ( new_spax )
 
 
-def psf_convolution(data, psfkernel, nb_process, **kwargs ):
+def psf_convolution(data, lbda, lbdaref, psfkernel, nb_process, **kwargs ):
 
     import pathos
     from pathos.multiprocessing import ProcessingPool as Pool
@@ -391,7 +397,7 @@ def psf_convolution(data, psfkernel, nb_process, **kwargs ):
 
     def multipro_psf(number):
        
-        new_data[:,:,number] = psfkernel.convolution( new_data[:,:,number])
+        new_data[:,:,number] = psfkernel.convolution( new_data[:,:,number],  lbda[number], lbdaref)
 
         return new_data[:,:,number]
 

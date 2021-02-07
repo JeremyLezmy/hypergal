@@ -152,10 +152,7 @@ def Mof(x,beta,alpha):
     """
     return (1+(x/alpha)**2)**(-beta)
 
-def alph_to_beta(alpha, b0=0.22, b1=1.31):
-    """
-    """
-    return (b0+alpha*b1)
+
 
 def Gauss_Mof(sigma, alpha, eta, A, B):
 
@@ -221,13 +218,34 @@ class Gauss_Mof_kernel():
 
     def __init__(self):
         
-        self._init_parameters = dict( { 'A':1.5, 'B':0, 'eta':2, 'sigma':1, 'alpha':2.5} )
-        self._bounds = [ (0,5), (-5,5), (0,None), (0.1,15), (0.6,15)  ]
+        #self._init_parameters = dict( { 'A':1.5, 'B':0, 'eta':2, 'sigma':1, 'alpha':2.5} )
+        #self._bounds = [ (0,5), (-5,5), (0,None), (0.1,15), (0.6,15)  ]
+        self._init_parameters = dict( { 'A':1.5, 'B':0, 'alpha0':3, 'alpha1':0, 'alpha2':0} )
+        self._bounds = [ (0,5), (-5,5), (0.6,15), (-10,10), (-5,5)  ]
         self._name = 'Gaussian+Moffat'
 
 
+    def alph_to_beta(self, alpha, b0=1.35, b1=0.22):
+        """
+        """
+        return (b0+alpha*b1)
+
+
+
+    def alph_to_sigma(self, alpha, s0=0.64, s1=0.34:
+        """
+        """
+        return (b0+alpha*b1)
+
+
+
+    def alph_to_eta(self, alpha, e0=0.36, e1=0.77):
+        """
+        """
+        return (b0+alpha*b1)
+
     
-    def evaluate(self, A, B,  eta, sigma, alpha,  normed=True):
+    def evaluate(self, A, B, alpha0, alpha1, alpha2, lbda, lbdaref,  normed=True):
 
             import math
             import numpy as np
@@ -235,7 +253,11 @@ class Gauss_Mof_kernel():
             x_mean=0
             y_mean=0
             
-            beta=alph_to_beta(alpha)
+            alpha = alpha0 + alpha1*lbda/lbdaref +alpha2*(lbda/lbdaref)**2
+
+            beta = self.alph_to_beta(alpha)
+            sigma = self.alph_to_sigma(alpha)
+            eta = self.alph_to_eta(alpha)
             
             fwhm = 2.0 * np.abs(alpha) * np.sqrt(2.0 ** (1.0 / beta) - 1.0)
             
@@ -289,9 +311,9 @@ class PSF_kernel():
             if k in self.params.keys():
                 self.params[k] = v
 
-    def get_kernel_data(self):
+    def get_kernel_data(self, lbda, lbdaref):
          
-            return(self.psfmodel.evaluate(**self.params))
+            return(self.psfmodel.evaluate(**self.params, lbda, lbdaref))
         
         
     def show_kernel(self, ax=None, **kwargs):
@@ -305,11 +327,11 @@ class PSF_kernel():
         ax.imshow(self.psfmodel.evaluate(**self.params), **kwargs)
         
         
-    def convolution(self, data, **kwargs):
+    def convolution(self, data, lbda, lbdaref, **kwargs):
         
         from astropy.convolution import convolve
         
-        convolve_data = convolve(np.nan_to_num(data), self.psfmodel.evaluate(**self.params), **kwargs )
+        convolve_data = convolve(np.nan_to_num(data), self.psfmodel.evaluate(**self.params, lbda, lbdaref), **kwargs )
         
         return convolve_data
 
