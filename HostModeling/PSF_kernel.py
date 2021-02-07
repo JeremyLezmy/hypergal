@@ -232,7 +232,7 @@ class Gauss_Mof_kernel():
 
 
 
-    def alph_to_sigma(self, alpha, s0=0.64, s1=0.34:
+    def alph_to_sigma(self, alpha, s0=0.64, s1=0.34):
         """
         """
         return (b0+alpha*b1)
