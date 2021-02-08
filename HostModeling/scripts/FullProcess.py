@@ -34,12 +34,12 @@ module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-import Host_removing as Hostrem
-import sedm_target 
-import Panstarrs_target as ps1targ
-import SED_Fitting as sedfit
-import intrinsec_cube
-import geometry_tool as geotool
+from HostModeling import Host_removing as Hostrem
+from HostModeling import sedm_target 
+from HostModeling import Panstarrs_target as ps1targ
+from HostModeling import SED_Fitting as sedfit
+from HostModeling import intrinsec_cube
+from HostModeling import geometry_tool as geotool
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -100,7 +100,7 @@ if __name__ == '__main__' :
     parser.add_argument('-nc', "--nb_process", type=int, default = None , help="How many core for the multiprocessing computation? Default is quantity of availabe core - 2" )
     parser.add_argument("-f","--fit", type=str2bool, nargs='?', const=True, default=True, help="Run the fit?")
 
-    parser.add_argument('-lrf',"--lbda_range_fit", nargs=2, type=float, default=[4500,8500], help="Lambda range in AA considered for the fit. Default is [4500,8500]")
+    parser.add_argument('-lrf',"--lbda_range_fit", nargs=2, type=float, default=[4500,9000], help="Lambda range in AA considered for the fit. Default is [4500,8500]")
     parser.add_argument('-mf',"--metaslices_fit", nargs=1, type=int, default=5, help="Quantity of metaslices considered for the fit. Default is 5")
 
     parser.add_argument("-fv","--set_fit_values", action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2..." , default=None, help="Set of values to give if you already know the best parameters. If so, you can skip the fit by setting -f False. ")

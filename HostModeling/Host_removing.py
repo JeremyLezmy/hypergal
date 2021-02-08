@@ -309,7 +309,7 @@ class Host_removing():
             return self.chi_square(map_parameters, fix_parameters=fix_parameters, sedm_data=sedm_data, sedm_var= sedm_var, lbda=lbda, metaslices=metaslices, lbda_ranges=lbda_ranges, use_bin_data=use_bin_data, nb_process=nb_process )
 
         
-        res = optimize.minimize(chi_squareflat, fit_params_init, bounds=fit_params_bounds, method="L-BFGS-B", options={'ftol': 5e-04, 'gtol': 5e-03, 'eps': 2e-02}  )
+        res = optimize.minimize(chi_squareflat, fit_params_init, bounds=fit_params_bounds, method="L-BFGS-B", options={'ftol': 1e-03, 'gtol': 1e-02, 'eps': 2e-02}  )
         #m = Minuit.from_array_func(chi_squareflat, fit_params_init, limit=fit_params_bounds, name=fit_params_name)
         #res=m.migrad()
 
@@ -554,12 +554,15 @@ class Host_removing():
 
     def set_default_parameters_bounds(self):
 
+        IFU_target = self.sedm.get_estimate_target_coord()
         self.parameters_bounds['airmass'] = default_airmass_bounds
 
         for (k,bound) in zip(self.scene.psfmodel.params.keys(), self.scene.psfmodel.psfmodel._bounds) :
             self.parameters_bounds[k] = bound
             
-        self.parameters_bounds['corr_factor']=(0.5,1.5)
+        self.parameters_bounds['corr_factor']=(0.5,2)
+        self.parameters_bounds['x0_IFU'] = ( IFU_target[0]-6, IFU_target[0]+6)
+        self.parameters_bounds['y0_IFU'] = ( IFU_target[1]-6, IFU_target[1]+6)
 
 
     def update_parameter(self, param_to_pop=None, **kwargs):

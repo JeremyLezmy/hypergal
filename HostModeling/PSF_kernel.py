@@ -220,8 +220,8 @@ class Gauss_Mof_kernel():
         
         #self._init_parameters = dict( { 'A':1.5, 'B':0, 'eta':2, 'sigma':1, 'alpha':2.5} )
         #self._bounds = [ (0,5), (-5,5), (0,None), (0.1,15), (0.6,15)  ]
-        self._init_parameters = dict( { 'A':1.5, 'B':0, 'alpha0':2, 'alpha1':0, 'alpha2':0} )
-        self._bounds = [ (0,5), (-5,5), (0.6,15), (-10,10), (-5,5)  ]
+        self._init_parameters = dict( { 'A':1.5, 'B':0, 'alpha':2, 'sigmaref':1, 'eta':2} )
+        self._bounds = [ (0,5), (-2,2), (0.1,15), (0.1,5), (0,None)  ]
         self._name = 'Gaussian+Moffat'
 
 
@@ -232,20 +232,14 @@ class Gauss_Mof_kernel():
 
 
 
-    def alph_to_sigma(self, alpha, s0=0.64, s1=0.34):
-        """
-        """
-        return (s0+alpha*s1)
+    def chrom_sigma(self, sigmaref, lbda, lbdaref, rho=-1/5.):
+        """ Evolution of the standard deviation as a function of lbda. """
+        return sigmaref * (lbda / lbdaref)**(rho)
 
 
-
-    def alph_to_eta(self, alpha, e0=0.36, e1=0.77):
-        """
-        """
-        return (e0+alpha*e1)
 
     
-    def evaluate(self, A, B, alpha0, alpha1, alpha2, lbda, lbdaref,  normed=True):
+    def evaluate(self, A, B, alpha, sigmaref, eta, lbda, lbdaref,  normed=True):
 
             import math
             import numpy as np
@@ -253,11 +247,10 @@ class Gauss_Mof_kernel():
             x_mean=0
             y_mean=0
             
-            alpha = alpha0 + alpha1*lbda/lbdaref +alpha2*(lbda/lbdaref)**2
-
+            
             beta = self.alph_to_beta(alpha)
-            sigma = self.alph_to_sigma(alpha)
-            eta = self.alph_to_eta(alpha)
+            sigma = self.chrom_sigma(sigmaref=sigmaref, lbda=lbda, lbdaref=lbdaref)
+            
             
             fwhm = 2.0 * np.abs(alpha) * np.sqrt(2.0 ** (1.0 / beta) - 1.0)
             
