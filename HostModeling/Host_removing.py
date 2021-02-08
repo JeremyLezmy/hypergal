@@ -309,7 +309,7 @@ class Host_removing():
             return self.chi_square(map_parameters, fix_parameters=fix_parameters, sedm_data=sedm_data, sedm_var= sedm_var, lbda=lbda, metaslices=metaslices, lbda_ranges=lbda_ranges, use_bin_data=use_bin_data, nb_process=nb_process )
 
         
-        res = optimize.minimize(chi_squareflat, fit_params_init, bounds=fit_params_bounds, method="L-BFGS-B", options={'ftol': 1e-05, 'gtol': 1e-03, 'eps': 1e-02}  )
+        res = optimize.minimize(chi_squareflat, fit_params_init, bounds=fit_params_bounds, method="L-BFGS-B", options={'ftol': 5e-04, 'gtol': 5e-03, 'eps': 2e-02}  )
         #m = Minuit.from_array_func(chi_squareflat, fit_params_init, limit=fit_params_bounds, name=fit_params_name)
         #res=m.migrad()
 

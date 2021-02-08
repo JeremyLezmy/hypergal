@@ -220,7 +220,7 @@ class Gauss_Mof_kernel():
         
         #self._init_parameters = dict( { 'A':1.5, 'B':0, 'eta':2, 'sigma':1, 'alpha':2.5} )
         #self._bounds = [ (0,5), (-5,5), (0,None), (0.1,15), (0.6,15)  ]
-        self._init_parameters = dict( { 'A':1.5, 'B':0, 'alpha0':3, 'alpha1':0, 'alpha2':0} )
+        self._init_parameters = dict( { 'A':1.5, 'B':0, 'alpha0':2, 'alpha1':0, 'alpha2':0} )
         self._bounds = [ (0,5), (-5,5), (0.6,15), (-10,10), (-5,5)  ]
         self._name = 'Gaussian+Moffat'
 
@@ -235,14 +235,14 @@ class Gauss_Mof_kernel():
     def alph_to_sigma(self, alpha, s0=0.64, s1=0.34):
         """
         """
-        return (b0+alpha*b1)
+        return (s0+alpha*s1)
 
 
 
     def alph_to_eta(self, alpha, e0=0.36, e1=0.77):
         """
         """
-        return (b0+alpha*b1)
+        return (e0+alpha*e1)
 
     
     def evaluate(self, A, B, alpha0, alpha1, alpha2, lbda, lbdaref,  normed=True):
@@ -312,8 +312,9 @@ class PSF_kernel():
                 self.params[k] = v
 
     def get_kernel_data(self, lbda, lbdaref):
-         
-            return(self.psfmodel.evaluate(**self.params, lbda, lbdaref))
+            params = self.params.copy()
+            params.update({'lbda':lbda,'lbdaref':lbdaref})
+            return(self.psfmodel.evaluate(**params))
         
         
     def show_kernel(self, ax=None, **kwargs):
@@ -330,8 +331,9 @@ class PSF_kernel():
     def convolution(self, data, lbda, lbdaref, **kwargs):
         
         from astropy.convolution import convolve
-        
-        convolve_data = convolve(np.nan_to_num(data), self.psfmodel.evaluate(**self.params, lbda, lbdaref), **kwargs )
+        params = self.params.copy()
+        params.update({'lbda':lbda,'lbdaref':lbdaref})
+        convolve_data = convolve(np.nan_to_num(data), self.psfmodel.evaluate(**params), normalize_kernel=False, **kwargs )
         
         return convolve_data
 

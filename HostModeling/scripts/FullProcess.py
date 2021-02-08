@@ -90,6 +90,7 @@ if __name__ == '__main__' :
     parser.add_argument('-sedf',"--SED_Fitter", type=str, default = 'Lephare', help="Which SEDfitter to use, default is Lephare")
     parser.add_argument('-specdir',"--spec_dirout", type=str, default = 'default', help="Name of the directory to store the .spec files in lepharework/pylephare/. Default is in lepharework/pylephare/*actual_time*.")
     parser.add_argument('-sedfdir',"--SED_Fitter_dirout", type=str, default = 'none', help="In case spec already has been computed, path of the saved spec")
+    parser.add_argument("--sedfdatdirout", type=str, default = None, help="Where to store the sampled spectrum?")
     parser.add_argument('-lpsn',"--Leph_sig_noise_ratio", type=float, default = 5, help="Sig/noise ratio selection for the computation of the spectra with Lephare. Default is 5")
 
     parser.add_argument('-psffit',"--psfmodel_fit", type=str, default = 'Gauss_Mof_kernel', help="Which psf model to apply on the host modeling, default is Gaussian + Moffat " )
@@ -169,7 +170,7 @@ if __name__ == '__main__' :
             Leph.Setup_Lephare( spec_dirout=args.spec_dirout, Sig_noise_ratio=args.Leph_sig_noise_ratio, redshift=redshift)
             Leph.run_Lephare()
 
-            spec,lbda = Leph.get_Sample_spectra()
+            spec,lbda = Leph.get_Sample_spectra(save_dirout_data = args.sedfdatdirout)
 
             #####PLOT POSSIBILITIES???
 
