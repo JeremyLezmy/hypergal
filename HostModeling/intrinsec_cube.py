@@ -324,6 +324,7 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
     import time
     from pathos.multiprocessing import ProcessingPool as Pool
     import pathos
+    #from scipy.interpolate import griddata
     
 
     centroid_x = np.array([i.centroid.x for i in list(pixelgrid)])
@@ -363,6 +364,10 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
     
         intersec["newflux"]=intersec['area']*intersec['flux']
         spaxels['flux']=intersec.groupby('id_spaxels')['newflux'].sum()
+
+        #points=np.array( [pixel_wadr['centroid_x'].values,pixel_wadr['centroid_y'].values] ).T
+        #values=pixel_wadr['flux'].values
+        #spaxels['flux']=griddata(points, values, (spaxels['geometry'].centroid.x.values, spaxels['geometry'].centroid.y.values), method='cubic')  (Interpolation method)
 
         return(spaxels)
     
