@@ -390,7 +390,7 @@ class Host_removing():
 
         cube.extract_pointsource(fwhm_guess=fwhm_guess, step1range=step1range, step1bins=step1bins, psfmodel=psfmodel, centroid=centroid, **kwargs)
         spec = cube.extractstar.get_spectrum(which='raw', persecond=False)
-        
+        spec.writeto('spec_'+cube_path.rsplit('/',1)[-1][10:-5]+'.txt', ascii=True)
         self.extracted_spec = spec
         self.cube_star_extracted = cube
         return cube
