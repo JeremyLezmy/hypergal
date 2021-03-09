@@ -383,7 +383,8 @@ class Host_removing():
         cube = pysedm.sedm.load_sedmcube(cube_path)
 
         if exptime_correction:
-            cube.scale_by((1/self.sedm_cube.header['EXPTIME']))
+            #cube.scale_by((1/self.sedm_cube.header['EXPTIME']))
+            cube.header['EXPTIME']=1
 
         if centroid=='fitted':
             centroid = np.array([self.fit_values[k] for k in ['x0_IFU', 'y0_IFU']])
@@ -425,7 +426,7 @@ class Host_removing():
             
 
 
-    def show_full_output(self, lbda_min=4500, lbda_max=8500, savefile_dirout=None, **kwargs):
+    def show_full_output(self, lbda_min=5000, lbda_max=8000, savefile_dirout=None, sliceid=2, **kwargs):
 
         fig10 = plt.figure( figsize=(8,12))
         fig10.subplots_adjust(top=0.95)
@@ -457,7 +458,7 @@ class Host_removing():
         
         
         ax2=fig10.add_subplot(gs00[0, 2])
-        sl=self.fitted_cuberesidu.get_slice(lbda_min=4500, lbda_max=8500, slice_object=True )
+        sl=self.fitted_cuberesidu.get_slice(lbda_min=4750, lbda_max=8350, slice_object=True )
         sl.show(ax = ax2,vmin=np.percentile(sl.data,1),vmax=np.percentile(sl.data,99.5), show_colorbar=False, rasterized=True )
         ax2.set_xlabel('Residu')
         ax2.set_yticks([])
@@ -471,16 +472,21 @@ class Host_removing():
         
         
         
-        self.cube_star_extracted.extractstar.show_psf( sliceid=int(len(self.cube_star_extracted.extractstar.lbdastep1)/2), vmin='1', vmax='98.',axes=[ax3,ax4,ax5,ax6], ylim_low= np.percentile( self.cube_star_extracted.data[self.cube_star_extracted.data>0],1), psf_in_log=True, );
+        #self.cube_star_extracted.extractstar.show_psf( sliceid=2, vmin='1', vmax='98.',axes=[ax3,ax4,ax5,ax6], ylim_low= np.percentile( self.cube_star_extracted.data[self.cube_star_extracted.data>0],1), psf_in_log=True, );
+        self.cube_star_extracted.extractstar.show_psf( sliceid=sliceid, vmin='1', vmax='98.',axes=[ax3,ax4,ax5,ax6], psf_in_log=False, logscale=False );
+
         ax3.set(adjustable='box', aspect='equal')
         ax4.set(adjustable='box', aspect='equal')
         ax5.set(adjustable='box', aspect='equal')
-        ax6.set(adjustable='box',aspect='equal')
+        #ax6.set(adjustable='box',aspect='equal')
         ax3.set_title('Data', fontsize=8)
         ax4.set_title('Model',fontsize=8)
         ax5.set_title('Residual',fontsize=8)
         ax6.set_xlabel("Elliptical distance (spx)", fontsize=7)
-        ax6.set_yticks([])
+        #ax6.set_yticks([])
+        ax6.yaxis.tick_right()
+        ax6.set_ylim(np.min(np.percentile( self.cube_star_extracted.extractstar.es_products['psffit'].slices[sliceid]['slpsf'].slice.data, 0.03)), 1.1*np.max(self.cube_star_extracted.extractstar.es_products['psffit'].slices[sliceid]['slpsf'].slice.data))
+        ax6.set_yticklabels([np.format_float_scientific( ax6.get_yticks()[i], precision=2) for i in range(len(ax6.get_yticks()))])
         
         ax6.legend(fontsize=7)
         
@@ -496,9 +502,11 @@ class Host_removing():
         
         line3 = plt.Line2D((.1,.9),(.53,.53), color="k", linewidth=1)
         fig10.add_artist(line3)
-        fig10.text(0.5, 0.537, 'Spectre Exctration from pysedm method', fontsize=12, ha='center')
+        fig10.text(0.5, 0.537, 'Point Source Extraction from pysedm method', fontsize=12, ha='center')
         line4 = plt.Line2D((.1,.9),(.56,.56), color="k", linewidth=1)
         fig10.add_artist(line4)
+        import datetime
+        fig10.text( 0.5,0.01,f"hypergal version 0.1 | made the {datetime.datetime.now().date().isoformat()} | J.Lezmy (lezmy@ipnl.in2p3.fr)", ha='center', color='grey', fontsize=7)
 
         if savefile_dirout is not None:
             fig10.savefig(savefile_dirout, **kwargs) 

@@ -84,7 +84,7 @@ if __name__ == '__main__' :
     parser.add_argument("--IFU_ratio", nargs=1, type=float, default = 2.12)
     
     parser.add_argument('-ph',"--photosource", type=str, default = 'Panstarrs', help="Photometric source for the host modeling. Default is Panstarrs")
-    parser.add_argument('-ps1size', "--PS1_size", type=int, default = 150, help="Size in pixels of the cutout loaded from PS1. Default is 150 pix ~ 37.5 arcs ")
+    parser.add_argument('-ps1size', "--PS1_size", type=int, default = 140, help="Size in pixels of the cutout loaded from PS1. Default is 150 pix ~ 37.5 arcs ")
     parser.add_argument('-ps1sub',"--PS1_subsample", type=int, default = 2, help="Bin of the ps1 grid, default is 2")
 
     parser.add_argument('-sedf',"--SED_Fitter", type=str, default = 'Lephare', help="Which SEDfitter to use, default is Lephare")
@@ -100,7 +100,7 @@ if __name__ == '__main__' :
     parser.add_argument('-nc', "--nb_process", type=int, default = None , help="How many core for the multiprocessing computation? Default is quantity of availabe core - 2" )
     parser.add_argument("-f","--fit", type=str2bool, nargs='?', const=True, default=True, help="Run the fit?")
 
-    parser.add_argument('-lrf',"--lbda_range_fit", nargs=2, type=float, default=[4500,9000], help="Lambda range in AA considered for the fit. Default is [4500,8500]")
+    parser.add_argument('-lrf',"--lbda_range_fit", nargs=2, type=float, default=[4500,8500], help="Lambda range in AA considered for the fit. Default is [4500,8500]")
     parser.add_argument('-mf',"--metaslices_fit", type=int, default=5, help="Quantity of metaslices considered for the fit. Default is 5")
 
     parser.add_argument("-fv","--set_fit_values", action=StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2..." , default=None, help="Set of values to give if you already know the best parameters. If so, you can skip the fit by setting -f False. ")
@@ -117,7 +117,8 @@ if __name__ == '__main__' :
 
 
     parser.add_argument('-shfo', "--show_full",type=str2bool, nargs='?', const=True, default=True, help="show full output?")
-    parser.add_argument('-sfod', "--save_full_output_dir",type=str, nargs=1, default=None, help="where to save the final output png (with name of the file) ")
+    parser.add_argument("--slid",type=int,  default=2, help="sliceid to show in the extracted spectra")
+    parser.add_argument('-sfod', "--save_full_output_dir",type=str, default=None, help="where to save the final output png (with name of the file) ")
     
     
     
@@ -218,7 +219,7 @@ if __name__ == '__main__' :
 
         if args.show_full:
 
-            hostfitter.show_full_output(savefile_dirout=args.save_full_output_dir )
+            hostfitter.show_full_output(sliceid=args.slid, savefile_dirout=args.save_full_output_dir )
             plt.show()
     
 

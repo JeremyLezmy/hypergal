@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/01/30 15:55:52
+# Modified on:       2021/03/09 11:16:21
 # Copyright:         2021, Jeremy Lezmy
 # $Id: sedm_target.py, 2021/01/18 10:38:37  JL $
 ################################################################################
@@ -78,17 +78,20 @@ class SEDM_tools():
         if path == 'default':
             
             try:
-                self.cube = pysedm.get_sedmcube( SEDMDIROUT + '/' + self.night + DATA_PREFIX + self.night + '_' + self.obs_hour + '_' + self.target   + '.fits')
+                cube = pysedm.get_sedmcube( SEDMDIROUT + '/' + self.night + DATA_PREFIX + self.night + '_' + self.obs_hour + '_' + self.target   + '.fits')
 
             except:
                 self.download_e3d()
-                self.cube = pysedm.get_sedmcube( SEDMDIROUT + '/' + self.night + DATA_PREFIX + self.night + '_' + self.obs_hour + '_' + self.target   + '.fits')
+                cube = pysedm.get_sedmcube( SEDMDIROUT + '/' + self.night + DATA_PREFIX + self.night + '_' + self.obs_hour + '_' + self.target   + '.fits')
 
         else:
-            self.cube =  pysedm.get_sedmcube(path)
+            cube =  pysedm.get_sedmcube(path)
 
+        self.cube = self.remove_out_spaxels(cube)
 
         self.cube.load_adr()
+
+        
         return(self.cube)
 
 
@@ -144,9 +147,29 @@ class SEDM_tools():
 
         cube.load_adr()
         
-        self.cube_cal = cube
+        self.cube_cal = self.remove_out_spaxels(cube)
         
         return (self.cube_cal)
+
+
+    def remove_out_spaxels(self, cube, overwrite = True):
+
+        spx_map = cube.spaxel_mapping
+        ill_spx = np.argwhere(np.isnan(list( spx_map.values() ))).T[0]
+
+        if len(ill_spx)>0:
+
+            cube_fix = cube.get_partial_cube([i for i in cube.indexes if i not in cube.indexes[ill_spx]],np.arange(len(cube.lbda)) )
+
+            if overwrite:
+        
+                cube_fix.writeto(cube.filename)
+
+            return cube_fix
+        
+        else:
+            
+            return cube
 
 
     def get_hexagrid(self):
