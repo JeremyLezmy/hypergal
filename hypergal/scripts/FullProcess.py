@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/02/01 12:12:25
+# Modified on:       2021/03/09 14:11:07
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -184,8 +184,8 @@ if __name__ == '__main__' :
     overlaycube.load_adr(init_adr)
 
 
-
-    hostfitter = Hostrem.Host_removing( sedm_base, overlaycube, pix_coord_targ )
+    
+    hostfitter = Hostrem.Host_removing( sedm_base, overlaycube, pix_coord_targ, IFU_target )
 
     if args.plot_init_hexagrid:
         fig,ax = plt.subplots()

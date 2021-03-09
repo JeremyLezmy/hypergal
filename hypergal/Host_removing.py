@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/28 16:26:31 $
-# Modified on:       2021/02/01 11:37:58
+# Modified on:       2021/03/09 14:29:28
 # Copyright:         2019, Jeremy Lezmy
 # $Id: Host_removing.py, 2021/01/28 16:26:31  JL $
 ################################################################################
@@ -140,7 +140,7 @@ default_fixed_params=['temperature', 'relathumidity', 'pressure', 'lbdaref']
 class Host_removing():
 
     
-    def __init__(self, sedm_target, scene, target_pixcoord_image ):
+    def __init__(self, sedm_target, scene, target_pixcoord_image, IFU_target=None ):
         """ 
         Parameters:
 
@@ -156,6 +156,7 @@ class Host_removing():
         
         self.hexagrid = scene.hexagrid
 
+        self.set_IFU_target_init(IFU_target)
         self.set_parameters_values_init()
         self.set_parameters_bounds()
         
@@ -518,8 +519,8 @@ class Host_removing():
 
     def set_parameters_values_init(self, fix_parameter = default_fixed_params, corr_factor=1):
 
-
-        IFU_target = self.sedm.get_estimate_target_coord()
+        
+        IFU_target = self.IFU_target_initcoor
         
         self._init_IFU_target = dict({'x0_IFU': IFU_target[0], 'y0_IFU':IFU_target[1]})
         self._init_adr_parameter = self.scene.adr.data.copy()
@@ -562,7 +563,9 @@ class Host_removing():
 
     def set_default_parameters_bounds(self):
 
-        IFU_target = self.sedm.get_estimate_target_coord()
+        
+        IFU_target = self.IFU_target_initcoor
+            
         self.parameters_bounds['airmass'] = default_airmass_bounds
 
         for (k,bound) in zip(self.scene.psfmodel.params.keys(), self.scene.psfmodel.psfmodel._bounds) :
@@ -572,6 +575,14 @@ class Host_removing():
         self.parameters_bounds['x0_IFU'] = ( IFU_target[0]-6, IFU_target[0]+6)
         self.parameters_bounds['y0_IFU'] = ( IFU_target[1]-6, IFU_target[1]+6)
 
+
+    def set_IFU_target_init(self,IFU_target):
+
+        if IFU_target==None:
+            self.IFU_target_initcoor = self.sedm.get_estimate_target_coord()
+        else:
+            self.IFU_target_initcoor = IFU_target
+            
 
     def update_parameter(self, param_to_pop=None, **kwargs):
         
