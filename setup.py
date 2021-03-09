@@ -31,16 +31,16 @@ import datetime
 
 
 
-DESCRIPTION = "HostModel: Python module for Host modeling"
-LONG_DESCRIPTION = """ HostModel: Python module for Hyperspectral Galaxy Modeling through SEDfitting and photometric source """
+DESCRIPTION = "hypergal: Python module for Host modeling"
+LONG_DESCRIPTION = """ hypergal: Python module for Hyperspectral Galaxy Modeling through SEDfitting and photometric source """
 
-DISTNAME = 'HostModeling'
+DISTNAME = 'hypergal'
 AUTHOR = 'Jeremy Lezmy'
 MAINTAINER = 'Jeremy Lezmy' 
 MAINTAINER_EMAIL = 'lezmy@ipnl.in2p3.fr'
-URL = 'https://github.com/JeremyLezmy/HostModel'
+URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
 LICENSE = ''
-DOWNLOAD_URL = 'https://github.com/JeremyLezmy/HostModel'
+DOWNLOAD_URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
 VERSION = '1.0.0'
 
 try:
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         print(packages)
     else:
         # This should be updated if new submodules are added
-        packages = ['HostModeling', 'HostModeling/scripts']
+        packages = ['hypergal', 'hypergal/scripts']
 
     setup(name=DISTNAME,
           author=AUTHOR,
@@ -109,7 +109,7 @@ if __name__ == "__main__":
           download_url=DOWNLOAD_URL,
           install_requires=install_requires,
           packages=packages,
-          scripts=["HostModeling/scripts/FullProcess.py"] ,
+          scripts=["hypergal/scripts/FullProcess.py"] ,
           package_data={},
           classifiers=[
               'Intended Audience :: Science/Research',
