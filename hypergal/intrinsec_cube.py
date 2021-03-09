@@ -47,14 +47,14 @@ from astropy.convolution import Box1DKernel, convolve
 import warnings
 import pyifu
 
-from HostModeling import SED_Fitting as sedfit
-from HostModeling import Panstarrs_target as ps1targ
-from HostModeling import sedm_target as sedtarg
-from HostModeling import geometry_tool as geotool
+from hypergal import SED_Fitting as sedfit
+from hypergal import Panstarrs_target as ps1targ
+from hypergal import sedm_target as sedtarg
+from hypergal import geometry_tool as geotool
 
 
 from collections import OrderedDict
-from HostModeling import PSF_kernel as psfker
+from hypergal import PSF_kernel as psfker
 
 
 class bcolors:

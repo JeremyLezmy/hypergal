@@ -40,7 +40,7 @@ import pysedm
 
 import matplotlib
 import numpy as np
-from HostModeling import geometry_tool as geotool
+from hypergal import geometry_tool as geotool
 
 
 

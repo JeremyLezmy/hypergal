@@ -34,12 +34,12 @@ module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from HostModeling import Host_removing as Hostrem
-from HostModeling import sedm_target 
-from HostModeling import Panstarrs_target as ps1targ
-from HostModeling import SED_Fitting as sedfit
-from HostModeling import intrinsec_cube
-from HostModeling import geometry_tool as geotool
+from hypergal import Host_removing as Hostrem
+from hypergal import sedm_target 
+from hypergal import Panstarrs_target as ps1targ
+from hypergal import SED_Fitting as sedfit
+from hypergal import intrinsec_cube
+from hypergal import geometry_tool as geotool
 import pandas as pd
 import matplotlib.pyplot as plt
 
