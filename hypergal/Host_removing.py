@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/28 16:26:31 $
-# Modified on:       2021/03/09 14:29:28
+# Modified on:       2021/03/11 13:36:55
 # Copyright:         2019, Jeremy Lezmy
 # $Id: Host_removing.py, 2021/01/28 16:26:31  JL $
 ################################################################################
@@ -578,10 +578,11 @@ class Host_removing():
 
     def set_IFU_target_init(self,IFU_target):
 
-        if IFU_target==None:
-            self.IFU_target_initcoor = self.sedm.get_estimate_target_coord()
-        else:
+        if IFU_target is not None:
             self.IFU_target_initcoor = IFU_target
+        else:
+            self.IFU_target_initcoor = self.sedm.get_estimate_target_coord()
+        
             
 
     def update_parameter(self, param_to_pop=None, **kwargs):

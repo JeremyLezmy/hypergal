@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/03/09 14:11:07
+# Modified on:       2021/03/11 16:06:08
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -78,6 +78,8 @@ if __name__ == '__main__' :
     parser.add_argument('-n',"--night",type=str, default = "20200703", help="night of the observation, for instance 20200703")
     parser.add_argument('-obh',"--obs_hour",type=str, default = "09_58_56", help="hour of the observation, format : HH_MM_SS" )
     parser.add_argument('-cp',"--cube_path",type=str, default = 'default', help="Cube path to load in case you want to use a specific one (for instance a cube where you first removed some spaxels)" )
+    parser.add_argument("--byecr", type=str2bool, nargs='?', const=True, default=True, help="Apply Byecr first?")
+    parser.add_argument("--sbyecr", type=str2bool, nargs='?', const=True, default=True, help="Save Byecr cube?")
     
     parser.add_argument('-z',"--redshift",type=float, default = None, help="redshift of the target, default is query from fritz")
     parser.add_argument('-sedtar', "--IFU_target_coord", nargs=2, type=float, default = None, help="target's coord in spaxel unit in the sedm ifu. Default is given by the astrometry")
@@ -132,8 +134,14 @@ if __name__ == '__main__' :
 
 
     sedm_base = sedm_target.SEDM_tools( args.target, args.night, args.obs_hour)
-    sedm_base.get_calib_cube(path=args.cube_path)
-    
+
+    if args.byecr ==True:
+        cube_origin = sedm_base.get_cube(path=args.cube_path)
+        cube_byecr = sedm_base.get_byecr_cube( cube_origin, save=args.sbyecr)
+        sedm_base.get_calib_cube( cube_byecr)
+
+    else :
+        sedm_base.get_calib_cube(path=args.cube_path)
 
     if args.redshift==None:
         redshift = sedm_base.get_Host_redshift_fritz()

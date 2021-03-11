@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/03/09 11:16:21
+# Modified on:       2021/03/11 16:39:35
 # Copyright:         2021, Jeremy Lezmy
 # $Id: sedm_target.py, 2021/01/18 10:38:37  JL $
 ################################################################################
@@ -31,7 +31,7 @@ import datetime
 
 import pandas as pd
 import pyifu
-from pysedm import astrometry
+from pysedm import astrometry, byecr
 
 import matplotlib.pyplot as plt
 from ztfquery import sedm, io
@@ -58,6 +58,17 @@ SEDMDIROUT = os.path.join(SEDMLOCAL_BASESOURCE,"redux")
 
 SPEC_CONT_PREFIX = '/spec_auto_contsep_lstep1__crr_b_ifu'
 SPEC_ROBOT_PREFIX = '/spec_auto_robot_lstep1__crr_b_ifu'
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 
@@ -140,7 +151,7 @@ class SEDM_tools():
         fs=fluxcalibration.load_fluxcal_spectrum(fcal)
         
         if remove_sky == True:
-            cube.remove_sky()
+            cube.remove_sky(usemean=True)
             
         cube.scale_by(cube.header['EXPTIME'], onraw=False)
         cube.scale_by(fs.get_inversed_sensitivity(hdul[0].header['airmass']), onraw=False)
@@ -171,6 +182,36 @@ class SEDM_tools():
             
             return cube
 
+
+    def get_byecr_cube(self, cube , save=True, cut_critera=7):
+
+        night = cube.header['OBSDATE'].rsplit('-')
+        night = ''.join(night)
+
+        try:
+            bycrcl = pysedm.byecr.SEDM_BYECR( night, cube)
+            cr_df = pysedm.bycrcl.get_cr_spaxel_info(None, False, cut_critera)
+            
+        except:
+            self.download_hexagrid(night)
+            bycrcl = pysedm.byecr.SEDM_BYECR( night, cube)
+            cr_df = bycrcl.get_cr_spaxel_info(None, False, cut_critera)
+
+        print( bcolors.OKBLUE + f" Byecr succeeded, {len(cr_df)} detected cosmic-rays removed!" + bcolors.ENDC)
+        cube.data[cr_df["cr_lbda_index"], cr_df["cr_spaxel_index"]] = np.nan
+        cube.header.set("NCR", len(cr_df), "total number of detected cosmic-rays from byecr")
+        cube.header.set("NCRSPX", len(np.unique(cr_df["cr_spaxel_index"])), "total number of cosmic-ray affected spaxels")
+        
+        
+        if save:
+            cube.writeto(cube.filename.rsplit('crr')[0]+'crr_crr'+cube.filename.rsplit('crr')[1])
+            cube_byecr = pysedm.get_sedmcube(cube.filename.rsplit('crr')[0]+'crr_crr'+cube.filename.rsplit('crr')[1])
+            self.cube_crr = cube_byecr.copy()
+            return(cube_byecr)
+        
+        else:
+            self.cube_crr = cube.copy()
+            return(cube)
 
     def get_hexagrid(self):
 
@@ -264,6 +305,12 @@ class SEDM_tools():
             
         io.download_single_url(PHAROS_DATALOC + self.night + spec_prefix + self.night + '_' +  self.obs_hour + '_'+ self.target +'.fits',
                                dirout + '/' + self.night+ spec_prefix + self.night + '_' + self.obs_hour  +  '_'+ self.target + '.fits' , show_progress=show_progress, overwrite = overwrite)
+
+
+    def download_hexagrid(self, night, dirout = SEDMDIROUT, nodl = False, show_progress = False, overwrite=False):
+        
+        io.download_single_url(PHAROS_DATALOC + night + '/'+ night +'_HexaGrid.pkl', dirout + '/' + night +'/' + night + '_HexaGrid.pkl', show_progress=False, overwrite=overwrite )
+       
 
 
     
