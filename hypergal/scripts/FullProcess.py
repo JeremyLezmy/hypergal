@@ -4,9 +4,9 @@
 # Filename:          testscript.py
 # Description:       script description
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
-# Author:            $Author: rlezmy $
+# Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/03/11 16:06:08
+# Modified on:       2021/03/16 11:37:28
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -112,15 +112,15 @@ if __name__ == '__main__' :
     
     parser.add_argument('-extr', "--extractstar",type=str2bool, nargs='?', const=True, default=True, help="run the extractstar?")
 
-    parser.add_argument('-extr_l', "--extractstar_lbda",type=float, nargs=2, default=[4500,9000], help="lbda range for extractstar")
-    parser.add_argument('-extr_b', "--extractstar_bins",type=int, nargs=1, default=8, help="nb metaslices for extractstar")
+    parser.add_argument('-extr_l', "--extractstar_lbda",type=float, nargs=2, default=[4500,7500], help="lbda range for extractstar")
+    parser.add_argument('-extr_b', "--extractstar_bins",type=int, nargs=1, default=6, help="nb metaslices for extractstar")
 
     parser.add_argument('-extr_c', "--extractstar_centroid",type=str, nargs=1, default='fitted', help="init centroid extractstar")
 
 
     parser.add_argument('-shfo', "--show_full",type=str2bool, nargs='?', const=True, default=True, help="show full output?")
     parser.add_argument("--slid",type=int,  default=2, help="sliceid to show in the extracted spectra")
-    parser.add_argument('-sfod', "--save_full_output_dir",type=str, default=None, help="where to save the final output png (with name of the file) ")
+    parser.add_argument('-sfod', "--save_full_output_dir",type=str, default='default', help="where to save the final output png (with name of the file) ")
     
     
     

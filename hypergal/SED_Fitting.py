@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/02/01 12:10:50
+# Modified on:       2021/03/11 17:26:43
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -149,7 +149,7 @@ class Lephare_SEDfitting():
 
        
         spec_data_leph=np.empty(shape=(len( full_DF )), dtype='object')
-        spec_data_interp=np.zeros(shape=(len( full_DF ),len(lbda_sedm)))
+        spec_data_interp=np.zeros(shape=(len( full_DF ),len(lbda_sample)))
         
 
         fitind=0           

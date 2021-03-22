@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/28 16:26:31 $
-# Modified on:       2021/03/11 13:36:55
+# Modified on:       2021/03/21 17:22:18
 # Copyright:         2019, Jeremy Lezmy
 # $Id: Host_removing.py, 2021/01/28 16:26:31  JL $
 ################################################################################
@@ -69,7 +69,6 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
 
 
 class Parameter(OrderedDict):
@@ -375,8 +374,8 @@ class Host_removing():
 
         
 
-    def extract_star_spectra( self, cube_path=None, exptime_correction=True, fwhm_guess=2, step1range=[4500, 9300], 
-                              step1bins=8,  psfmodel='NormalMoffatFlat', centroid='fitted', **kwargs):
+    def extract_star_spectra( self, cube_path=None, exptime_correction=True, fwhm_guess=2, step1range=[4500, 8500], 
+                              step1bins=6,  psfmodel='NormalMoffatTilted', centroid='fitted', **kwargs):
         
         if cube_path == None and hasattr(self,'_fit_residu_path'):
             cube_path = self._fit_residu_path
@@ -392,7 +391,7 @@ class Host_removing():
 
         cube.extract_pointsource(fwhm_guess=fwhm_guess, step1range=step1range, step1bins=step1bins, psfmodel=psfmodel, centroid=centroid, **kwargs)
         spec = cube.extractstar.get_spectrum(which='raw', persecond=False)
-        spec.writeto('spec_'+cube_path.rsplit('/',1)[-1][10:-5]+'.txt', ascii=True)
+        spec.writeto( cube_path.replace('e3d','spec_hypergalresidual').replace('_HostRemoved','').replace('.fits','.txt'), ascii=True)
         self.extracted_spec = spec
         self.cube_star_extracted = cube
         return cube
@@ -427,7 +426,7 @@ class Host_removing():
             
 
 
-    def show_full_output(self, lbda_min=5000, lbda_max=8000, savefile_dirout=None, sliceid=2, **kwargs):
+    def show_full_output(self, lbda_min=4500, lbda_max=7500, savefile_dirout='default', sliceid=2, **kwargs):
 
         fig10 = plt.figure( figsize=(8,12))
         fig10.subplots_adjust(top=0.95)
@@ -461,7 +460,7 @@ class Host_removing():
         ax2=fig10.add_subplot(gs00[0, 2])
         sl=self.fitted_cuberesidu.get_slice(lbda_min=4750, lbda_max=8350, slice_object=True )
         sl.show(ax = ax2,vmin=np.percentile(sl.data,1),vmax=np.percentile(sl.data,99.5), show_colorbar=False, rasterized=True )
-        ax2.set_xlabel('Residu')
+        ax2.set_xlabel('Residual')
         ax2.set_yticks([])
         ax2.set(adjustable='box', aspect='equal')
         
@@ -486,7 +485,7 @@ class Host_removing():
         ax6.set_xlabel("Elliptical distance (spx)", fontsize=7)
         #ax6.set_yticks([])
         ax6.yaxis.tick_right()
-        ax6.set_ylim(np.min(np.percentile( self.cube_star_extracted.extractstar.es_products['psffit'].slices[sliceid]['slpsf'].slice.data, 0.03)), 1.1*np.max(self.cube_star_extracted.extractstar.es_products['psffit'].slices[sliceid]['slpsf'].slice.data))
+        #ax6.set_ylim(np.min(np.percentile( self.cube_star_extracted.extractstar.es_products['psffit'].slices[sliceid]['slpsf'].slice.data, 0.03)), 1.1*np.max(self.cube_star_extracted.extractstar.es_products['psffit'].slices[sliceid]['slpsf'].slice.data))
         ax6.set_yticklabels([np.format_float_scientific( ax6.get_yticks()[i], precision=2) for i in range(len(ax6.get_yticks()))])
         
         ax6.legend(fontsize=7)
@@ -509,8 +508,10 @@ class Host_removing():
         import datetime
         fig10.text( 0.5,0.01,f"hypergal version 0.1 | made the {datetime.datetime.now().date().isoformat()} | J.Lezmy (lezmy@ipnl.in2p3.fr)", ha='center', color='grey', fontsize=7)
 
-        if savefile_dirout is not None:
-            fig10.savefig(savefile_dirout, **kwargs) 
+        if savefile_dirout=='default':
+            fig10.savefig(self.sedm_cube.filename.replace('e3d','hypergal_report').replace('_HostRemoved','').replace('.fits','.png'), **kwargs)
+        elif savefile_dirout is not None:
+            fig10.savefig(savefile_dirout, **kwargs)
 
         return fig10
 
@@ -571,7 +572,7 @@ class Host_removing():
         for (k,bound) in zip(self.scene.psfmodel.params.keys(), self.scene.psfmodel.psfmodel._bounds) :
             self.parameters_bounds[k] = bound
             
-        self.parameters_bounds['corr_factor']=(0.5,2)
+        self.parameters_bounds['corr_factor']=(0.,2)
         self.parameters_bounds['x0_IFU'] = ( IFU_target[0]-6, IFU_target[0]+6)
         self.parameters_bounds['y0_IFU'] = ( IFU_target[1]-6, IFU_target[1]+6)
 
