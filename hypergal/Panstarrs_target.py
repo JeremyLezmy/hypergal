@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/02/01 11:00:45
+# Modified on:       2021/04/09 17:36:35
 # Copyright:         2021, Jeremy Lezmy
 # $Id: Panstarrs_target.py, 2021/01/18 17:23:14  JL $
 ################################################################################
@@ -114,11 +114,11 @@ class Panstarrs_target():
                 if subsample==1:
                     
                     df['ps1.'+ str(filt)] = self.imgcutout[filt].count_to_flux( self.imgcutout[filt].data.ravel() )
-                    df['ps1.'+ str(filt) + '.err'] = self.imgcutout[filt].count_to_flux( self.imgcutout[filt].weightimage.data.ravel() )
+                    df['ps1.'+ str(filt) + '.err'] = self.imgcutout[filt].count_to_flux( self.imgcutout[filt].var.ravel()**0.5 )
                     
                 elif subsample > 1:
                     
-                    restride_dat, restride_err = geotool.restride(self.imgcutout[filt].data, subsample), geotool.restride(self.imgcutout[filt].weightimage.data**(-2), subsample)
+                    restride_dat, restride_err = geotool.restride(self.imgcutout[filt].data, subsample), geotool.restride(self.imgcutout[filt].var**0.5, subsample)
                     sum_restride_dat, sum_restride_err = np.sum(restride_dat, axis=(2,3)), np.sum(restride_err, axis=(2,3))
 
                     df['ps1.'+ str(filt)] = self.imgcutout[filt].count_to_flux( sum_restride_dat.ravel() )

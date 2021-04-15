@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/26 18:38:59 $
-# Modified on:       2021/03/21 15:50:15
+# Modified on:       2021/03/30 13:56:53
 # Copyright:         2019, Jeremy Lezmy
 # $Id: PSF_kernel.py, 2021/01/26 18:38:59  JL $
 ################################################################################
@@ -34,6 +34,7 @@ import numpy as np
 import math
 from scipy.stats import norm
 from collections import OrderedDict
+import matplotlib.pyplot as plt
 
 
 def Gauss_Kernel_2D(x_stddev=1, y_stddev=1,theta=0):
