@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/04/16 20:00:48
+# Modified on:       2021/04/16 20:29:20
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -576,6 +576,11 @@ class Cigale_sed():
 
 
 
+
+
+
+            
+
 def command_cigale(command, file_path=None):
     '''
     Call pcigale commands through python function rather than shell commands.
@@ -647,6 +652,45 @@ def command_cigale(command, file_path=None):
               f' \'init\', \'genconf\', \'check\' and \'run\'')
 
 
+
+
+
+
+
+def move_files(old_path, new_path, files, verbose=False):
+    '''
+    Move files (and/or directories) from one location to another.
+
+    Parameters
+    ----------
+    old_path : string
+        Name of the current path to the files.
+
+    new_path : string
+        Name of the new path to the files.
+
+    files : [string]
+        Names of every files(and/or directories) to move.
+
+    Options
+    -------
+    verbose : bool
+        If True, print old and new locations.
+        Default to False.
+    '''
+    old_location = [old_path+l for l in files]
+    new_location = [new_path+l for l in files]
+
+    try:
+        _ = [os.rename(l, nl) for l, nl in zip(old_location,new_location)]
+    except OSError:
+        _ = [shutil.move(l, nl) for l, nl in zip(old_location,new_location)]
+    if verbose:
+        print(old_location)
+        print("moved to")
+        print(new_location)
+
+        
 
 
 #class SED_Fitting_to_cube():
