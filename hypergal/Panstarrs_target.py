@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/04/16 20:12:38
+# Modified on:       2021/04/16 20:23:32
 # Copyright:         2021, Jeremy Lezmy
 # $Id: Panstarrs_target.py, 2021/01/18 17:23:14  JL $
 ################################################################################
@@ -142,7 +142,7 @@ class Panstarrs_target():
             cig_df['ps1.'+ filt] = flux_aa_to_hz(cig_df['ps1.'+ filt], self.imgcutout[filt].INFO['ps1.'+ filt]['lbda'] ) * 10**26
             cig_df['ps1.'+ filt + '.err'] = flux_aa_to_hz(cig_df['ps1.'+ filt + '.err'], self.imgcutout[filt].INFO['ps1.'+ filt]['lbda'] ) * 10**26
     
-            cig_df.columns = cig_df.columns.str.replace(".", "_")
+        cig_df.columns = cig_df.columns.str.replace(".", "_")
             
         return cig_df
 
