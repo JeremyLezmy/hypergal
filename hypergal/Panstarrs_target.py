@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/04/16 20:10:22
+# Modified on:       2021/04/16 20:12:38
 # Copyright:         2021, Jeremy Lezmy
 # $Id: Panstarrs_target.py, 2021/01/18 17:23:14  JL $
 ################################################################################
@@ -35,6 +35,7 @@ from pymage import panstarrs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pymage import panstarrs
+from astropy import constants
 from hypergal import geometry_tool as geotool
 import geopandas
 import matplotlib.pyplot as plt
