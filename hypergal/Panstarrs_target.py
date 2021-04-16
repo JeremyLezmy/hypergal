@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/04/09 17:36:35
+# Modified on:       2021/04/16 19:58:18
 # Copyright:         2021, Jeremy Lezmy
 # $Id: Panstarrs_target.py, 2021/01/18 17:23:14  JL $
 ################################################################################
@@ -133,6 +133,20 @@ class Panstarrs_target():
 
 
 
+    def make_cigale_compatible(self,  mJy=True):
+    
+        cig_df = self.geo_dataframe.copy()
+    
+        for filt in ps1.available_filters:
+            cig_df['ps1.'+ filt] = flux_aa_to_hz(cig_df['ps1.'+ filt], ps1.imgcutout[filt].INFO['ps1.'+ filt]['lbda'] ) * 10**26
+            cig_df['ps1.'+ filt + '.err'] = flux_aa_to_hz(cig_df['ps1.'+ filt + '.err'], ps1.imgcutout[filt].INFO['ps1.'+ filt]['lbda'] ) * 10**26
+    
+            cig_df.columns = cig_df.columns.str.replace(".", "_")
+            
+        return cig_df
+
+    
+
     def show(self, with_grid=False, ax=None, filt = 'ps1.r', origin='lower'):
 
 
@@ -187,7 +201,15 @@ class Panstarrs_target():
     
 
 
+def flux_aa_to_hz(flux, wavelength):
+ 
+    return flux * (wavelength**2 / constants.c.to("AA/s").value)
 
+
+
+def flux_hz_to_aa(flux, wavelength):
+   
+    return flux / (wavelength**2 / constants.c.to("AA/s").value)
 
 
 
