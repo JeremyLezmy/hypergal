@@ -6,7 +6,7 @@
 # Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/03/11 16:39:35
+# Modified on:       2021/04/27 17:15:23
 # Copyright:         2021, Jeremy Lezmy
 # $Id: sedm_target.py, 2021/01/18 10:38:37  JL $
 ################################################################################
@@ -106,7 +106,7 @@ class SEDM_tools():
         return(self.cube)
 
 
-    def get_calib_cube(self, cube = None, which_airmass = 'robot', path='default', remove_sky = True ):
+    def get_calib_cube(self, cube = None, which_airmass = 'header', path='default', remove_sky = True ):
 
         import fnmatch
         import os
@@ -122,25 +122,34 @@ class SEDM_tools():
                 
         else:
             cube=cube.copy()
+
+        if which_airmass == 'header':
+
+            airm = cube.header['AIRMASS']
+
+        elif which_airmass!='header' and type(which_airmass)==str:
       
-        try:
-            for file in os.listdir(cube.filename.rsplit('/', 1)[0]):
-                if fnmatch.fnmatch(file, 'spec_auto_'+ which_airmass + '*.fits'):
-                    spec_fits = cube.filename.rsplit('/', 1)[0]+'/'+file
+            try:
+                for file in os.listdir(cube.filename.rsplit('/', 1)[0]):
+                    if fnmatch.fnmatch(file, 'spec_auto_'+ which_airmass + '*.fits'):
+                        spec_fits = cube.filename.rsplit('/', 1)[0]+'/'+file
                     
-            hdul = fits.open(spec_fits)
-
-        except:
-
-            self.download_spec(which = which_airmass)
+                hdul = fits.open(spec_fits)
+                airm = hdul[0].header['airmass']
             
-            for file in os.listdir(cube.filename.rsplit('/', 1)[0]):
-                if fnmatch.fnmatch(file, 'spec_auto_'+ which_airmass + '*.fits'):
-                    spec_fits = cube.filename.rsplit('/', 1)[0]+'/'+file
-                    
-            hdul = fits.open(spec_fits)
+            except:
 
-        
+                self.download_spec(which = which_airmass)
+            
+                for file in os.listdir(cube.filename.rsplit('/', 1)[0]):
+                    if fnmatch.fnmatch(file, 'spec_auto_'+ which_airmass + '*.fits'):
+                        spec_fits = cube.filename.rsplit('/', 1)[0]+'/'+file
+                    
+                hdul = fits.open(spec_fits)
+                airm = hdul[0].header['airmass']
+
+        else:
+            airm = which_airmass
         
         fcal = pysedm.io.fetch_nearest_fluxcal(file=cube.filename)
         
@@ -154,7 +163,7 @@ class SEDM_tools():
             cube.remove_sky(usemean=True)
             
         cube.scale_by(cube.header['EXPTIME'], onraw=False)
-        cube.scale_by(fs.get_inversed_sensitivity(hdul[0].header['airmass']), onraw=False)
+        cube.scale_by(fs.get_inversed_sensitivity(airm), onraw=False)
 
         cube.load_adr()
         

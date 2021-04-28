@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/28 16:26:31 $
-# Modified on:       2021/03/21 17:22:18
+# Modified on:       2021/04/28 15:51:36
 # Copyright:         2019, Jeremy Lezmy
 # $Id: Host_removing.py, 2021/01/28 16:26:31  JL $
 ################################################################################
@@ -129,7 +129,7 @@ class Parameter(OrderedDict):
         else:
             pass
 
-IFU_ratio = 2.12
+IFU_ratio = 2.235
 default_airmass_bounds = (1,5)
 
 
@@ -309,7 +309,7 @@ class Host_removing():
             return self.chi_square(map_parameters, fix_parameters=fix_parameters, sedm_data=sedm_data, sedm_var= sedm_var, lbda=lbda, metaslices=metaslices, lbda_ranges=lbda_ranges, use_bin_data=use_bin_data, nb_process=nb_process )
 
         
-        res = optimize.minimize(chi_squareflat, fit_params_init, bounds=fit_params_bounds, method="L-BFGS-B", options={'ftol': 1e-03, 'gtol': 1e-02, 'eps': 2e-02}  )
+        res = optimize.minimize(chi_squareflat, fit_params_init, bounds=fit_params_bounds, method="L-BFGS-B", options={'ftol': 1e-03, 'gtol': 1e-03, 'eps': 1e-03, 'maxls':10}  )
         #m = Minuit.from_array_func(chi_squareflat, fit_params_init, limit=fit_params_bounds, name=fit_params_name)
         #res=m.migrad()
 

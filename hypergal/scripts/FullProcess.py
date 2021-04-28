@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/03/16 11:37:28
+# Modified on:       2021/04/27 17:30:53
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -78,12 +78,14 @@ if __name__ == '__main__' :
     parser.add_argument('-n',"--night",type=str, default = "20200703", help="night of the observation, for instance 20200703")
     parser.add_argument('-obh',"--obs_hour",type=str, default = "09_58_56", help="hour of the observation, format : HH_MM_SS" )
     parser.add_argument('-cp',"--cube_path",type=str, default = 'default', help="Cube path to load in case you want to use a specific one (for instance a cube where you first removed some spaxels)" )
+
+    parser.add_argument("--cal_air", default = 'header', help="airmass to use for flux calibration. Default is the header one" )
     parser.add_argument("--byecr", type=str2bool, nargs='?', const=True, default=True, help="Apply Byecr first?")
     parser.add_argument("--sbyecr", type=str2bool, nargs='?', const=True, default=True, help="Save Byecr cube?")
     
     parser.add_argument('-z',"--redshift",type=float, default = None, help="redshift of the target, default is query from fritz")
     parser.add_argument('-sedtar', "--IFU_target_coord", nargs=2, type=float, default = None, help="target's coord in spaxel unit in the sedm ifu. Default is given by the astrometry")
-    parser.add_argument("--IFU_ratio", nargs=1, type=float, default = 2.12)
+    parser.add_argument("--IFU_ratio", nargs=1, type=float, default = 2.235)
     
     parser.add_argument('-ph',"--photosource", type=str, default = 'Panstarrs', help="Photometric source for the host modeling. Default is Panstarrs")
     parser.add_argument('-ps1size', "--PS1_size", type=int, default = 140, help="Size in pixels of the cutout loaded from PS1. Default is 150 pix ~ 37.5 arcs ")
@@ -138,10 +140,10 @@ if __name__ == '__main__' :
     if args.byecr ==True:
         cube_origin = sedm_base.get_cube(path=args.cube_path)
         cube_byecr = sedm_base.get_byecr_cube( cube_origin, save=args.sbyecr)
-        sedm_base.get_calib_cube( cube_byecr)
+        sedm_base.get_calib_cube( cube_byecr, which_airmass=args.cal_air)
 
     else :
-        sedm_base.get_calib_cube(path=args.cube_path)
+        sedm_base.get_calib_cube(path=args.cube_path, which_airmass=args.cal_air)
 
     if args.redshift==None:
         redshift = sedm_base.get_Host_redshift_fritz()

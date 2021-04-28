@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/25 13:28:46 $
-# Modified on:       2021/02/01 11:02:29
+# Modified on:       2021/04/27 17:30:40
 # Copyright:         2019, Jeremy Lezmy
 # $Id: intrinsec_cube.py, 2021/01/25 13:28:46  JL $
 ################################################################################
@@ -239,7 +239,7 @@ class Intrinsec_cube():
         return( new_spax )
 
 
-    def Build_model_cube( self, target_ifu=[0,0] ,target_image=[0,0], ifu_ratio=2.12, corr_factor = 1):
+    def Build_model_cube( self, target_ifu=[0,0] ,target_image=[0,0], ifu_ratio=2.235, corr_factor = 1):
 
         
         spax_data = self.new_spax

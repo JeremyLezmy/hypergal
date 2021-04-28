@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/04/16 20:29:20
+# Modified on:       2021/04/20 18:15:55
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -211,6 +211,90 @@ class Lephare_SEDfitting():
         return(spec_data_interp,lbda_sample)
 
 
+    def get_res_rms_df(self):
+
+
+        #Getting the filter names used with these data
+        filterlist = list(self.Lephare_DF.columns[:-1][0::2])
+
+        rms_df = pd.DataFrame( columns= filterlist + ['Total'])
+
+        sni=0
+        for idx in range(len( self.dataframe)):
+
+            if idx in self.Lephare_DF_threshold.index:
+
+                lephout = spectrum.LePhareSpectrum(filename=self.LephareOut["spec"][sni])
+                mod_out = lephout.get_model_data()[1]
+                data_in = lephout.get_input_data()[1][0]
+
+                filt_res = list((mod_out - data_in) / data_in)
+                tot_rms = np.sqrt( (1/len(filt_res)) * np.nansum(np.array(filt_res)**2))
+
+                rms_df.loc[idx] = filt_res + [tot_rms]
+                sni+=1
+
+            else :
+                rms_df.loc[idx] = [np.nan]*len(rms_df.columns)
+
+        self.rms_df = rms_df
+
+        return rms_df
+
+
+
+    def show_rms( self,pixel_bin=2, hist=False, arcsec_unit=False, px_in_asrcsec=0.25, vmin=5, vmax=95, savepath=None):
+
+        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(8,5), sharex=not hist, sharey=not hist,constrained_layout=True)
+
+        filterlist = self.rms_df.iloc[:, 0:-1].copy()
+        resmin = np.nanpercentile(filterlist , vmin)
+        resmax = np.nanpercentile(filterlist, vmax )
+        resbound = abs(max(abs(resmin),abs(resmax)))
+
+        shape = int(np.max( self.dataframe['centroid_x'])-np.min( self.dataframe['centroid_x']) + pixel_bin)
+
+        if arcsec_unit:
+            extent = [0,shape*px_in_asrcsec, 0,shape*px_in_asrcsec]
+            centered_extent = [-shape*px_in_asrcsec/2, shape*px_in_asrcsec/2, -shape*px_in_asrcsec/2 , shape*px_in_asrcsec/2]
+            unit = 'arcsec'
+        else :
+            extent = [0,shape , 0,shape]
+            centered_extent = [-shape/2, shape/2, -shape/2, shape/2]
+            unit = 'px'
+        for ax, filter in zip(axs.flat,filterlist):
+            mean_rms = "{:6.4f}".format(np.sqrt( (1/len( self._idx_underThreshold)) * np.nansum(filterlist[filter].values**2) ) )
+            if hist:
+                data_to_plot = filterlist[filter].values
+                ax.hist(data_to_plot, bins=30, range=(resmin,resmax))
+                ax.set(title=filter+' RMS='+mean_rms, xlabel='Residuals')
+            else:
+                imres=ax.imshow(np.reshape( self.rms_df[filter].values,(int(shape/pixel_bin), int(shape/pixel_bin))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='lower',extent = extent, aspect = 1)
+                ax.set(title=filter+' RMS='+mean_rms, xlabel='x (in '+unit+')', ylabel='y (in '+unit+')')
+                ax.label_outer()
+
+        mean_rms = "{:6.4f}".format( np.sqrt( (1/len( self._idx_underThreshold)) * np.nansum(self.rms_df['Total'].values**2) ) )
+        if hist:
+            data_to_plot = self.rms_df['Total'].values
+            axs[-1,-1].hist(data_to_plot, bins=30)
+            axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
+        else:
+            imrms=axs[-1,-1].imshow(np.reshape(self.rms_df["Total"].values,(int(shape/pixel_bin), int(shape/pixel_bin))),vmin=np.nanpercentile(self.rms_df["Total"].values, vmin), vmax=np.nanpercentile(self.rms_df["Total"].values, vmax),  cmap='inferno_r',origin='lower',extent = extent, aspect = 1)
+            axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x (in '+unit+')')
+            cbar_res = fig.colorbar(imres, ax=axs[0].ravel().tolist(),extend='both', label='Residuals')
+            cbar_rms = fig.colorbar(imrms, ax=axs[1].ravel().tolist(),extend='max', label='Spectral RMS')
+
+
+        fig.suptitle('Residuals & RMS using Lephare', fontsize=17)
+        
+        if savepath != None:
+            filename = 'RMS_hist' if hist else 'RMS'
+            fig.savefig(savepath+filename, facecolor = 'white',transparent=False)
+            print(savepath+filename+' saved')
+            
+        return fig,ax
+
+    
 
     
     def get_3D_cube(self, pixel_bin = 2, origin_shift = -0.5):
@@ -230,15 +314,6 @@ class Lephare_SEDfitting():
 
 
 
-PS1_FILTER_CIGALE=['ps1_g','ps1_r', 'ps1_i', 'ps1_z', 'ps1_y']
-PS1_FILTER_CIGALE_err=['ps1_g_err','ps1_r_err', 'ps1_i_err', 'ps1_z_err', 'ps1_y_err']
-ORDER = "ugrizy"
-POS = {c:p for (p, c) in enumerate(ORDER)}
-import geopandas
-from configobj import ConfigObj
-lbda_sedm = np.linspace(3700,9300,220)
-from scipy.interpolate import interp1d
-from astropy.convolution import Box1DKernel, convolve
 
 class Cigale_sed():
     
@@ -302,7 +377,7 @@ class Cigale_sed():
             config['data_file'] = dfpath
         
         if sed_modules=='default':
-            config['sed_modules'] = ['sfhdelayed', 'bc03', 'nebular', 'dustatt_powerlaw', 'dale2014', 'redshifting']
+            config['sed_modules'] = ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dl2014', 'redshifting']
         
         elif type(sed_modules)!=list and type(sed_modules[0])!=str:
             print('sed_modules should be a list of string.')
@@ -321,13 +396,15 @@ class Cigale_sed():
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
         
         if 'sfhdelayed' in config['sed_modules_params']:
-            config['sed_modules_params']['sfhdelayed']['tau_main'] = ['250', '500', '1000', '2000.0', '4000', '6000', '8000']
-            config['sed_modules_params']['sfhdelayed']['age_main'] = ['250', '500', '1000', '2000', '4000', '8000', '10000', '12000']
+            config['sed_modules_params']['sfhdelayed']['tau_main'] = ['250', '500', '1000', '2000.0', '5000']
+            config['sed_modules_params']['sfhdelayed']['age_main'] = ['250', '500', '1000', '2000', '4000', '8000', '11000']
+            config['sed_modules_params']['sfhdelayed']['age_burst']= ['10', '20']
+            config['sed_modules_params']['sfhdelayed']['f_burst']= ['0', '0.01', '0.1']
             
         if 'bc03' in config['sed_modules_params']:
         
             config['sed_modules_params']['bc03']['imf'] = '1'
-            config['sed_modules_params']['bc03']['metallicity'] = ['0.0001', '0.0004', '0.004', '0.008', '0.02', '0.05']
+            config['sed_modules_params']['bc03']['metallicity'] = ['0.0001', '0.004', '0.008', '0.02', '0.05']
             
         if 'dustatt_powerlaw' in config['sed_modules_params']:
             
@@ -335,10 +412,30 @@ class Cigale_sed():
             config['sed_modules_params']['dustatt_powerlaw']['uv_bump_amplitude'] = ['0.0', '1.0', '2.0', '3.0']
             
             config['sed_modules_params']['dustatt_powerlaw']['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
+
+
+
+        if 'dustatt_modified_CF00' in config['sed_modules_params']:
+            
+            config['sed_modules_params']['dustatt_modified_CF00']['Av_ISM'] = ['0.2', '1.0']
+            config['sed_modules_params']['dustatt_modified_CF00']['mu'] = ['0.44', '0.8']
+            config['sed_modules_params']['dustatt_modified_CF00']['slope_ISM'] = ['-1.5', '-0.7']
+            config['sed_modules_params']['dustatt_modified_CF00']['slope_BC'] = ['-1.3']
+            
+            config['sed_modules_params']['dustatt_modified_CF00']['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
+            
             
         if 'dale2014' in config['sed_modules_params']:
             
             config['sed_modules_params']['dale2014']['alpha'] = ['0.5', '1.0', '1.5', '2.0', '2.5']
+
+
+        if 'dl2014' in config['sed_modules_params']:
+            
+            config['sed_modules_params']['dl2014']['alpha'] = ['1', '2']
+            config['sed_modules_params']['dl2014']['qpah'] = ['1.12', '3.19']
+            config['sed_modules_params']['dl2014']['umin'] = ['0.1', '15', '25']
+            config['sed_modules_params']['dl2014']['gamma'] = ['0.1', '0.9']
         
         config['analysis_params']['redshift_decimals'] = '3'
         config['analysis_params']['save_best_sed'] = 'True'
@@ -357,10 +454,16 @@ class Cigale_sed():
             actual_path = os.getcwd()+'/'
             if os.path.exists(path_result+ result_dir_name):
                 name = path_result+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
-                os.rename(path_result+result_dir_name, name)
+                shutil.move(path_result+result_dir_name, name)
                 print(f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
-            os.rename(actual_path+'out/', result_dir_name)
-            files = ['pcigale.ini', 'pcigale.ini.spec','cig_df.txt', result_dir_name]
+
+            if os.path.exists(actual_path+result_dir_name):
+                name = actual_path_result+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
+                shutil.move(actual_path+result_dir_name, name)
+                print(f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
+            shutil.move(actual_path+'out/', actual_path+result_dir_name)
+            files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt', result_dir_name]
+            
             move_files(actual_path, path_result, files)
             
             self._path_result = path_result
@@ -383,7 +486,7 @@ class Cigale_sed():
         fitind=0           
         for i in range(len( full_DF )):
           
-            if i in ( cg._idx_underThreshold ):
+            if i in ( self._idx_underThreshold ):
                 
                 valid_spec = 'yes'
                 
@@ -475,7 +578,7 @@ class Cigale_sed():
         filtererrlist = [f'{i}_err'  for i in filterlist]
 
         sni = 0
-        for idx in range(len( cg.cig_df)):
+        for idx in range(len( self.cig_df)):
 
             if idx in self.cig_df_threshold.index:
                 
@@ -493,7 +596,7 @@ class Cigale_sed():
         return rms_df
 
 
-    def show_rms(self, pixel_bin=2, hist=False, arcsec_unit=True, px_in_asrcsec=0.25, vmin=5, vmax=95, savepath=None):
+    def show_rms(self, pixel_bin=2, hist=False, arcsec_unit=False, px_in_asrcsec=0.25, vmin=5, vmax=95, savepath=None):
         '''
         Plot the residual images for each filters and the total RMS
 
@@ -509,12 +612,12 @@ class Cigale_sed():
 
         fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(8,5), sharex=not hist, sharey=not hist,constrained_layout=True)
 
-        filterlist = self.rms_df[:-2]
+        filterlist = self.rms_df.iloc[:, 0:-1].copy()
         resmin = np.nanpercentile(filterlist , vmin)
         resmax = np.nanpercentile(filterlist, vmax )
         resbound = abs(max(abs(resmin),abs(resmax)))
         
-        shape = int(np.max( cg.dataframe['centroid_x'])-np.min( cg.dataframe['centroid_x']) + pixel_bin)
+        shape = int(np.max( self.dataframe['centroid_x'])-np.min( self.dataframe['centroid_x']) + pixel_bin)
         
         if arcsec_unit:
             extent = [0,shape*px_in_asrcsec, 0,shape*px_in_asrcsec]
@@ -525,9 +628,9 @@ class Cigale_sed():
             centered_extent = [-shape/2, shape/2, -shape/2, shape/2]
             unit = 'px'
         for ax, filter in zip(axs.flat,filterlist):
-            mean_rms = "{:6.4f}".format(np.sqrt( (1/len( cg._idx_underThreshold)) * np.nansum(filterlist[filter].values**2) ) )
+            mean_rms = "{:6.4f}".format(np.sqrt( (1/len( self._idx_underThreshold)) * np.nansum(filterlist[filter].values**2) ) )
             if hist:
-                data_to_plot = dict_res[filter].flat
+                data_to_plot = filterlist[filter].values
                 ax.hist(data_to_plot, bins=30, range=(resmin, resmax))
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='Residuals')
             else:
@@ -535,11 +638,11 @@ class Cigale_sed():
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='x (in '+unit+')', ylabel='y (in '+unit+')')
                 ax.label_outer()
 
-        mean_rms = "{:6.4f}".format( np.sqrt( (1/len( self._idx_underThreshold)) * np.nansum(filterlist['Total'].values**2) ) )
+        mean_rms = "{:6.4f}".format( np.sqrt( (1/len( self._idx_underThreshold)) * np.nansum(self.rms_df['Total'].values**2) ) )
         if hist:
-            data_to_plot = tot_rms.flat
-            axs[-1,-1].hist(data_to_plot, bins=30, range=(rmsmin, rmsmax))
-            axs[-1,-1].set(title=r' $ \sum $ $\alpha$filters RMS='+mean_rms, xlabel='Spectral RMS')
+            data_to_plot = self.rms_df['Total'].values
+            axs[-1,-1].hist(data_to_plot, bins=30)
+            axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
         else:
             imrms=axs[-1,-1].imshow(np.reshape(self.rms_df["Total"].values,(int(shape/pixel_bin), int(shape/pixel_bin))),vmin=np.nanpercentile(self.rms_df["Total"].values, vmin), vmax=np.nanpercentile(self.rms_df["Total"].values, vmax),  cmap='inferno_r',origin='lower',extent = extent, aspect = 1)
             axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x (in '+unit+')')
@@ -549,10 +652,10 @@ class Cigale_sed():
 
         fig.suptitle('Residuals & RMS using CIGALE', fontsize=17)
         #plt.show()
-        #if savepath != None:
-        #    filename = 'RMS_hist' if hist else 'RMS'
-        #    fig.savefig(savepath+filename, facecolor = 'white',transparent=False)
-        #    print(savepath+filename+' saved')
+        if savepath != None:
+            filename = 'RMS_hist' if hist else 'RMS'
+            fig.savefig(savepath+filename, facecolor = 'white',transparent=False)
+            print(savepath+filename+' saved')
         return fig,ax
 
 
@@ -691,6 +794,15 @@ def move_files(old_path, new_path, files, verbose=False):
         print(new_location)
 
         
+def flux_aa_to_hz(flux, wavelength):
+ 
+    return flux * (wavelength**2 / constants.c.to("AA/s").value)
+
+
+
+def flux_hz_to_aa(flux, wavelength):
+   
+    return flux / (wavelength**2 / constants.c.to("AA/s").value)
 
 
 #class SED_Fitting_to_cube():
