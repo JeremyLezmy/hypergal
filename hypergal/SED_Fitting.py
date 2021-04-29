@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/04/20 18:15:55
+# Modified on:       2021/04/29 10:39:32
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -377,7 +377,7 @@ class Cigale_sed():
             config['data_file'] = dfpath
         
         if sed_modules=='default':
-            config['sed_modules'] = ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dl2014', 'redshifting']
+            config['sed_modules'] = ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dale2014', 'redshifting']
         
         elif type(sed_modules)!=list and type(sed_modules[0])!=str:
             print('sed_modules should be a list of string.')
@@ -396,9 +396,10 @@ class Cigale_sed():
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
         
         if 'sfhdelayed' in config['sed_modules_params']:
-            config['sed_modules_params']['sfhdelayed']['tau_main'] = ['250', '500', '1000', '2000.0', '5000']
-            config['sed_modules_params']['sfhdelayed']['age_main'] = ['250', '500', '1000', '2000', '4000', '8000', '11000']
-            config['sed_modules_params']['sfhdelayed']['age_burst']= ['10', '20']
+            config['sed_modules_params']['sfhdelayed']['tau_main'] = ['1', '100', '1000', '2000.0', '5000']
+            config['sed_modules_params']['sfhdelayed']['age_main'] = ['350', '1500', '4000', '8000', '12000']
+            config['sed_modules_params']['sfhdelayed']['tau_burst'] = ['20', '50']
+            config['sed_modules_params']['sfhdelayed']['age_burst']= ['5', '10']
             config['sed_modules_params']['sfhdelayed']['f_burst']= ['0', '0.01', '0.1']
             
         if 'bc03' in config['sed_modules_params']:
@@ -417,17 +418,17 @@ class Cigale_sed():
 
         if 'dustatt_modified_CF00' in config['sed_modules_params']:
             
-            config['sed_modules_params']['dustatt_modified_CF00']['Av_ISM'] = ['0.2', '1.0']
-            config['sed_modules_params']['dustatt_modified_CF00']['mu'] = ['0.44', '0.8']
-            config['sed_modules_params']['dustatt_modified_CF00']['slope_ISM'] = ['-1.5', '-0.7']
-            config['sed_modules_params']['dustatt_modified_CF00']['slope_BC'] = ['-1.3']
+            config['sed_modules_params']['dustatt_modified_CF00']['Av_ISM'] = [ '0', '0.5', '1']
+            config['sed_modules_params']['dustatt_modified_CF00']['mu'] = ['0.1', '0.5', '0.8']
+            config['sed_modules_params']['dustatt_modified_CF00']['slope_ISM'] = ['-1.5', '-0.5', '0.5']
+            config['sed_modules_params']['dustatt_modified_CF00']['slope_BC'] = ['-1.8', '-1.', '0.3']
             
             config['sed_modules_params']['dustatt_modified_CF00']['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
             
             
         if 'dale2014' in config['sed_modules_params']:
             
-            config['sed_modules_params']['dale2014']['alpha'] = ['0.5', '1.0', '1.5', '2.0', '2.5']
+            config['sed_modules_params']['dale2014']['alpha'] = [ '1', '2']
 
 
         if 'dl2014' in config['sed_modules_params']:
@@ -436,6 +437,8 @@ class Cigale_sed():
             config['sed_modules_params']['dl2014']['qpah'] = ['1.12', '3.19']
             config['sed_modules_params']['dl2014']['umin'] = ['0.1', '15', '25']
             config['sed_modules_params']['dl2014']['gamma'] = ['0.1', '0.9']
+
+        config['sed_modules_params']['nebular']['logU']= '-2'
         
         config['analysis_params']['redshift_decimals'] = '3'
         config['analysis_params']['save_best_sed'] = 'True'

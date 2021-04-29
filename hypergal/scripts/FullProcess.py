@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/04/27 17:30:53
+# Modified on:       2021/04/29 10:35:12
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -91,17 +91,21 @@ if __name__ == '__main__' :
     parser.add_argument('-ps1size', "--PS1_size", type=int, default = 140, help="Size in pixels of the cutout loaded from PS1. Default is 150 pix ~ 37.5 arcs ")
     parser.add_argument('-ps1sub',"--PS1_subsample", type=int, default = 2, help="Bin of the ps1 grid, default is 2")
 
-    parser.add_argument('-sedf',"--SED_Fitter", type=str, default = 'Lephare', help="Which SEDfitter to use, default is Lephare")
+    parser.add_argument('-sedf',"--SED_Fitter", type=str, default = 'cigale', help="Which SEDfitter to use, default is cigale")
     parser.add_argument('-specdir',"--spec_dirout", type=str, default = 'default', help="Name of the directory to store the .spec files in lepharework/pylephare/. Default is in lepharework/pylephare/*actual_time*.")
     parser.add_argument('-sedfdir',"--SED_Fitter_dirout", type=str, default = 'none', help="In case spec already has been computed, path of the saved spec")
     parser.add_argument("--sedfdatdirout", type=str, default = None, help="Where to store the sampled spectrum?")
-    parser.add_argument('-lpsn',"--Leph_sig_noise_ratio", type=float, default = 5, help="Sig/noise ratio selection for the computation of the spectra with Lephare. Default is 5")
+    parser.add_argument("--mod_cig", type=str, default = 'default', help="Modules to use (stellar, nebular, attenuation etc... for cigale")
+    parser.add_argument("--path_cig", type=str, default = None, help="Where to store the cigale files (txt file with input, pcigal.ini, pcigal.ini.spec, and output diretory). ")
+    parser.add_argument("--out_dir_cig", type=str, default ='out/', help="Name of the output directory with cigale fit ")
+    
+    parser.add_argument("--snr", type=float, default = 3, help="Sig/noise ratio selection for the computation of the spectra with Sedfitter. Default is 3")
 
     parser.add_argument('-psffit',"--psfmodel_fit", type=str, default = 'Gauss_Mof_kernel', help="Which psf model to apply on the host modeling, default is Gaussian + Moffat " )
 
     parser.add_argument('-pih', "--plot_init_hexagrid",type=str2bool, nargs='?', const=True, default=False, help="show initial hexagrid over the photo image?")
 
-    parser.add_argument('-nc', "--nb_process", type=int, default = None , help="How many core for the multiprocessing computation? Default is quantity of availabe core - 2" )
+    parser.add_argument('-nc', "--nb_process", default = 'auto' , help="How many core for the multiprocessing computation? Default is quantity of availabe core - 2" )
     parser.add_argument("-f","--fit", type=str2bool, nargs='?', const=True, default=True, help="Run the fit?")
 
     parser.add_argument('-lrf',"--lbda_range_fit", nargs=2, type=float, default=[4500,8500], help="Lambda range in AA considered for the fit. Default is [4500,8500]")
@@ -178,12 +182,30 @@ if __name__ == '__main__' :
 
             Leph = sedfit.Lephare_SEDfitting(pd.DataFrame(geodf))           
             
-            Leph.Setup_Lephare( spec_dirout=args.spec_dirout, Sig_noise_ratio=args.Leph_sig_noise_ratio, redshift=redshift)
+            Leph.Setup_Lephare( spec_dirout=args.spec_dirout, Sig_noise_ratio=args.snr, redshift=redshift)
             Leph.run_Lephare()
 
             spec,lbda = Leph.get_Sample_spectra(save_dirout_data = args.sedfdatdirout)
 
             #####PLOT POSSIBILITIES???
+
+
+    if args.SED_Fitter=='cigale':
+
+        if args.SED_Fitter_dirout is not 'none':
+
+            spec, lbda = np.load(args.SED_Fitter_dirout)['spec'], np.load(args.SED_Fitter_dirout)['lbda']
+
+        else:
+
+            cig_geodf = photo_s.make_cigale_compatible()
+            cg = sedfit.Cigale_sed(cig_geodf)
+            cg.setup_cigale_df( SNR=args.snr, redshift=redshift)
+            cg.initiate_cigale(sed_modules = args.mod_cig, cores = args.nb_process)
+            cg.run_cigale( path_result = args.path_cig, result_dir_name=args.out_dir_cig)
+            
+            spec, lbda = cg.get_Sample_spectra(save_dirout_data = args.sedfdatdirout)
+            
 
     init_hexagrid = geotool.get_cube_grid( sedm_base.cube_cal, scale = args.IFU_ratio, targShift=IFU_target, x0=pix_coord_targ[0], y0=pix_coord_targ[1]  )
 
