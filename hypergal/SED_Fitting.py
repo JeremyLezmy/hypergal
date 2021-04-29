@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/04/29 10:39:32
+# Modified on:       2021/04/29 12:08:57
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -461,11 +461,15 @@ class Cigale_sed():
                 print(f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
 
             if os.path.exists(actual_path+result_dir_name):
-                name = actual_path_result+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
+                name = actual_path+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
                 shutil.move(actual_path+result_dir_name, name)
                 print(f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
-            shutil.move(actual_path+'out/', actual_path+result_dir_name)
-            files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt', result_dir_name]
+            if result_dir_name!='out/':
+                shutil.move(actual_path+'out/', actual_path+result_dir_name)
+                files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt', result_dir_name]
+            else:
+                shutil.move(name, actual_path+'out/')
+                files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt',result_dir_name]
             
             move_files(actual_path, path_result, files)
             
