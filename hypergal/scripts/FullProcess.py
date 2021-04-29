@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ################################################################################
-# Filename:          testscript.py
+# Filename:          FullProcess.py
 # Description:       script description
-# Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
+# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/04/29 10:35:12
+# Modified on:       2021/04/29 14:13:01
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -21,9 +21,9 @@ testscript.py
 """
 __license__ = "2019, Jeremy Lezmy"
 __docformat__ = 'reStructuredText'
-__author__ = 'Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>'
+__author__ = 'Jeremy Lezmy <lezmy@ipnl.in2p3.fr>'
 __date__ = '2021/01/31 15:03:03'
-__adv__ = 'testscript.py'
+__adv__ = 'FullProcess.py'
 
 import os
 import sys

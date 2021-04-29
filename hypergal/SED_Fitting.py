@@ -3,10 +3,10 @@
 ################################################################################
 # Filename:          SED_Fitting.py
 # Description:       script description
-# Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
-# Author:            $Author: rlezmy $
+# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
+# Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/04/29 12:08:57
+# Modified on:       2021/04/29 14:12:00
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################

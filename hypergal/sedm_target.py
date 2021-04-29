@@ -3,10 +3,10 @@
 ################################################################################
 # Filename:          sedm_target.py
 # Description:       script description
-# Author:            Jeremy Graziani <jeremy.lezmy@ipnl.in2p3.fr>
+# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/04/27 17:15:23
+# Modified on:       2021/04/29 14:11:43
 # Copyright:         2021, Jeremy Lezmy
 # $Id: sedm_target.py, 2021/01/18 10:38:37  JL $
 ################################################################################

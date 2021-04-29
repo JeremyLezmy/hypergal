@@ -4,9 +4,9 @@
 # Filename:          intrinsec_cube.py
 # Description:       script description
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
-# Author:            $Author: rlezmy $
+# Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/25 13:28:46 $
-# Modified on:       2021/04/27 17:30:40
+# Modified on:       2021/04/29 14:10:57
 # Copyright:         2019, Jeremy Lezmy
 # $Id: intrinsec_cube.py, 2021/01/25 13:28:46  JL $
 ################################################################################

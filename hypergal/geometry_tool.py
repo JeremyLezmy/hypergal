@@ -3,10 +3,10 @@
 ################################################################################
 # Filename:          geometry_tool.py
 # Description:       script description
-# Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
-# Author:            $Author: rlezmy $
+# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
+# Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 18:43:04 $
-# Modified on:       2021/01/25 17:50:40
+# Modified on:       2021/04/29 14:12:16
 # Copyright:         2019, Jeremy Lezmy
 # $Id: geometry_tool.py, 2021/01/18 18:43:04  JL $
 ################################################################################

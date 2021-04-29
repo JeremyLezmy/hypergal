@@ -3,10 +3,10 @@
 ################################################################################
 # Filename:          Host_removing.py
 # Description:       script description
-# Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
-# Author:            $Author: rlezmy $
+# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
+# Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/28 16:26:31 $
-# Modified on:       2021/04/28 15:51:36
+# Modified on:       2021/04/29 14:12:36
 # Copyright:         2019, Jeremy Lezmy
 # $Id: Host_removing.py, 2021/01/28 16:26:31  JL $
 ################################################################################
@@ -21,7 +21,7 @@ Host_removing.py
 """
 __license__ = "2019, Jeremy Lezmy"
 __docformat__ = 'reStructuredText'
-__author__ = 'Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>'
+__author__ = 'Jeremy Lezmy <lezmy@ipnl.in2p3.fr>'
 __date__ = '2021/01/28 16:26:31'
 __adv__ = 'Host_removing.py'
 
