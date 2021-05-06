@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/04/29 14:13:01
+# Modified on:       2021/05/04 16:25:00
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -85,7 +85,7 @@ if __name__ == '__main__' :
     
     parser.add_argument('-z',"--redshift",type=float, default = None, help="redshift of the target, default is query from fritz")
     parser.add_argument('-sedtar', "--IFU_target_coord", nargs=2, type=float, default = None, help="target's coord in spaxel unit in the sedm ifu. Default is given by the astrometry")
-    parser.add_argument("--IFU_ratio", nargs=1, type=float, default = 2.235)
+    parser.add_argument("--IFU_ratio", nargs=1, type=float, default = 2.232)
     
     parser.add_argument('-ph',"--photosource", type=str, default = 'Panstarrs', help="Photometric source for the host modeling. Default is Panstarrs")
     parser.add_argument('-ps1size', "--PS1_size", type=int, default = 140, help="Size in pixels of the cutout loaded from PS1. Default is 150 pix ~ 37.5 arcs ")

@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/25 13:28:46 $
-# Modified on:       2021/04/29 14:10:57
+# Modified on:       2021/05/05 15:34:39
 # Copyright:         2019, Jeremy Lezmy
 # $Id: intrinsec_cube.py, 2021/01/25 13:28:46  JL $
 ################################################################################
@@ -239,12 +239,24 @@ class Intrinsec_cube():
         return( new_spax )
 
 
-    def Build_model_cube( self, target_ifu=[0,0] ,target_image=[0,0], ifu_ratio=2.235, corr_factor = 1):
+    def Build_model_cube( self, target_ifu=[0,0] ,target_image=[0,0], ifu_ratio=2.232, corr_factor = 1, bkg=0):
 
         
         spax_data = self.new_spax
 
         flux = np.array([spax_data[i]['flux'] for i in range(len(spax_data))])
+
+        if type(corr_factor) in (int, float):
+            flux*=corr_factor
+        elif len(corr_factor)==len(flux):
+                for i in range(np.shape(flux)[-1]):
+                    flux[:,i]*= corr_factor
+
+        if type(bkg) in (int, float):
+            flux+=bkg
+        elif len(bkg)==len(flux):
+                for i in range(np.shape(flux)[-1]):
+                    flux[:,i]+= bkg
         
         pixMap = dict(zip(np.arange(0, len(spax_data[0])), np.array( [ (np.array (spax_data[0]['centroid_x']) + target_ifu[0] * ifu_ratio - target_image[0]) / ifu_ratio,
                                                                        (np.array (spax_data[0]['centroid_y']) + target_ifu[1] * ifu_ratio - target_image[1]) / ifu_ratio ]).T ))
@@ -252,7 +264,7 @@ class Intrinsec_cube():
 
         spax_vertices = np.array([[ 0.19491447,  0.6375365 ],[-0.45466557,  0.48756913],[-0.64958004, -0.14996737],[-0.19491447, -0.6375365 ],[ 0.45466557, -0.48756913], [ 0.64958004,  0.14996737]])
         
-        Model_cube = pyifu.spectroscopy.get_cube( data = corr_factor * flux,lbda = self.lbda_used, spaxel_mapping = pixMap)
+        Model_cube = pyifu.spectroscopy.get_cube( data = flux,lbda = self.lbda_used, spaxel_mapping = pixMap)
 
         Model_cube.set_spaxel_vertices( spax_vertices )
 
@@ -370,17 +382,23 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
         #spaxels['flux']=griddata(points, values, (spaxels['geometry'].centroid.x.values, spaxels['geometry'].centroid.y.values), method='cubic')  (Interpolation method)
 
         return(spaxels)
-    
 
     start=time.time()
-    print(f"Start of the multiprocessing with {nb_process} core")   
+    print(f"Start of the projection with {nb_process} core")
     
-    with Pool(nb_process) as p:
-        new_spax = p.map(multiprocess, range(len(lbda)))
+    if nb_process>1:
+       
     
+        with Pool(nb_process) as p:
+            new_spax = p.map(multiprocess, range(len(lbda)))
+
+    else:
+        new_spax=[]
+        for i in range(len(lbda)):
+            new_spax.append(multiprocess(i))
      
     end=time.time()   
-    print(f"end of the multiprocessing, it took: { end-start} s")
+    print(f"end of the projection, it took: { end-start} s")
     
     
     for i in range(len(lbda)):
@@ -397,7 +415,7 @@ def psf_convolution(data, lbda, lbdaref, psfkernel, nb_process, **kwargs ):
     import pathos
     from pathos.multiprocessing import ProcessingPool as Pool
 
-    new_data = np.atleast_3d(data)
+    new_data = np.atleast_3d(data).copy()
     
 
     def multipro_psf(number):
@@ -405,10 +423,14 @@ def psf_convolution(data, lbda, lbdaref, psfkernel, nb_process, **kwargs ):
         new_data[:,:,number] = psfkernel.convolution( new_data[:,:,number],  lbda[number], lbdaref)
 
         return new_data[:,:,number]
-
-    with Pool(nb_process) as p:
-        result = p.map(multipro_psf, np.arange( new_data.shape[-1] ))
     
+    if nb_process>1:
+        with Pool(nb_process) as p:
+            result = p.map(multipro_psf, np.arange( new_data.shape[-1] ))
+    else:
+        result=[]
+        for i in range(new_data.shape[-1] ):
+            result.append( multipro_psf(i))
      
     return(np.asarray(result).T.swapaxes(0,1))
 

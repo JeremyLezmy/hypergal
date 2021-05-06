@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: rlezmy $
 # Created on:        $Date: 2021/01/26 18:38:59 $
-# Modified on:       2021/03/30 13:56:53
+# Modified on:       2021/05/05 14:49:46
 # Copyright:         2019, Jeremy Lezmy
 # $Id: PSF_kernel.py, 2021/01/26 18:38:59  JL $
 ################################################################################
@@ -212,7 +212,11 @@ def read_psf_model(psfmodel):
     if 'Kolmo_extend' in psfmodel:
 
         return Kolmo_extend()
+    
 
+def chrom_sigma( sigmaref, lbda, lbdaref, rho=-1/5):
+        """ Evolution of the standard deviation as a function of lbda. """
+        return sigmaref * (lbda / lbdaref)**(rho)
 
 
 class Gauss_Mof_kernel():
@@ -222,7 +226,7 @@ class Gauss_Mof_kernel():
         #self._init_parameters = dict( { 'A':1.5, 'B':0, 'eta':2, 'sigma':1, 'alpha':2.5} )
         #self._bounds = [ (0,5), (-5,5), (0,None), (0.1,15), (0.6,15)  ]
         self._init_parameters = dict( { 'A':1.5, 'B':0, 'alpha':2, 'sigmaref':1, 'eta':2} )
-        self._bounds = [ (0,5), (-2,2), (0.1,15), (0.05,5), (0,None)  ]
+        self._bounds = [ (-10,10), (-2,2), (0.01,15), (0.05,5), (0,None)  ]
         self._name = 'Gaussian+Moffat'
 
 

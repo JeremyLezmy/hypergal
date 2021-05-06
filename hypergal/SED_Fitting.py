@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/04/29 14:12:00
+# Modified on:       2021/05/06 12:11:31
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -366,8 +366,19 @@ class Cigale_sed():
         self._idx_underThreshold = idx
         
         
-    def initiate_cigale(self, dfpath='default', sed_modules='default', cores='auto' ):
-    
+    def initiate_cigale(self, dfpath='default', sed_modules='default', cores='auto', working_dir=None ):
+
+        self._currentpwd = os.getcwd()
+        
+        if working_dir is not None:
+            if not os.path.isdir(working_dir) :
+                os.makedirs(working_dir, exist_ok = True)
+            os.chdir(working_dir)
+        else :
+            working_dir = self._currentpwd
+
+        self._working_dir = working_dir
+            
         command_cigale('init')
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
         
@@ -473,12 +484,16 @@ class Cigale_sed():
             
             move_files(actual_path, path_result, files)
             
+            self._out_dir = result_dir_name
+             
             self._path_result = path_result
+            
         else:
-            self._path_result = ''
-        self._out_dir = result_dir_name
+            self._path_result = self._working_dir
+            
+            self._out_dir = 'out/'
         
-    def get_Sample_spectra(self, lbda_sample = lbda_sedm, interp_kind = 'linear', box_ker_size=10, save_dirout_data = None):
+    def get_Sample_spectra(self, lbda_sample = lbda_sedm, interp_kind = 'linear', box_ker_size=10, save_dirout_data = None, as_cube = False):
 
        
         kerbox = Box1DKernel( box_ker_size )       
@@ -498,7 +513,7 @@ class Cigale_sed():
                 valid_spec = 'yes'
                 
                 try:
-                    datafile = fits.open(self._path_result+self._out_dir+f'{i}'+'_best_model.fits')
+                    datafile = fits.open( os.path.join(self._path_result,self._out_dir,f'{i}_best_model.fits'))
                     data = Table(datafile[1].data)
                                    
                 except:
@@ -536,6 +551,11 @@ class Cigale_sed():
         if save_dirout_data is not None:
 
             np.savez(save_dirout_data, spec=spec_data_interp, lbda=lbda_sample)
+
+        if as_cube:
+
+            return (self.get_3D_cube())
+            
         
         return(spec_data_interp,lbda_sample)
     
@@ -564,12 +584,12 @@ class Cigale_sed():
         
         if self._path_result == '':
 
-            file_in = fits.open(self._out_dir+'observations.fits')
-            file_out = fits.open(self._out_dir+'results.fits')
+            file_in = fits.open(os.path.join(self._out_dir,'observations.fits'))
+            file_out = fits.open(os.path.join(self._out_dir,'results.fits'))
             
         else:
-            file_in = fits.open(self._path_result+self._out_dir+'observations.fits')
-            file_out = fits.open(self._path_result+self._out_dir+'results.fits')
+            file_in = fits.open(os.path.join(self._path_result,self._out_dir,'observations.fits'))
+            file_out = fits.open(os.path.join(self._path_result,self._out_dir,'results.fits'))
             
         data_in = Table(file_in[1].data)
         data_out = Table(file_out[1].data)
@@ -603,7 +623,7 @@ class Cigale_sed():
         return rms_df
 
 
-    def show_rms(self, pixel_bin=2, hist=False, arcsec_unit=False, px_in_asrcsec=0.25, vmin=5, vmax=95, savepath=None):
+    def show_rms(self, pixel_bin=2, hist=False, arcsec_unit=False, px_in_asrcsec=0.25, vmin=5, vmax=95, savefile=None):
         '''
         Plot the residual images for each filters and the total RMS
 
@@ -616,7 +636,10 @@ class Cigale_sed():
         Returns
         -------
         '''
-
+        if not hasattr(self, 'rms_df'):
+            self.get_res_rms_df()
+        
+        
         fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(8,5), sharex=not hist, sharey=not hist,constrained_layout=True)
 
         filterlist = self.rms_df.iloc[:, 0:-1].copy()
@@ -659,13 +682,23 @@ class Cigale_sed():
 
         fig.suptitle('Residuals & RMS using CIGALE', fontsize=17)
         #plt.show()
-        if savepath != None:
-            filename = 'RMS_hist' if hist else 'RMS'
-            fig.savefig(savepath+filename, facecolor = 'white',transparent=False)
-            print(savepath+filename+' saved')
+        if savefile != None:
+            
+            fig.savefig( savefile )
+            print(savefile,' saved')
+            
         return fig,ax
 
 
+
+    def clean_output(self):
+
+        import shutil
+        os.chdir( self._currentpwd)
+        shutil.rmtree( self._working_dir)
+
+        self._working_dir = None
+        
         
     def set_sedmodule_config(self, sedmodule, param, value):
         

@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/04/29 14:11:28
+# Modified on:       2021/05/03 16:42:44
 # Copyright:         2021, Jeremy Lezmy
 # $Id: Panstarrs_target.py, 2021/01/18 17:23:14  JL $
 ################################################################################
@@ -96,7 +96,7 @@ class Panstarrs_target():
         return(self.available_filters)
 
 
-    def build_geo_dataframe(self, subsample = 2):
+    def build_geo_dataframe(self, subsample = 2, as_cigale=False):
 
         if not hasattr(self,'_size'):
             raise AttributeError("No cutout loaded yet. Run self.load_cutout()")
@@ -126,6 +126,16 @@ class Panstarrs_target():
                     df['ps1.'+ str(filt) + '.err'] = self.imgcutout[filt].count_to_flux( sum_restride_err.ravel() )
 
         df = df.assign(**{'centroid_x' :df['geometry'].centroid.x, 'centroid_y':df['geometry'].centroid.y, 'id_pixel':np.arange(0,len(df))})
+
+        if as_cigale:
+            cig_df =df.copy()
+    
+            for filt in self.available_filters:
+                cig_df['ps1.'+ filt] = flux_aa_to_hz(cig_df['ps1.'+ filt], self.imgcutout[filt].INFO['ps1.'+ filt]['lbda'] ) * 10**26
+                cig_df['ps1.'+ filt + '.err'] = flux_aa_to_hz(cig_df['ps1.'+ filt + '.err'], self.imgcutout[filt].INFO['ps1.'+ filt]['lbda'] ) * 10**26
+    
+            cig_df.columns = cig_df.columns.str.replace(".", "_")
+            df = cig_df
 
         self.geo_dataframe = df
         self.subsample = subsample
@@ -158,7 +168,7 @@ class Panstarrs_target():
         else:
             fig = ax.figure
 
-        ax.imshow(np.reshape(self.geo_dataframe[filt].values, (int(size/subsample), int(size/subsample))), origin=origin, extent=(-0.5, size-0.5, -0.5, size-0.5) )
+        ax.imshow(np.reshape(self.geo_dataframe[filt].values.astype(float), (int(size/subsample), int(size/subsample))), origin=origin, extent=(-0.5, size-0.5, -0.5, size-0.5) )
 
         if with_grid:
             geotool.show_Mutipolygon( self.full_grid, ax=ax)
