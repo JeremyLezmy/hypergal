@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/25 13:28:46 $
-# Modified on:       2021/05/05 15:34:39
+# Modified on:       2021/05/06 16:23:15
 # Copyright:         2019, Jeremy Lezmy
 # $Id: intrinsec_cube.py, 2021/01/25 13:28:46  JL $
 ################################################################################
@@ -47,8 +47,8 @@ from astropy.convolution import Box1DKernel, convolve
 import warnings
 import pyifu
 
-from hypergal import SED_Fitting as sedfit
-from hypergal import Panstarrs_target as ps1targ
+from hypergal import sed_fitting as sedfit
+from hypergal import panstarrs_target as ps1targ
 from hypergal import sedm_target as sedtarg
 from hypergal import geometry_tool as geotool
 
@@ -310,7 +310,15 @@ class Intrinsec_cube():
         return (H,W)
 
 
+    def set_sedm_targetpos(self, pos):
+        
+        self.sedm_targetpos = np.array(pos)
+        
 
+    def set_int_targetpos(self, pos):
+        
+        self.int_targetpos = np.array(pos)
+        
 
     def set_hexagrid(self, hexagrid):
 

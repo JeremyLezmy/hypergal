@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/21 14:40:25 $
-# Modified on:       2021/05/06 12:11:31
+# Modified on:       2021/05/06 15:53:49
 # Copyright:         2019, Jeremy Lezmy
 # $Id: SED_Fitting.py, 2021/01/21 14:40:25  JL $
 ################################################################################
@@ -315,7 +315,7 @@ class Lephare_SEDfitting():
 
 
 
-class Cigale_sed():
+class CigaleSED():
     
     def __init__(self, dataframe ):
         
@@ -325,7 +325,7 @@ class Cigale_sed():
             self.dataframe = dataframe
 
     
-    def setup_cigale_df(self, SNR=4, SNR_filt='all', redshift=0.02, path_to_save = None):
+    def setup_cigale_df(self, snr=4, snr_filt='all', redshift=0.02, path_to_save = None):
         
         cig_df = self.dataframe.copy()
         
@@ -344,13 +344,13 @@ class Cigale_sed():
         
         cig_df = cig_df.reindex(columns=(['id','redshift'] + list([a for a in cig_df.columns if a not in ['id','redshift']]) ))
 
-        if SNR_filt == 'all' :
+        if snr_filt == 'all' :
             
             filt = [ele for ele in lst  if ('err' not in ele)]
         else:
-            filt = SNR_filt
+            filt = snr_filt
         
-        idx = cig_df.loc[ np.logical_and.reduce([ cig_df[i].values / cig_df[i + '_err'].values > SNR for i in filt])].index
+        idx = cig_df.loc[ np.logical_and.reduce([ cig_df[i].values / cig_df[i + '_err'].values > snr for i in filt])].index
 
         cig_df_threshold = cig_df.loc[idx].copy()
         
@@ -358,8 +358,11 @@ class Cigale_sed():
             cig_df_threshold.to_csv('cig_df.txt', header=True, index=None, sep='\t', mode='w+')
             self._dfpath = 'cig_df.txt'
         else:
+            dirout = os.path.dirname(path_to_save)
+            if not os.path.isdir(dirout) :
+                os.makedirs(dirout, exist_ok = True)
             cig_df_threshold.to_csv(path_to_save, header=True, index=None, sep='\t', mode='w+')
-            self._dfpath = path_to_save
+            self._dfpath = os.path.abspath(path_to_save)
         
         self.cig_df = cig_df
         self.cig_df_threshold = cig_df_threshold
@@ -377,7 +380,7 @@ class Cigale_sed():
         else :
             working_dir = self._currentpwd
 
-        self._working_dir = working_dir
+        self._working_dir = os.path.abspath(working_dir)
             
         command_cigale('init')
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
@@ -489,11 +492,11 @@ class Cigale_sed():
             self._path_result = path_result
             
         else:
-            self._path_result = self._working_dir
+            self._path_result = os.path.abspath(self._working_dir)
             
             self._out_dir = 'out/'
         
-    def get_Sample_spectra(self, lbda_sample = lbda_sedm, interp_kind = 'linear', box_ker_size=10, save_dirout_data = None, as_cube = False):
+    def get_sample_spectra(self, lbda_sample = lbda_sedm, interp_kind = 'linear', box_ker_size=10, save_dirout_data = None, as_cube = False):
 
        
         kerbox = Box1DKernel( box_ker_size )       
@@ -572,7 +575,8 @@ class Cigale_sed():
         cube=pyifu.spectroscopy.get_cube(data=spec.T,lbda=lbda,spaxel_mapping=pixMap)
 
         cube.set_spaxel_vertices(xy = [[origin_shift, origin_shift],[origin_shift + pixel_bin, origin_shift],[origin_shift + pixel_bin , origin_shift + pixel_bin],[origin_shift, origin_shift + pixel_bin ]])
-
+        cube.set_spaxel_mapping({k: np.array(v)-0.5 for k,v in cube.spaxel_mapping.items()})
+        
         self.cube3D = cube
         
         return(cube)
