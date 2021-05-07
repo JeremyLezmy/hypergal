@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/04/29 17:01:52 $
-# Modified on:       2021/05/06 19:44:33
+# Modified on:       2021/05/07 10:04:54
 # Copyright:         2019, Jeremy Lezmy
 # $Id: fitter.py, 2021/04/29 17:01:52  JL $
 ################################################################################
@@ -199,7 +199,7 @@ class Fitter():
         return np.nansum( (sedm_data - model.data)**2 / sedm_var )
 
 
-    def fit_slice(self, lbda_ranges=None, metaslices=None, sliceid=0, fix_parameters = default_fixed_params_slice, apply_bkg=True, default_bounds=True, ftol=1e-5):
+    def fit_slice(self, lbda_ranges=None, metaslices=None, sliceid=0, fix_parameters = default_fixed_params_slice, apply_bkg=True, default_bounds=True, ftol=1e-4):
 
         sedm_data, sedm_var, lbda = self.get_sedm_data(lbda_ranges, metaslices)
 
@@ -293,11 +293,12 @@ class Fitter():
 
         if ncore>1:
             print('TO DO')
+            return
 
         return self.fit_values
 
 
-    def get_fitted_adr(self, x0, y0, x0_err, y0_err, lbda, lbdaref=6500):
+    def get_fitted_adr(self, x0, y0, x0_err, y0_err, lbda, lbdaref=6500, show=False, savefile=None):
         import pyifu
         import pyifu.adr as adr
         from scipy import optimize
@@ -336,6 +337,13 @@ class Fitter():
         self.fit_adrobj = adrset
         #self.fit_err_airmass = np.diag(scaletest.hess_inv)[1]**0.5
         #self.fit_err_parangle = np.diag(scaletest.hess_inv)[0]**0.5
+
+        if show:
+            
+            self.show_adr( adrset, x0, y0, x0_err, y0_err, self.fit_xref, self.fit_yref, lbda, savefile = savefile)
+
+        
+            
        
         return scaletest, self.fit_adrobj
 
@@ -413,14 +421,15 @@ class Fitter():
         spaxproj = flatmodel.copy()
         testspax = np.array([spaxproj[i]['flux'].values for i in range(len(spaxproj))]).copy()
         
-        idx = np.arange(0, testspax.shape[-1])
+        #idx = np.arange(0, testspax.shape[-1])
+        bkg_estimate = np.nanmedian(self.sedm_cube.get_index_data(self.sedm_cube.get_faintest_spaxels(50)), axis=0)
         
         def fun(coeff, bkg, slices):
             testspax = np.array([spaxproj[i]['flux'].values for i in range(len(spaxproj))]).copy()
             testspax[slices,:] *= coeff
-            testspax[slices,:] += bkg * np.nanmedian(self.sedm_cube.get_index_data(self.sedm_cube.get_faintest_spaxels(50)), axis=0)[slices]
+            testspax[slices,:] += bkg * bkg_estimate[slices]
             
-            return np.nansum( (testspax[slices,idx] - self.sedm_cube.data[slices,idx])**2/self.sedm_cube.variance[slices,idx] )
+            return np.nansum( (testspax[slices,:] - self.sedm_cube.data[slices,:])**2/self.sedm_cube.variance[slices,:] )
 
         coeff_arr = np.ones(shape=(220))
         bkg_arr = np.ones(shape=(220))
@@ -438,7 +447,7 @@ class Fitter():
             m = Minuit(fun_flat, coeff=1, bkg=1, errordef=1);
             m.migrad();
             coeff_arr[sl]*=m.values[0]
-            bkg_arr[sl]*=m.values[1]*np.nanmedian(self.sedm_cube.get_index_data(self.sedm_cube.get_faintest_spaxels(50)), axis=0)[sl]
+            bkg_arr[sl]*=m.values[1] * bkg_estimate[sl]
             
             if sl%20==0:
                 print(sl,'/220')
@@ -448,7 +457,7 @@ class Fitter():
     
 
 
-    def evaluate_model_cube(self, parameters, fix_parameters, lbda_ranges, metaslices, use_bin_data,  nb_process, fit_coeff):
+    def evaluate_model_cube(self, parameters, fix_parameters=[], lbda_ranges=[], metaslices=None, use_bin_data=False,  nb_process='auto', fit_coeff=True):
 
         if ('x0_IFU' in fix_parameters) and ('y0_IFU' in fix_parameters):
             IFU_coord = list(self._init_IFU_target.values())
@@ -470,6 +479,8 @@ class Fitter():
         if fit_coeff:
 
             coeff_arr, bkg_arr = self.fit_coeff_bkg(flat_model)
+            self.fit_coeff_cube = coeff_arr
+            self.fit_bkg_cube = bkg_arr
 
             Model_cube =  self.scene.Build_model_cube( target_ifu=IFU_coord ,target_image = self.target_imagecoord, ifu_ratio=IFU_ratio, corr_factor = coeff_arr, bkg=bkg_arr,)
 
@@ -477,6 +488,8 @@ class Fitter():
             
             Model_cube =  self.scene.Build_model_cube( target_ifu=IFU_coord ,target_image = self.target_imagecoord, ifu_ratio=IFU_ratio,  corr_factor = parameters['corr_factor'])
 
+        self.model_cube = Model_cube
+       
         return Model_cube
 
 
@@ -595,7 +608,7 @@ class Fitter():
 
 
 
-    def show_adrscale(self, adrobj, x0, y0, x0_err, y0_err,xref,yref, lbda):
+    def show_adr(self, adrobj, x0, y0, x0_err, y0_err,xref,yref, lbda, savefile = None):
         
         fig,ax=plt.subplots( figsize=(8,8))
 
@@ -629,6 +642,13 @@ class Fitter():
                      fr'$Airmass= {np.round( self.fit_airmass,2)},Parangle= {np.round( self.fit_parangle,2)}  $')
        
         ax.set_aspect('equal',adjustable='datalim')
+
+        
+        if savefile != None:
+            
+            fig.savefig( savefile )
+          
+            
 
 
 
