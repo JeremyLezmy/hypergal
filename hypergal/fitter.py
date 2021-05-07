@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/04/29 17:01:52 $
-# Modified on:       2021/05/07 10:17:43
+# Modified on:       2021/05/07 15:09:20
 # Copyright:         2019, Jeremy Lezmy
 # $Id: fitter.py, 2021/04/29 17:01:52  JL $
 ################################################################################
@@ -138,7 +138,7 @@ class Fitter():
 
         else:
 
-            return (self.sedm_cube.data, self.sedm_var, self.sedm_cube.lbda)
+            return (self.sedm_cube.data, self.sedm_cube.var, self.sedm_cube.lbda)
 
 
 
