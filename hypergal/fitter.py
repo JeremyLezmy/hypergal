@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/04/29 17:01:52 $
-# Modified on:       2021/05/07 10:04:54
+# Modified on:       2021/05/07 10:17:43
 # Copyright:         2019, Jeremy Lezmy
 # $Id: fitter.py, 2021/04/29 17:01:52  JL $
 ################################################################################
@@ -457,7 +457,7 @@ class Fitter():
     
 
 
-    def evaluate_model_cube(self, parameters, fix_parameters=[], lbda_ranges=[], metaslices=None, use_bin_data=False,  nb_process='auto', fit_coeff=True):
+    def evaluate_model_cube(self, parameters, fix_parameters=[], lbda_ranges=[], metaslices=None, use_bin_data=False,  nb_process='auto', fit_coeff=True, getresidu=False):
 
         if ('x0_IFU' in fix_parameters) and ('y0_IFU' in fix_parameters):
             IFU_coord = list(self._init_IFU_target.values())
@@ -489,8 +489,22 @@ class Fitter():
             Model_cube =  self.scene.Build_model_cube( target_ifu=IFU_coord ,target_image = self.target_imagecoord, ifu_ratio=IFU_ratio,  corr_factor = parameters['corr_factor'])
 
         self.model_cube = Model_cube
+
+        if getresidu:
+            import pyifu
+            cuberesidu=pyifu.spectroscopy.get_cube(data =( self.sedm_cube.data - Model_cube.data), lbda = self.sedm_cube.lbda, spaxel_mapping = self.scene.pixmapping)
+            spax_vertices = np.array([[ 0.19491447,  0.6375365 ], [-0.45466557,  0.48756913], [-0.64958004, -0.14996737], [-0.19491447, -0.6375365 ], [ 0.45466557, -0.48756913], [ 0.64958004,  0.14996737]])
+        
+            cuberesidu.set_spaxel_vertices( spax_vertices )
+
+            self.residual_cube = cuberesidu
+
+            return Model_cube, cuberesidu
        
         return Model_cube
+
+
+    
 
 
                 
