@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/04/29 17:01:52 $
-# Modified on:       2021/05/07 15:09:20
+# Modified on:       2021/05/07 18:54:03
 # Copyright:         2019, Jeremy Lezmy
 # $Id: fitter.py, 2021/04/29 17:01:52  JL $
 ################################################################################
@@ -241,11 +241,11 @@ class Fitter():
         #    self.fit_values=dict()
         #    self.fit_values_err=dict()
         
-        def chi_squareflat(x, fix_parameters=fix_parameters, sedm_data=sedm_slice_data, intrinsec_data =intrinsec_slice_data, sedm_var= sedm_slice_var, lbda=lbda_slice, bkg=estim_bkg):
+        def chi_squareflat(x, sliceid=sliceid,fix_parameters=fix_parameters, sedm_data=sedm_slice_data, intrinsec_data =intrinsec_slice_data, sedm_var= sedm_slice_var, lbda=lbda_slice, bkg=estim_bkg):
 
             
             map_parameters = {i: j for i, j in zip(fit_params_name, x)}
-            print(map_parameters)
+            print(f"slice n°{sliceid} : {map_parameters}")
             
             return self.chi_square_slice(map_parameters, fix_parameters=fix_parameters, sedm_data=sedm_data, sedm_var= sedm_var, intrinsec_data=intrinsec_data, lbda=lbda, bkg=bkg )
 
