@@ -367,7 +367,7 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
 
         spaxels=spax.copy()
         
-        intersec=geopandas.overlay(pixel_wadr,spaxels,how='intersection')
+        intersec=geopandas.overlay(pixel_wadr, spaxels, how='intersection')
         
         def localdef_get_area(l):
             return l.geometry.area/pixel_wadr.iloc[l.id_pixels].geometry.area
