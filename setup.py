@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/02/04 14:20:22 $
-# Modified on:       2021/02/04 14:33:45
+# Modified on:       2021/05/06 14:04:52
 # Copyright:         2019, Jeremy Lezmy
 # $Id: setup.py, 2021/02/04 14:20:22  JL $
 ################################################################################
@@ -41,7 +41,7 @@ MAINTAINER_EMAIL = 'lezmy@ipnl.in2p3.fr'
 URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
 LICENSE = ''
 DOWNLOAD_URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 try:
     from setuptools import setup, find_packages

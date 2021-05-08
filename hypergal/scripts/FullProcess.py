@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/31 15:03:03 $
-# Modified on:       2021/05/04 16:25:00
+# Modified on:       2021/05/06 14:22:44
 # Copyright:         2019, Jeremy Lezmy
 # $Id: testscript.py, 2021/01/31 15:03:03  JL $
 ################################################################################
@@ -36,8 +36,8 @@ if module_path not in sys.path:
 
 from hypergal import Host_removing as Hostrem
 from hypergal import sedm_target 
-from hypergal import Panstarrs_target as ps1targ
-from hypergal import SED_Fitting as sedfit
+from hypergal import panstarrs_target as ps1targ
+from hypergal import sed_fitting as sedfit
 from hypergal import intrinsec_cube
 from hypergal import geometry_tool as geotool
 import pandas as pd
@@ -199,12 +199,12 @@ if __name__ == '__main__' :
         else:
 
             cig_geodf = photo_s.make_cigale_compatible()
-            cg = sedfit.Cigale_sed(cig_geodf)
-            cg.setup_cigale_df( SNR=args.snr, redshift=redshift)
+            cg = sedfit.CigaleSED(cig_geodf)
+            cg.setup_cigale_df( snr=args.snr, redshift=redshift)
             cg.initiate_cigale(sed_modules = args.mod_cig, cores = args.nb_process)
             cg.run_cigale( path_result = args.path_cig, result_dir_name=args.out_dir_cig)
             
-            spec, lbda = cg.get_Sample_spectra(save_dirout_data = args.sedfdatdirout)
+            spec, lbda = cg.get_sample_spectra(save_dirout_data = args.sedfdatdirout)
             
 
     init_hexagrid = geotool.get_cube_grid( sedm_base.cube_cal, scale = args.IFU_ratio, targShift=IFU_target, x0=pix_coord_targ[0], y0=pix_coord_targ[1]  )
