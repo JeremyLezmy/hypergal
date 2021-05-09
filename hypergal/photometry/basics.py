@@ -3,7 +3,6 @@
 import pandas
 import warnings
 import numpy as np
-from astrobject.instruments import panstarrs
 
 
 from .astrometry import WCSHolder
