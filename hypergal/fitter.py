@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/04/29 17:01:52 $
-# Modified on:       2021/05/09 09:56:10
+# Modified on:       2021/05/09 10:33:56
 # Copyright:         2019, Jeremy Lezmy
 # $Id: fitter.py, 2021/04/29 17:01:52  JL $
 ################################################################################
@@ -268,7 +268,7 @@ class Fitter():
         err = np.sqrt(max(1, abs(res.fun)) * ftol * np.diag(res.hess_inv.todense()))
         
         fit_values = {**dict({k:v for k,v in zip( fit_params_name, res.x)}),
-                      **dict({k+"_err":v for k,v in zip( fit_params_name, err)})}
+                      **dict({k+"_err":v for k,v in zip( fit_params_name, err)}), 'lbda':lbda_slice}
         return {f'slice{sliceid}':fit_values }
                       
         
@@ -308,7 +308,7 @@ class Fitter():
         from scipy import optimize
         
         adrset=pyifu.adr.ADR()
-        datacube = self.sedm_cube.copy()
+        datacube = pysedm.get_sedmcube( self.sedm_cube_filename)
         datacube.load_adr()
                
         adrset.set(airmass=datacube.adr.airmass, lbdaref=datacube.adr.lbdaref, pressure=datacube.adr.pressure, 
@@ -424,16 +424,17 @@ class Fitter():
 
         spaxproj = flatmodel.copy()
         testspax = np.array([spaxproj[i]['flux'].values for i in range(len(spaxproj))]).copy()
+        sedm_cube = pysedm.get_sedmcube( self.sedm_cube_filename)
         
         #idx = np.arange(0, testspax.shape[-1])
-        bkg_estimate = np.nanmedian(self.sedm_cube.get_index_data(self.sedm_cube.get_faintest_spaxels(50)), axis=0)
+        bkg_estimate = np.nanmedian(sedm_cube.get_index_data(sedm_cube.get_faintest_spaxels(50)), axis=0)
         
         def fun(coeff, bkg, slices):
             testspax = np.array([spaxproj[i]['flux'].values for i in range(len(spaxproj))]).copy()
             testspax[slices,:] *= coeff
             testspax[slices,:] += bkg * bkg_estimate[slices]
             
-            return np.nansum( (testspax[slices,:] - self.sedm_cube.data[slices,:])**2/self.sedm_cube.variance[slices,:] )
+            return np.nansum( (testspax[slices,:] - sedm_cube.data[slices,:])**2/sedm_cube.variance[slices,:] )
 
         coeff_arr = np.ones(shape=(220))
         bkg_arr = np.ones(shape=(220))
@@ -469,9 +470,9 @@ class Fitter():
             IFU_coord = [parameters[k] for k in ['x0_IFU','y0_IFU']]
         psfparam = {k:parameters[k] for k in (self.scene.psfmodel.params.keys() - fix_parameters) }
         adrparam = {k:parameters[k] for k in (self.scene.adr.data.keys() - fix_parameters) }
+        sedm_cube = pysedm.get_sedmcube( self.sedm_cube_filename)
         
-        
-        update_hexagrid = geotool.get_cube_grid( self.sedm_cube, scale = IFU_ratio, targShift=IFU_coord, x0=self.target_imagecoord[0] , y0=self.target_imagecoord[1]  )
+        update_hexagrid = geotool.get_cube_grid( sedm_cube, scale = IFU_ratio, targShift=IFU_coord, x0=self.target_imagecoord[0] , y0=self.target_imagecoord[1]  )
 
         self.scene.set_hexagrid( update_hexagrid )
         
