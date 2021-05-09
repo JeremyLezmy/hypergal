@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/25 13:28:46 $
-# Modified on:       2021/05/07 10:00:06
+# Modified on:       2021/05/08 18:19:47
 # Copyright:         2019, Jeremy Lezmy
 # $Id: intrinsec_cube.py, 2021/01/25 13:28:46  JL $
 ################################################################################
@@ -344,8 +344,6 @@ class Intrinsec_cube():
 def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size):
     
     import time
-    from pathos.multiprocessing import ProcessingPool as Pool
-    import pathos
     #from scipy.interpolate import griddata
     
 
@@ -398,7 +396,7 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
     
     if nb_process>1:
        
-    
+        from pathos.multiprocessing import ProcessingPool as Pool
         with Pool(nb_process) as p:
             new_spax = p.map(multiprocess, range(len(lbda)))
 
@@ -422,9 +420,6 @@ def measure_overlay(nb_process, spec, lbda, pixelgrid, hexagrid, adr, pixel_size
 
 def psf_convolution(data, lbda, lbdaref, psfkernel, nb_process, **kwargs ):
 
-    import pathos
-    from pathos.multiprocessing import ProcessingPool as Pool
-
     new_data = np.atleast_3d(data).copy()
     
 
@@ -435,9 +430,11 @@ def psf_convolution(data, lbda, lbdaref, psfkernel, nb_process, **kwargs ):
         return new_data[:,:,number]
     
     if nb_process>1:
+        from pathos.multiprocessing import ProcessingPool as Pool
         with Pool(nb_process) as p:
             result = p.map(multipro_psf, np.arange( new_data.shape[-1] ))
     else:
+       
         result=[]
         for i in range(new_data.shape[-1] ):
             result.append( multipro_psf(i))

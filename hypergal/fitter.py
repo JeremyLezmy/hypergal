@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/04/29 17:01:52 $
-# Modified on:       2021/05/07 18:54:03
+# Modified on:       2021/05/09 09:56:10
 # Copyright:         2019, Jeremy Lezmy
 # $Id: fitter.py, 2021/04/29 17:01:52  JL $
 ################################################################################
@@ -81,7 +81,7 @@ default_fixed_params_slice=['temperature', 'relathumidity', 'pressure', 'lbdaref
 class Fitter():
 
     
-    def __init__(self, sedmcalcube, scene, IFU_target=None ):
+    def __init__(self, sedmcalcube_filename, scene, IFU_target=None ):
         """ 
         Parameters:
 
@@ -91,7 +91,7 @@ class Fitter():
         """
 
         #self.sedm = sedm_target
-        self.sedm_cube = sedmcalcube        
+        self.sedm_cube_filename = sedmcalcube_filename        
         self.scene = scene       
         self.target_imagecoord =  scene.int_targetpos
         
@@ -110,6 +110,10 @@ class Fitter():
 
     def get_sedm_data(self, lbda_ranges=None, metaslices=None):
 
+        #if not hasattr(self, 'sedm_cube'):
+        #    self.sedm_cube = pysedm.get_sedmcube( self.sedm_cube_filename)
+        sedm_cube = pysedm.get_sedmcube( self.sedm_cube_filename)
+
         if lbda_ranges is not None or metaslices is not None:
             
             self.set_lbda_ranges(lbda_ranges)
@@ -117,18 +121,18 @@ class Fitter():
             
             lbda_stepbin = self.lbda_step_bin(self.lbda_ranges, self.metaslices)
             
-            binned_sedm_data = np.zeros( (metaslices, np.shape(self.sedm_cube.data)[-1] ))
-            binned_sedm_var = np.zeros( (metaslices, np.shape(self.sedm_cube.variance)[-1] ))
+            binned_sedm_data = np.zeros( (metaslices, np.shape(sedm_cube.data)[-1] )) #self
+            binned_sedm_var = np.zeros( (metaslices, np.shape(sedm_cube.variance)[-1] )) #self
             binned_lbda = np.zeros( metaslices )
         
             for (i,j) in enumerate( lbda_stepbin ):
                         
-                slice_obj = self.sedm_cube.get_slice(lbda_min=j[0], lbda_max=j[1], slice_object=True)
+                slice_obj = sedm_cube.get_slice(lbda_min=j[0], lbda_max=j[1], slice_object=True) #self
             
                 binned_sedm_data[i,:] = slice_obj.data
                 binned_sedm_var[i,:] = slice_obj.variance
             
-                binned_lbda[i] = np.mean ( self.sedm_cube.lbda[  (self.sedm_cube.lbda>=j[0]) & (self.sedm_cube.lbda<j[1]) ] )
+                binned_lbda[i] = np.mean ( sedm_cube.lbda[  (sedm_cube.lbda>=j[0]) & (sedm_cube.lbda<j[1]) ] ) #self
 
             self.binned_sedm_data = binned_sedm_data
             self.binned_sedm_var = binned_sedm_var
@@ -138,7 +142,7 @@ class Fitter():
 
         else:
 
-            return (self.sedm_cube.data, self.sedm_cube.var, self.sedm_cube.lbda)
+            return (sedm_cube.data, sedm_cube.var, sedm_cube.lbda) #self
 
 
 
@@ -162,7 +166,7 @@ class Fitter():
         #adrparam = {k:parameters[k] for k in (self.scene.adr.data.keys() - fix_parameters) }
         
         
-        update_hexagrid = geotool.get_cube_grid( self.sedm_cube, scale = IFU_ratio, targShift=IFU_coord, x0=self.target_imagecoord[0] , y0=self.target_imagecoord[1]  )
+        update_hexagrid = geotool.get_cube_grid( pysedm.get_sedmcube( self.sedm_cube_filename), scale = IFU_ratio, targShift=IFU_coord, x0=self.target_imagecoord[0] , y0=self.target_imagecoord[1]  )
 
         self.scene.set_hexagrid( update_hexagrid )
         
@@ -184,9 +188,9 @@ class Fitter():
 
         dat =  parameters['corr_factor']*flux.squeeze() + bkg*parameters['sc_bkg'] if 'sc_bkg' in parameters else parameters['corr_factor']*flux.squeeze() + bkg
         
-        model_slice = pyifu.spectroscopy.get_slice( data = dat, xy =list(pixMap.values()) , spaxel_vertices=spax_vertices, variance=None, indexes=list(pixMap.keys()), lbda=np.array([lbda]))
+        #model_slice = pyifu.spectroscopy.get_slice( data = dat, xy =list(pixMap.values()) , spaxel_vertices=spax_vertices, variance=None, indexes=list(pixMap.keys()), lbda=np.array([lbda]))
 
-
+        model_slice = dat.copy()
         return model_slice
 
 

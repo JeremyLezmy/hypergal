@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/05/08 16:41:39
+# Modified on:       2021/05/08 19:19:07
 # Copyright:         2021, Jeremy Lezmy
 # $Id: sedm_target.py, 2021/01/18 10:38:37  JL $
 ################################################################################
@@ -326,7 +326,17 @@ class SEDM_tools():
 
 
     
+    def __getstate__(self):
 
+        # this method is called when you are
+        # going to pickle the class, to know what to pickle
+        state = self.__dict__.copy()
+        
+       
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
 
 
