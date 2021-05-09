@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/04/29 14:11:43
+# Modified on:       2021/05/08 16:41:39
 # Copyright:         2021, Jeremy Lezmy
 # $Id: sedm_target.py, 2021/01/18 10:38:37  JL $
 ################################################################################
@@ -285,23 +285,26 @@ class SEDM_tools():
     ########################## DOWNLOAD SECTION ########################################
     ####################################################################################
 
-    def download_e3d(self, dirout = 'default', nodl = False, show_progress = False):
+    def download_e3d(self, dirout = None, nodl = False, show_progress = False, nprocess=1):
 
         s=sedm.SEDMQuery()
-        s.download_target_data(self.target, nodl=nodl,show_progress = show_progress, download_dir = dirout)
+        s.update_pharosio()
+        s.download_target_cubes(self.target, nodl=nodl,show_progress = show_progress, dirout = dirout, nprocess = nprocess)
 
         
 
-    def download_fluxcal(self, dirout = 'default', nodl = False, show_progress = False):
+    def download_fluxcal(self, dirout = None, nodl = False, show_progress = False, nprocess=1):
         
         s=sedm.SEDMQuery()
-        s.download_night_fluxcal(self.night, nodl=nodl,show_progress = show_progress, download_dir = dirout)
+        s.update_pharosio()
+        s.download_night_fluxcal(self.night, nodl=nodl,show_progress = show_progress, dirout = dirout, nprocess = nprocess)
 
 
-    def download_astrometry(self, dirout = SEDMDIROUT, nodl = False, show_progress = False, overwrite=False):
+    def download_astrometry(self, dirout = None, nodl = False, show_progress = False, nprocess=1):
 
-        io.download_single_url(PHAROS_DATALOC + self.night + ASTRO_PREFIX + self.night + '_' +  self.obs_hour + ASTRO_SUFFIX,
-                               dirout + '/' + self.night+ ASTRO_PREFIX + self.night + '_' + self.obs_hour  + ASTRO_SUFFIX , show_progress=show_progress, overwrite = overwrite)
+        s=sedm.SEDMQuery()
+        s.update_pharosio()
+        s.download_target_astrom(self.target, nodl=nodl,show_progress = show_progress, dirout = dirout, nprocess = nprocess)
         
 
     def download_spec(self, dirout = SEDMDIROUT, which = 'contsep', nodl = False, show_progress = False, overwrite=False):
