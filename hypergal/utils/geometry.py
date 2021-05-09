@@ -1,5 +1,6 @@
 """ geometry tools """
 
+import numpy as np
 import geopandas
 from shapely import geometry, vectorized, affinity
 

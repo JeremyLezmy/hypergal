@@ -41,7 +41,7 @@ import geopandas
 import matplotlib.pyplot as plt
 
 
-
+print("hypergal/panstarrs_target.py is DEPRECATED, use hypergal/photometry/panstarrs.py instead")
 
 def HR_to_deg( ra, dec):
     
