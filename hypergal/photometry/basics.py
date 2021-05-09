@@ -53,7 +53,7 @@ class CutOut( WCSHolder ):
     # ================ #
     #   Methods        #
     # ================ #
-    def to_cube(self, header_id=0, influx=True, binfactor=None, xy_center='target', **kwargs):
+    def to_cube(self, header_id=0, influx=True, binfactor=None, xy_center=None, **kwargs):
         """ 
         xy_center: [optional] -optional-
             center coordinates (in pixel) or the returned cube.
