@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/02/04 14:20:22 $
-# Modified on:       2021/05/06 14:04:52
+# Modified on:       2021/05/10 10:39:18
 # Copyright:         2019, Jeremy Lezmy
 # $Id: setup.py, 2021/02/04 14:20:22  JL $
 ################################################################################
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         print(packages)
     else:
         # This should be updated if new submodules are added
-        packages = ['hypergal', 'hypergal/scripts']
+        packages = ['hypergal', 'hypergal/scripts','hypergal/photometry','hypergal/spectroscopy','hypergal/utils' ]
 
     setup(name=DISTNAME,
           author=AUTHOR,
