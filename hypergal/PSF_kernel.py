@@ -37,6 +37,9 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 
 
+print("PSF_kernel.py is deprecated")
+
+
 def Gauss_Kernel_2D(x_stddev=1, y_stddev=1,theta=0):
         
         

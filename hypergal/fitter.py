@@ -85,7 +85,7 @@ class Fitter():
         """ 
         Parameters:
 
-        sedm_target : Instance of sedm_target()
+        sedm_target : Instance of sedm_target() 
         scene :  Instance of intrinsec_cube()
         target_pixcoord_image: Position in pixel of the target in the photometric image. Format list/array with size 2. 
         """

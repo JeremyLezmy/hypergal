@@ -102,8 +102,9 @@ class SliceScene( object ):
     # --------- #
     #  GETTER   #
     # --------- #
-    def get_model(self, xy_offset=None, scale=None, rotation=None,
-                          psfparam=None):
+    def get_model(self, ampl=1, background=0,
+                      xy_offset=None, scale=None, rotation=None,
+                      psfparam=None):
         """ Convolves and project flux_in into the 
 
 
@@ -130,7 +131,7 @@ class SliceScene( object ):
         modelflux = self.overlay.get_projected_flux(flux_in)
 
         # 4. Out
-        return modelflux
+        return ampl*modelflux + background
     
     def get_convolved_flux_in(self, psfconv):
         """ """
