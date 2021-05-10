@@ -53,6 +53,9 @@ def Gauss_Kernel_2D(x_stddev=1, y_stddev=1,theta=0):
         ----------
     [1] https://en.wikipedia.org/wiki/Gaussian_function
     """
+    print("Gauss_Kernel_2D  DEPRECATED")
+
+    
     import math
     import numpy as np
     
@@ -240,7 +243,6 @@ class Gauss_Mof_kernel():
     def chrom_sigma(self, sigmaref, lbda, lbdaref, rho=-1/5.):
         """ Evolution of the standard deviation as a function of lbda. """
         return sigmaref * (lbda / lbdaref)**(rho)
-
 
 
     

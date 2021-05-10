@@ -1,5 +1,5 @@
 
-from .utils import geometry
+from ..utils import geometry
 import numpy as np
 #import warnings
 
