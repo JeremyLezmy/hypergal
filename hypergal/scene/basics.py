@@ -102,8 +102,8 @@ class SliceScene( object ):
     # --------- #
     #  GETTER   #
     # --------- #
-    def get_modeldata(self, xy_offset=None, scale=None, rotation=None,
-                          psfparam=None, incl_variance=True):
+    def get_model(self, xy_offset=None, scale=None, rotation=None,
+                          psfparam=None):
         """ Convolves and project flux_in into the 
 
 
@@ -128,16 +128,9 @@ class SliceScene( object ):
         # 3. (overlaydf calculated only if needed)
         # Get the new projected flux and variance (_in->_comp grid)
         modelflux = self.overlay.get_projected_flux(flux_in)
-        if variance_in is not None and incl_variance:
-            modelvariance = self.overlay.get_projected_flux(variance_in) # YANNICK ERROR OR VAR ?
-        else:
-            modelvariance = None
 
         # 4. Out
-        if incl_variance:
-            return modelflux
-        
-        return modelflux, modelvariance
+        return modelflux
     
     def get_convolved_flux_in(self, psfconv):
         """ """
