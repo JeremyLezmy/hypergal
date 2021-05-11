@@ -72,19 +72,20 @@ class PSF2D( object ):
         prop = dict(origin="lower", cmap="cividis")
         sc = ax.imshow(self.get_stamp(psfwindow),  **{**prop,**kwargs} )
         return fig
+    
     # ============= #
     #  Properties   #
     # ============= #
     @property
     def a_ell(self):
-        """ a elliticity parameter """
+        """ a elliticity parameter (defined as "a+b**2") """
         return self._ellipticity_params["a"]
-
+    
     @property
     def b_ell(self):
-        """ a elliticity parameter """
+        """ b elliticity parameter """
         return self._ellipticity_params["b"]
-
+    
     @property
     def PARAMETER_NAMES(self):
         """ """

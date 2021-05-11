@@ -1,225 +1,291 @@
 
-from .utils import geometry
 import numpy as np
-#import warnings
-
-DEFAULT_SCALE_RATIO = 0.558/0.25 #SEDm/PS1
+from iminuit import Minuit
 
 
-# ================= #
-#                   #
-#   SLICE SCENE     # 
-#                   #
-# ================= #
+# ===================== #
+#                       #
+#      PRIORS           #
+#                       #
+# ===================== #
+class Priors( object ):
+    """ """
+    
+    BOUND_VALUE = 1e-12
+    def set_parameters(self, parameters):
+        """ """
+        self._parameters = parameters
+        self._parameter_names = list(self.parameters.keys())
+        
+    # ============== #
+    #  Methods       #
+    # ============== #
+    def get_priors(self):
+        """ """
+        priors = []
+        if self.has_ellipticity_param():
+            a = self.parameters["a"]
+            b = self.parameters["b"]
+            priors.append(self.get_ellipticity_prior(a,b))
+        
+        # np.prod([])-> 1
+        return np.prod(priors)
+    
+    
+    # -------- #
+    #  HAS     #
+    # -------- #
+    def has_ellipticity_param(self):
+        """ """
+        return "a" in self.parameter_names and \
+               "b" in self.parameter_names
+    
+    # ============== #
+    #  Statics       #
+    # ============== #
+
+    @staticmethod
+    def get_ellipticity_prior(a, b, max_ratio=0.9):
+        """ """
+        if b>max_ratio * np.sqrt(a):
+            return self.BOUND_VALUE
+        return 1
+
+    # ============== #
+    #  Properties    #
+    # ============== #
+    @property
+    def parameters(self):
+        """ """
+        return self._parameters
+    
+    @property
+    def parameter_names(self):
+        """ """
+        return self._parameter_names 
+    
+                    
+
+# ===================== #
+#                       #
+#      FITTER           #
+#                       #
+# ===================== #
+
 class SceneFitter( object ):
-
-    def __init__(self, scene):
+    def __init__(self, scene, fix_params=["scale","rotation"], priors=None):
         """ """
-        self.set_slice(slice_in, "in")
-        self.set_slice(slice_comp, "comp")
-        if load_overlay:
-            self.load_overlay(xy_in=xy_in, xy_comp=xy_comp, **kwargs)
+        if scene is not None:
+            self.set_scene(scene)
             
-        if psf is not None:
-            self.set_psf(psf)
-            
+        self.set_fixed_params(fix_params)
+
+        if priors is None:
+            priors = Priors()
+        self.set_priors(priors)
+        
+    # ============== #
+    # Initialisation #
+    # ============== #
     @classmethod
-    def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psf=None, **kwargs):
+    def from_slices(cls, slice_in, slice_comp, psf, whichscene="HostSlice",
+                        xy_in=None, xy_comp=None, 
+                    fix_params=["scale","rotation"], **kwargs):
         """ """
-        return cls(slice_in, slice_comp,
-                       xy_in=xy_in, xy_comp=xy_comp, psf=psf,
-                       **kwargs)
-
-    # ============= #
-    #  Methods      #
-    # ============= #
-    def load_overlay(self,  xy_in=None, xy_comp=None, 
-                       rotation_in=None, rotation_comp=None,
-                       scale_in=None, scale_comp=DEFAULT_SCALE_RATIO):
+        if whichscene == "HostSlice":
+            from .scene import host
+            scene = host.HostSlice.from_slices(slice_in, slice_comp, 
+                                               xy_in=xy_in, xy_comp=xy_comp, 
+                                               psf=psf, **kwargs)
+        else:
+            raise NotImplementedError("Only HostSlice scene has been implemented.")
+        
+        return cls.from_scene(scene, fix_params=fix_params)
+    
+    @classmethod
+    def from_scene(cls, scene, fix_params=["scale","rotation"]):
         """ """
-        # get all the inputs and drop the self.
-        klocal = locals()
-        _ = klocal.pop("self")
-        overlay = geometry.Overlay.from_slices(self.slice_in, self.slice_comp,
-                                                **klocal)
-        self.set_overlay(overlay)
+        return cls(scene, fix_params=fix_params)
+    
+    # ============== #
+    #   Methods      #
+    # ============== #
+    # ------- #
+    # SETTER  #
+    # ------- #
+    def set_scene(self, scene):
+        """ """
+        self._scene = scene
+        self._base_parameters = {k:None for k in self.scene.BASE_PARAMETERS}
+        self._psf_parameters = {k:None for k in self.scene.PSF_PARAMETERS}
+        self._geometry_parameters = {k:None for k in self.scene.GEOMETRY_PARAMETERS}
         
-    # --------- #
-    #  SETTER   #
-    # --------- #
-    def set_slice(self, slice_, which, norm="nanmean"):
-        """ set the 'in' or 'comp' geometry
-        
-        Parameters
-        ----------
-        slice: [pyifu.Slice]
-            spaxelhandler object (Slice)
-
-        which: [string]
-            Which geometry are you providing ?
-            - in or which.
-            a ValueError is raise if which is not 'in' or 'comp'
-
-        Returns
-        -------
-        None
-        """
-        if type(norm) is str:
-            norm = getattr(np, norm)(slice_.data, axis=0)
+    def set_fixed_params(self, list_of_params):
+        """ """
+        if list_of_params is None or len(list_of_params)==0:
+            self._fixedparams = []
+        else:
+            list_of_params = np.atleast_1d(list_of_params)
+            for k in list_of_params:
+                if k not in self.PARAMETER_NAMES:
+                    raise ValueError(f"{k} is not a known parameter")
             
-        if which == "in":
-            self._slice_in = slice_
-            self._norm_in = norm
-            self._flux_in = slice_.data/norm
-            nshape = np.sqrt(len(self._flux_in))
-            self._flux_in2d = self._flux_in.reshape(nshape,nshape)
-            if slice_.has_variance():
-                self._variance_in = slice_.variance/norm**2
-            else:
-                self._variance_in = None
+            self._fixedparams = list_of_params
+        
+        self._freeparams = [k for k in self.PARAMETER_NAMES if k not in self._fixedparams]
+        
+    def set_freeparameters(self, parameters):
+        """ """
+        if len(parameters) != self.nfree_parameters:
+            raise ValueError(f"you must provide {self.nfree_parameters} parameters, you gave {len(parameters)}")
+            
+        dfreeparam = {k:v for k, v in zip(self.free_parameters, parameters)}
+        return self.update_parameters(**dfreeparam)
+
+    def set_priors(self, priors):
+        """ """
+        self._priors = priors
+        
+    def update_parameters(self, **kwargs):
+        """ """
+        for k,v in kwargs.items():
+            # Change the baseline scene
+            if k in self.scene.BASE_PARAMETERS:
+                self._base_parameters[k] = v
                 
-        elif which == "comp":
-            self._slice_comp = slice_
-            self._norm_comp = norm
-            self._flux_comp = slice_.data/norm
-            if slice_.has_variance():
-                self._variance_comp = slice_.variance/norm**2
+            # Change the scene PSF
+            elif k in self.scene.PSF_PARAMETERS:
+                self._psf_parameters[k] = v
+                
+            # Change the scene geometry                
+            elif k in self.scene.GEOMETRY_PARAMETERS:
+                self._geometry_parameters[k] = v
+                
+            # or crash
             else:
-                self._variance_comp = None
+                raise ValueError(f"Unknow input parameter {k}={v}")
+
+    # ------- #
+    # GETTER  #
+    # ------- #
+    def get_guesses(self, free_only=False, as_array=False, **kwargs):
+        """ """
+        dict_guess = {**self.scene.guess_parameters(), **kwargs}
+        if free_only:
+            dict_guess = {k:dict_guess[k] for k in self.free_parameters}
             
-        else:
-            raise ValueError(f"which can be 'in' or 'comp', {which} given")
-
-    def set_overlay(self, overlay):
-        """ Provide the hypergal.utils.geometry.Overlay object """
-        self._overlay = overlay
-
-    def set_psf(self, psf):
+        if as_array:
+            return list(dict_guess.values())
+        
+        return dict_guess
+        
+    def get_limits(self, a_limit=[0.01, None], pos_limits=4):
         """ """
-        self._psf = psf
+        param_names = self.free_parameters
+        param_guess = self.get_guesses(free_only=True, as_array=True)
+        limits = [None for i in range(self.nfree_parameters)]
         
-    # --------- #
-    #  GETTER   #
-    # --------- #
-    def get_modeldata(self, xy_offset=None, scale=None, rotation=None,
-                          psfparam=None, incl_variance=True):
-        """ Convolves and project flux_in into the 
-
-
-        Parameters
-        ----------
-        psfparam: [dict or None]
-            if dict, this is passed as a kwargs to self.psf.update_parameters(**psfparam)
-
-        Returns
-        -------
-        flux[, variance (could be None) if incl_variance]
-        """
-        # 1.
-        # Change position of the comp grid
-        if (xy_offset is not None) or (scale is not None) or (rotation is not None):
-            self.change_comp(xy_offset=xy_offset, scale=scale, rotation=None)
-
-        # 2.            
-        # Change values of flux and variances of _in by convolving the image
-        flux_in = self.get_convolved_flux_in(psfparam)
-
-        # 3. (overlaydf calculated only if needed)
-        # Get the new projected flux and variance (_in->_comp grid)
-        modelflux = self.overlay.get_projected_flux(flux_in)
-        if variance_in is not None and incl_variance:
-            modelvariance = self.overlay.get_projected_flux(variance_in) # YANNICK ERROR OR VAR ?
-        else:
-            modelvariance = None
-
-        # 4. Out
-        if incl_variance:
-            return modelflux
+        if "xoff" in param_names:
+            id_ = param_names.index("xoff")
+            limits[id_] = [param_guess[id_]-pos_limits, param_guess[id_]+pos_limits]
+            
+        if "yoff" in param_names:
+            id_ = param_names.index("yoff")
+            limits[id_] = [param_guess[id_]-pos_limits, param_guess[id_]+pos_limits]
+            
+        if "a" in param_names:
+            id_ = param_names.index("a")
+            limits[id_] = a_limit
+            
+        return limits 
         
-        return modelflux, modelvariance
+    def get_parameters(self, free_only=False):
+        """ """
+        all_params = {**self._base_parameters,
+                    **self._psf_parameters,
+                    **self._geometry_parameters}
+        if free_only:
+            return {k:all_params[k] for k in self.free_parameters}
+        return all_params
     
-    def get_convolved_flux_in(self, psfconv):
+    def get_model(self, parameters=None):
         """ """
-        if psfconv is None or len(psfconv)==0:
-            return self.flux_in
-        
-        self.psf.update_parameters(**psfconv)
-        return self.psf.convolve(self._flux_in2d).flatten()
-        
-        
-    # ============= #
-    #  Properties   #
-    # ============= #
-    @property
-    def slice_in(self):
+        if parameters is not None:
+            self.set_freeparameters(parameters)
+            
+        return self.scene.get_model(**self._base_parameters,
+                                       overlayparam = self._geometry_parameters, 
+                                       psfparam = self._psf_parameters)
+
+    # ------------ #
+    #  FITTING     #
+    # ------------ #
+    # - chi2 = -2log(Likelihood)
+    def get_chi2(self, parameters):
         """ """
-        return self._slice_in
+        model = self.get_model(parameters).values
+        return np.sum( (self.scene.flux_comp - model)**2/self.scene.variance_comp )
     
-    @property    
-    def slice_comp(self):
-        """ """
-        return self._slice_comp
+    # - priors = -2log(prod_of_priors)
+    def get_logprior(self):
+        """ -2*np.log(prod_of_priors)"""
+        self.priors.set_parameters( self.get_parameters(free_only=True) )
+        return -2*np.log(self.priors.get_priors())
 
-    @property
-    def overlay(self):
+    # - prob = Likelihood*prod_of_priors
+    #   logprob =-2log(prob) = -2log(Likelihood) + -2log(prod_of_priors) 
+    def get_logprob(self, parameters):
         """ """
-        if not hasattr(self,"_overlay"):
-            raise AttributeError("No Overlay set ; see self.set/load_overlay()")
-        return self._overlay
+        return self.get_chi2(parameters) + self.get_logprior()
 
-    @property
-    def psf(self):
+
+    # - fitting over logprob
+    def fit(self, guess=None, limit=None, verbose=False, **kwargs):
         """ """
-        if not hasattr(self, "_psf"):
-            raise AttributeError("No PSF set ; see self.set_psf()")
+        from scipy import optimize
+        if guess is None: guess = {}
+        if limit is None: limit = {}
+        guess = self.get_guesses(free_only=True, as_array=True, **guess)
+        limit = self.get_limits(**limit)
+        if verbose:
+            print(f"param names {self.free_parameters}")
+            print(f"guess {guess}")
+            print(f"limits {limit}")
         
-        return self._psf
-
+        m = Minuit.from_array_func(self.get_logprob, guess, limit=limit,
+                                    name= hscene.free_parameters, 
+                                   **kwargs)
+        return m
+        
+    # ============== #
+    #  Parameters    #
+    # ============== #
     @property
-    def norm_in(self):
-        """ """ # No test to gain time
-        return self._norm_in
+    def scene(self):
+        """ """
+        return self._scene
     
     @property
-    def norm_comp(self):
-        """ """ # No test to gain time
-        return self._norm_in
-
-    @property
-    def norm_comp(self):
-        """ """ # No test to gain time
-        return self._flux_comp
-
-    @property
-    def flux_in(self):
-        """ """ # No test to gain time
-        return self._flux_in
-
-    @property
-    def flux_comp(self):
-        """ """ # No test to gain time
-        return self._flux_comp
+    def free_parameters(self):
+        """ """
+        return self._freeparams
     
     @property
-    def variance_in(self):
-        """ """ # No test to gain time
-        return self._variance_in
-
-    @property
-    def variance_comp(self):
-        """ """ # No test to gain time
-        return self._variance_comp
-        
-
-# ================= #
-#                   #
-#   CUBE SCENE      # 
-#                   #
-# ================= #
-
-class CubeSceneFitter( SceneFitter ):
-    def __init__(self, *args, **kwargs):
+    def nfree_parameters(self):
         """ """
-        _ = super().__init__(*args, **kwargs)
-        print("CubeScene has not been implemented yet")
-        
+        return len(self.free_parameters)
+    
+    @property
+    def fixed_parameters(self):
+        """ """
+        return self._fixedparams
+    
+    @property
+    def priors(self):
+        """ """
+        return self._priors
+    
+    @property
+    def PARAMETER_NAMES(self):
+        """ """
+        return self.scene.PARAMETER_NAMES
