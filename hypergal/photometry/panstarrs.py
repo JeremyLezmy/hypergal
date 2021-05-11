@@ -104,7 +104,7 @@ class PS1CutOuts( CutOut ):
     # ================ #
     @staticmethod
     def download_cutouts(ra, dec, size=140, filters=None, client=None, ignore_warnings=True):
-        """ Get url for images in the table
+        """ Download Panstarrs cutouts
     
         Parameters
         ----------
@@ -126,7 +126,7 @@ class PS1CutOuts( CutOut ):
         
     Returns
     -------
-    List of Panstarrs Instrument object (see astrobject.instrument)
+    List of cutouts, (Panstarrs Instrument object, see astrobject.instrument)
     """
         if filters is None:
             filters=["g","r","i","z","y"]
