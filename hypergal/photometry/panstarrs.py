@@ -104,7 +104,30 @@ class PS1CutOuts( CutOut ):
     # ================ #
     @staticmethod
     def download_cutouts(ra, dec, size=140, filters=None, client=None, ignore_warnings=True):
-        """ """
+        """ Download Panstarrs cutouts
+    
+        Parameters
+        ----------
+        ra, dec: [floats] 
+            position in degrees
+
+        size: [float]  -optional-
+            image size in pixels (0.25 arcsec/pixel)
+            Default is 140
+
+        filters: [strings]  -optional-
+             string with filters to include
+             if None, load all the filters (g,r,i,z,y)
+
+        client: [dask Client]  -optional-
+             Provide a dask client for using Dask multiprocessing.
+             If so, a list of futures will be returned.
+             
+        
+    Returns
+    -------
+    List of cutouts, (Panstarrs Instrument object, see astrobject.instrument)
+    """
         if filters is None:
             filters=["g","r","i","z","y"]
             
