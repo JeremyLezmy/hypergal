@@ -212,16 +212,17 @@ class Overlay( object ):
         -------
         None
         """
-        new_param = {k:(v-self.geoparam_in[k]) if self.geoparam_in[k] is not None else v
-                         for k,v in locals().items()
+        new_param = {k:v for k,v in locals().items()
                          if k in self.PARAMETER_NAMES and\
                          v is not None and \
                          v != self.geoparam_in[k]}
         if len(new_param) ==0:
             return None
         
-                        
-        new_mpoly = transform_geometry(self.mpoly_in, **new_param)
+        transfor_param = {k:(v-self.geoparam_in[k]) if self.geoparam_in[k] is not None else v
+                              for k,v in new_param.items()}
+        new_mpoly = transform_geometry(self.mpoly_in, **transfor_param)
+        
         self.set_multipolygon(new_mpoly, "in")
         self._geoparam_in = {**self._geoparam_in, **new_param}
         
@@ -259,10 +260,12 @@ class Overlay( object ):
                          v != self.geoparam_comp[k]}
         if len(new_param) == 0:
             return None
+
+        transfor_param = {k:(v-self.geoparam_comp[k]) if self.geoparam_comp[k] is not None else v
+                              for k,v in new_param.items()}
+        new_mpoly = transform_geometry(self.mpoly_comp, **transfor_param)
         
-        new_mpoly = transform_geometry(self.mpoly_comp, **new_param)
-        
-        self.set_multipolygon(new_mpoly, "in")
+        self.set_multipolygon(new_mpoly, "comp")
         self._geoparam_comp = {**self._geoparam_comp, **new_param}
         if reset_overlay:
             self.reset_overlaydf()
@@ -346,7 +349,7 @@ class Overlay( object ):
     # -------- #
     #  PLOTTER #
     # -------- #
-    def show(self, ax=None, flux_in=None, **kwargs):
+    def show(self, ax=None, flux_in=None, lw_in=0.5, lw_comp=0.5, adjust=False, **kwargs):
         """ """
         import matplotlib.pyplot as mpl
         if ax is None:
@@ -356,19 +359,47 @@ class Overlay( object ):
         else:
             fig = ax.figure
 
-        if flux_in is not None:
-            ec_in = "0.5"
+        
+        ec_in = "0.5" if flux_in is not None else "k"
+        _ = self.show_mpoly("in",   ax=ax, facecolor="C0", edgecolor=ec_in,  flux=flux_in, zorder=3, lw=lw_in, **kwargs)
+        _ = self.show_mpoly("comp", ax=ax, facecolor="None", edgecolor="0.7", lw=lw_comp, zorder=5)
+
+        if adjust:
+            vert_outin = np.asarray(self.mpoly_in.convex_hull.exterior.xy).T
+            ax.set_xlim(*np.percentile(vert_outin[:,0], [0,100]))
+            ax.set_ylim(*np.percentile(vert_outin[:,1], [0,100]))
+        
+        return ax
+
+    def show_projection(self, flux_in, savefile=None, axes=None, vmin=None, vmax=None):
+        """ """
+        import matplotlib.pyplot as mpl
+        from hypergal.utils.tools import parse_vmin_vmax
+
+        if axes is None:
+            fig = mpl.figure(figsize=[8,4])
+            axl = fig.add_axes([0.05,0.1,0.4,0.8])
+            axr = fig.add_axes([0.55,0.1,0.4,0.8])
         else:
-            ec_in  = "k"
+            fig = ax.figure
+            axl, axr = fig.axes 
+
+        vmin, vmax = parse_vmin_vmax(flux_in, vmin, vmax)
+
+        prop = dict(vmin=vmin, vmax=vmax)
+        _ = self.show(flux_in=flux_in, ax=axl, lw_in=0, adjust=True, **prop)
+        flux_proj = self.get_projected_flux(flux_in)
+        _ = self.show_mpoly("comp", ax=axr, flux=flux_proj, edgecolor="0.7",lw=0.5, zorder=5, adjust=True,
+                           **prop)
+
+        axl.set_title("Projection", fontsize="small", color="0.5", loc="left")
+        axr.set_title("Projected", fontsize="small", color="0.5", loc="left")
+
+        if savefile is not None:
+            fig.savefig(savefile)
             
-        _ = self.show_mpoly("in",   ax=ax, facecolor="C0", edgecolor=ec_in,  flux=flux_in, zorder=3, lw=0.5, **kwargs)
-        _ = self.show_mpoly("comp", ax=ax, facecolor="None", edgecolor="0.7",lw=0.5, zorder=5)
-
-        vert_outin = np.asarray(self.mpoly_in.convex_hull.exterior.xy).T
-        ax.set_xlim(*np.percentile(vert_outin[:,0], [0,100]))
-        ax.set_ylim(*np.percentile(vert_outin[:,1], [0,100]))
-
-
+        return fig
+    
     def show_mpoly(self, which, ax=None, facecolor=None, edgecolor="k", adjust=False,
                   flux=None, cmap="cividis", vmin=None, vmax=None, **kwargs):
         """ 
@@ -381,7 +412,8 @@ class Overlay( object ):
             - None: converted to '1' and '99'
         
         """
-        import matplotlib.pyplot as mpl        
+        import matplotlib.pyplot as mpl
+        from .tools import parse_vmin_vmax
         if which not in ["in", "comp"]:
             raise ValueError("which much be 'in' or 'comp'")
 
@@ -395,8 +427,7 @@ class Overlay( object ):
 
         if flux is not None:
             cmap = mpl.cm.get_cmap(cmap)
-
-                
+            vmin, vmax = parse_vmin_vmax(flux, vmin, vmax)
             colors = cmap( (flux-vmin)/(vmax-vmin) )
         else:
             colors = [facecolor]*len(self.mpoly_in)

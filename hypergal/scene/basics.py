@@ -20,6 +20,7 @@ class SliceScene( object ):
         """ """
         self.set_slice(slice_in, "in")
         self.set_slice(slice_comp, "comp")
+        
         if load_overlay:
             self.load_overlay(xy_in=xy_in, xy_comp=xy_comp, **kwargs)
             
