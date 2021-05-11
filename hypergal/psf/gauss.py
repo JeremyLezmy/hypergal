@@ -21,22 +21,17 @@ class Gauss2D( PSF2D ):
         sigma = self.get_sigma()
         return get_radial_gauss(r, sigma=sigma,  a_ell=self.a_ell, b_ell=self.b_ell)
     
-    
     def get_sigma(self):
         """ """
         return self._profile_params["sigma"]
     
-
     def guess_parameters(self):
         """ """
         return {**{"a":1.,"b":0.},
                 **{"sigma":2.}
                 }
-    
-    # ============= #
-    #  Properties   #
-    # ============= #    
 
+    
 
 class Gaus3D( PSF3D, Gauss2D ):
 
