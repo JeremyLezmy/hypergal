@@ -6,6 +6,7 @@ from astropy.convolution import convolve
 class PSF2D( object ):
     
     ELLIPTICITY_PARAMETERS = ["a","b"]
+    PROFILE_PARAMETERS = []
     
     def __init__(self, **kwargs):
         """ """
@@ -50,7 +51,10 @@ class PSF2D( object ):
         """ """
         return convolve(arr2d, self.get_stamp(psfwindow=psfwindow, **kwargs), normalize_kernel=False)
 
-
+    def guess_parameters(self):
+        """ """
+        return {**{"a":1,"b":0}, **{k:None for k in self.PROFILE_PARAMETERS}}
+    
     # -------- #
     #  PLOTTER #
     # -------- #
@@ -81,7 +85,12 @@ class PSF2D( object ):
         """ a elliticity parameter """
         return self._ellipticity_params["b"]
 
-
+    @property
+    def PARAMETER_NAMES(self):
+        """ """
+        return self.ELLIPTICITY_PARAMETERS + self.PROFILE_PARAMETERS
+    
+    
 class PSF3D( PSF2D ):
 
     def __init__(self, lbdaref=6000, **kwargs):

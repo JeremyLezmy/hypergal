@@ -11,10 +11,9 @@ DEFAULT_SCALE_RATIO = 0.558/0.25 #SEDm/PS1
 #   SLICE SCENE     # 
 #                   #
 # ================= #
-class SliceScene( object ):
+class SceneFitter( object ):
 
-    def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
-                     psf=None, **kwargs):
+    def __init__(self, scene):
         """ """
         self.set_slice(slice_in, "in")
         self.set_slice(slice_comp, "comp")
@@ -218,7 +217,7 @@ class SliceScene( object ):
 #                   #
 # ================= #
 
-class CubeScene( SliceScene ):
+class CubeSceneFitter( SceneFitter ):
     def __init__(self, *args, **kwargs):
         """ """
         _ = super().__init__(*args, **kwargs)

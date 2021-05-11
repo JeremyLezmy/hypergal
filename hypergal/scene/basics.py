@@ -13,6 +13,8 @@ DEFAULT_SCALE_RATIO = 0.558/0.25 #SEDm/PS1
 # ================= #
 class SliceScene( object ):
 
+    BASE_PARAMETERS = ["ampl", "background"]
+    
     def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
                      psf=None, **kwargs):
         """ """
@@ -72,7 +74,7 @@ class SliceScene( object ):
             self._slice_in = slice_
             self._norm_in = norm
             self._flux_in = slice_.data/norm
-            nshape = np.sqrt(len(self._flux_in))
+            nshape = int(np.sqrt(len(self._flux_in)))
             self._flux_in2d = self._flux_in.reshape(nshape,nshape)
             if slice_.has_variance():
                 self._variance_in = slice_.variance/norm**2
@@ -103,24 +105,27 @@ class SliceScene( object ):
     #  GETTER   #
     # --------- #
     def get_model(self, ampl=1, background=0,
-                      xy_offset=None, scale=None, rotation=None,
+                      overlayparam=None,
                       psfparam=None):
         """ Convolves and project flux_in into the 
 
 
         Parameters
         ----------
+        overlayparam: [dict or None]
+            if dict, this is passed as kwargs to overlay
         psfparam: [dict or None]
             if dict, this is passed as a kwargs to self.psf.update_parameters(**psfparam)
 
         Returns
         -------
-        flux[, variance (could be None) if incl_variance]
+        flux
         """
         # 1.
-        # Change position of the comp grid
-        if (xy_offset is not None) or (scale is not None) or (rotation is not None):
-            self.change_comp(xy_offset=xy_offset, scale=scale, rotation=None)
+        # Change position of the comp grid if needed
+        #   - if the overlayparam are the same as already know, no update made.
+        if overlayparam is not None and len(overlayparam)>0:
+            self.overlay.change_comp(**overlayparam)
 
         # 2.            
         # Change values of flux and variances of _in by convolving the image
@@ -140,8 +145,20 @@ class SliceScene( object ):
         
         self.psf.update_parameters(**psfconv)
         return self.psf.convolve(self._flux_in2d).flatten()
-        
-        
+
+    def guess_parameters(self):
+        """ """
+        bkgd_in = np.percentile(self.flux_in, 10)
+        bkgd_comp = np.percentile(self.flux_comp, 10)
+        flux_ratio = (np.nansum(self.flux_comp)-bkgd_comp) / (np.nansum(self.flux_in)-bkgd_in)
+
+        base_guess = {**{k:None for k in self.BASE_PARAMETERS},
+                      **{"ampl":flux_ratio, "background": bkgd_comp-flux_ratio*bkgd_in}
+                      }
+        geom_guess = self.overlay.geoparam_comp
+        psf_guess  = self.psf.guess_parameters()
+        return {**base_guess, **geom_guess, **psf_guess}
+         
     # ============= #
     #  Properties   #
     # ============= #
@@ -204,8 +221,25 @@ class SliceScene( object ):
     def variance_comp(self):
         """ """ # No test to gain time
         return self._variance_comp
-        
 
+    # ----------- #
+    #  Parameters #
+    # ----------- #
+    @property
+    def PSF_PARAMETERS(self):
+        """ """
+        return self.psf.PARAMETER_NAMES
+    
+    @property
+    def GEOMETRY_PARAMETERS(self):
+        """ """
+        return self.overlay.PARAMETER_NAMES
+    
+    @property
+    def PARAMETER_NAMES(self):
+        """ """
+        return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS
+    
 # ================= #
 #                   #
 #   CUBE SCENE      # 
