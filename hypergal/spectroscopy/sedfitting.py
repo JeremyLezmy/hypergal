@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 13:36:18 $
-# Modified on:       2021/05/11 18:12:23
+# Modified on:       2021/05/11 19:55:02
 # Copyright:         2019, Jeremy Lezmy
 # $Id: sedfitting.py, 2021/05/11 13:36:18  JL $
 ################################################################################
@@ -102,7 +102,8 @@ class SEDFitter():
                 
         lst=list(df.columns)
         lst.sort(key = lambda c: POS[c.split('_')[1][-1]])
-        df = df[lst]           
+        
+        df = df[lst]
         df['redshift']=np.array([self.redshift]*len(df))
 
         if hasattr(self, '_sedfitter_name') and self._sedfitter_name=='cigale':      
@@ -110,7 +111,8 @@ class SEDFitter():
             df = df.reindex(columns=(['id','redshift'] + list([a for a in df.columns if a not in ['id','redshift']]) ))
 
         self.set_clean_df(df)
-        filt = [ele for ele in lst  if ('err' not in ele)]                
+        filt = [ele for ele in lst  if ('err' not in ele)]
+        self.filters = filt
         idx = df.loc[ np.logical_and.reduce([ df[i].values / df[i + '_err'].values > snr for i in filt])].index
         df_threshold = df.loc[idx].copy()
         self.set_input_sedfitter(df_threshold)
@@ -222,7 +224,15 @@ class SEDFitter():
             return None
         return self._idx_used
 
-
+    @property
+    def filters(self):
+        """ 
+        filters used for the sedfitting
+        """
+        if not hasattr(self, 'filters'):
+            return None
+        return self.filters
+    
 
 class Cigale(SEDFitter):
 
@@ -293,8 +303,10 @@ class Cigale(SEDFitter):
             with open(os.path.join('config',
                        'cigale.json')) as data_file:
                 params = json.load(data_file)
-            config.update(params)
-
+                
+            config = utils.update(config,params)
+        config['sed_modules_params'][[k for k in config['sed_modules_params'].keys() if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
+        
         config.write()            
         self.config = config
 

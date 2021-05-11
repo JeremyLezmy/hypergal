@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 15:38:49 $
-# Modified on:       2021/05/11 18:12:00
+# Modified on:       2021/05/11 19:44:33
 # Copyright:         2019, Jeremy Lezmy
 # $Id: utils.py, 2021/05/11 15:38:49  JG $
 ################################################################################
@@ -35,6 +35,7 @@ import shutil
 from pcigale import init, genconf, check, run
 from pcigale.session.configuration import Configuration
 import pyifu
+import collections.abc
 
 def command_cigale(command, file_path=None):
     '''
@@ -141,6 +142,23 @@ def move_files(old_path, new_path, files, verbose=False):
         print(new_location)
 
 
+
+def update(d, u):
+    """
+    Tools to update dict of dict without losing not changed values
+    Parameters
+    ----------
+    d: [dict]
+        dict to update
+    u: [dict]
+        dict used to update
+    """
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 def flux_aa_to_hz(flux, wavelength):
     """
