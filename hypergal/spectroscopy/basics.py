@@ -64,3 +64,10 @@ class WCSCube( Cube, WCSHolder ):
             warnings.simplefilter("ignore")
             self.load_wcs(header)
         
+    def get_target_removed(self, target_pos=None, radious=3, store=False, **kwargs):
+        """ """
+        from . import sedmtools
+        if target_pos is None:
+            target_pos = sedmtools.get_target_position(self)
+            
+        return sedmtools.remove_target_spx(self, target_pos, radius=radious, store=store, **kwargs)

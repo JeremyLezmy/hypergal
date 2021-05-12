@@ -1,14 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import numpy as np
+
 from ztfquery import sedm
-from pysedm import byecr
+from pysedm import byecr, astrometry
 from shapely.geometry.point import Point
 
 # color printing
 from ..utils.tools import bcolors
 
-def remove_targ_spx(cube, xy, radius=3, store=True, get_filename=True):
+def get_target_position(cube, warn=False, **kwargs):
+    """ shortcut to pysedm.astrometry.position_source()
+    returns the best guess target location in the ifu.
+    """
+    return astrometry.position_source(cube, warn=warn,  **kwargs)[0]
+
+def remove_target_spx(cube, xy, radius=3, store=True, get_filename=True):
     
     """ Remove spaxels around the target position
 
@@ -107,10 +115,12 @@ def get_byecr_cube(self, cube , cut_critera = 5, store = True, get_filename = Tr
     return cube_bycr
 
 
-def download_hexagrid(self, night, dirout = SEDMDIROUT, nodl = False, show_progress = False, overwrite=False):
+def download_hexagrid(self, night, dirout = None, nodl = False, show_progress = False, overwrite=False):
     """ """
     # THIS shoudl use ZTFquery
-    SEDMDIROUT = os.path.join(SEDMLOCAL_BASESOURCE,"redux")
+    if dirout is None:
+        dirout = os.path.join(SEDMLOCAL_BASESOURCE,"redux")
+        
     PHAROS_DATALOC = 'http://pharos.caltech.edu/data/'
     import os
     from ztfquery import io

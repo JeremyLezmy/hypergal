@@ -196,7 +196,54 @@ class SliceScene( object ):
         geom_guess = self.overlay.geoparam_comp
         psf_guess  = self.psf.guess_parameters()
         return {**base_guess, **geom_guess, **psf_guess}
-         
+
+
+    def show(self, savefile=None, titles=True):
+        """ """
+        import matplotlib.pyplot as mpl
+        from ..utils import tools
+        fig = mpl.figure(figsize=[9,2.7])
+        left, witdth = 0.05, 0.21
+        height = 0.8
+        spanx, extraspanx =0.018, 0.03
+        ax = fig.add_axes([left+0*(witdth+spanx)            ,0.12,witdth*1.1, height])
+        axm = fig.add_axes([left+1*(witdth+spanx)+extraspanx,0.12,witdth, height])
+        axd = fig.add_axes([left+2*(witdth+spanx)+extraspanx,0.12,witdth, height])
+        axr = fig.add_axes([left+3*(witdth+spanx)+extraspanx,0.12,witdth, height])
+        axifu = [axm, axd, axr]
+
+        # Convolved image flux
+        flux_conv = self.get_convolved_flux_in()
+        self.overlay.show(ax=ax, flux_in = flux_conv, lw_in=0, adjust=True)
+
+        # Model flux (=convolved *ampl + background)
+        flux_model = self.get_model().values
+        vmin, vmax = tools.parse_vmin_vmax(flux_model, "1","99")
+        prop = {"cmap":"cividis", "vmin":vmin, "vmax":vmax, "lw":0.1, "edgecolor":"0.7","adjust":True}
+        self.overlay.show_mpoly("comp", ax=axm, flux=flux_model, **prop)
+        self.overlay.show_mpoly("comp", ax=axd, flux=self.flux_comp, **prop)
+        res = (self.flux_comp-flux_model)/flux_model
+        self.overlay.show_mpoly("comp", ax=axr, flux=res, **{**prop,**{"vmin":-0.5, "vmax":0.5, "cmap":"coolwarm"}})
+        
+        clearwhich = ["left","right","top","bottom"]    
+        for ax_ in axifu:
+            ax_.set_yticks([])
+            ax_.set_xticks([])        
+            [ax_.spines[which].set_visible(False) for which in clearwhich]
+
+        if titles:
+            prop = dict(loc="left", color="0.5", fontsize="small")
+            ax.set_title("Projection", **prop)
+            axm.set_title("Projected Scene", **prop)
+            axd.set_title("Data", **prop)
+            axr.set_title("Residual (data-scene)/scene [±50%]", **prop)
+
+        if savefile is not None:
+            fig.savefig(savefile)
+            
+        return fig
+            
+        
     # ============= #
     #  Properties   #
     # ============= #
