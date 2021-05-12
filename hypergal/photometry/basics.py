@@ -3,7 +3,7 @@
 import pandas
 import warnings
 import numpy as np
-
+import pandas as pd
 
 from .astrometry import WCSHolder
 
@@ -141,7 +141,50 @@ class CutOut( WCSHolder ):
         from ..spectroscopy import WCSCube
         return WCSCube.from_cutouts(self, header_id=header_id, influx=influx,
                                         binfactor=binfactor, xy_center=xy_center, **kwargs)
-        
+
+    
+    def to_dataframe( self, which=['data','err'], filters=None, influx=True):
+        """
+        Get Panda DataFrame from Cutouts
+        Parameters
+        ----------
+        which: [string/list of string]
+            What do you want in your dataframe
+            Might be 'data', 'err', 'var'
+            Default is ['data', 'err']
+
+        filters: [string/list of string]
+            For which filter(s) do you want [which]. 
+            If None, '*', 'all', consider all availbales filters
+            Default is None
+
+        influx: [bool]
+            Do you want [which] in flux (erg/s/cm2/AA) or in counts
+            Default is True
+
+        Return
+        ----------
+        Pandas DataFrame
+        """
+        df = pd.DataFrame()
+        which = which.split() if type(which)==str else which
+        filters = filters.split() if type(filters)==str else filters
+        if which is None or which in ['*', 'all']:
+            which = ['data', 'err']
+        if filters is None or filters in ['*', 'all']:
+            filters = self.filters
+
+        for w in which:
+            to_add = self._get_which_(w, filters, influx)
+            to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
+
+            if w=='data':
+                df = df.assign(**dict(zip(filters , to_add)))
+            else:
+                df = df.assign(**dict(zip([s + '_'+ w for s in filters] , to_add)))
+
+        return df
+            
     # -------- #
     #  SETTER  #
     # -------- #
