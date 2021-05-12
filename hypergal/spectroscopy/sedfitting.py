@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 13:36:18 $
-# Modified on:       2021/05/12 15:15:34
+# Modified on:       2021/05/12 15:44:34
 # Copyright:         2019, Jeremy Lezmy
 # $Id: sedfitting.py, 2021/05/11 13:36:18  JL $
 ################################################################################
@@ -37,9 +37,10 @@ from astropy.table import Table
 from scipy.interpolate import interp1d
 from astropy.convolution import Box1DKernel, convolve
 import geopandas
-import pkg_resources
+#import pkg_resources
 
-JSON_PATH = pkg_resources.resource_filename('hypergal', 'spectroscopy/config/')
+#JSON_PATH = pkg_resources.resource_filename('hypergal', 'spectroscopy/config/')
+JSON_PATH = os.path.dirname(os.path.realpath(__file__))
 
 PS1_FILTER=['ps1_g', 'ps1_r', 'ps1_i', 'ps1_z', 'ps1_y']
 PS1_FILTER_err=['ps1_g_err','ps1_r_err', 'ps1_i_err', 'ps1_z_err', 'ps1_y_err']
@@ -197,7 +198,7 @@ class SEDFitter():
         """ 
         Dataframe already in the format (column order, columns names etc) asked by the sedfitter. This is before SNR selection applied
         """
-        if not hasattr(self, 'clean_df'):
+        if not hasattr(self, '_clean_df'):
             return None
         return self._clean_df
 
@@ -206,7 +207,7 @@ class SEDFitter():
         """
         Dataframe which will be directly used by the sedfitter (after setup, SNR selection, and flux compatible)
         """
-        if not hasattr(self, 'input_sedfitter'):
+        if not hasattr(self, '_input_sedfitter'):
             return None
         return self._input_sedfitter
 
@@ -233,7 +234,7 @@ class SEDFitter():
         """ 
         filters used for the sedfitting
         """
-        if not hasattr(self, 'filters'):
+        if not hasattr(self, '_filters'):
             return None
         return self._filters
     
@@ -305,7 +306,7 @@ class Cigale(SEDFitter):
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
 
         if sed_modules=='default':
-            with open(os.path.join(JSON_PATH,
+            with open(os.path.join(JSON_PATH,'..','config',
                        'cigale.json')) as data_file:
                
                 params = json.load(data_file)
@@ -393,7 +394,7 @@ class Cigale(SEDFitter):
         spec_data_interp=np.zeros(shape=(len( full_DF ),len(lbda_sample)))       
         fitind=0           
         for i in range(len( full_DF )):          
-            if i in ( self._idx_used ):               
+            if i in ( self.idx_used ):               
                 valid_spec = 'yes'               
                 try:
                     datafile = fits.open( os.path.join(self._path_result,self._out_dir,f'{i}_best_model.fits'))
@@ -435,10 +436,13 @@ class Cigale(SEDFitter):
 
     def clean_output(self):
         """
+        THIS COMMAND WILL DELETE self.working_dir, BE CAREFUL
         Be sure you saved the cigale results before using this command.
         Go back to the initial path (_currentpwd) before the cigale run, 
         then clean the directory where cigale has been run.
         """
+        if self.currentpwd == self.working_dir:
+            return
         os.chdir( self._currentpwd)
         shutil.rmtree( self._working_dir)
         self._working_dir = None
@@ -474,7 +478,7 @@ class Cigale(SEDFitter):
         """
         config file
         """
-        if not hasattr(self, 'config'):
+        if not hasattr(self, '_config'):
             return None
         return self._config
 
