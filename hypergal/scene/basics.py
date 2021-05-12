@@ -94,6 +94,10 @@ class SliceScene( object ):
         else:
             raise ValueError(f"which can be 'in' or 'comp', {which} given")
 
+    def set_baseparams(self, parameters):
+        """ """
+        self._baseparams = {k:v for k,v in parameters.items() if k in self.BASE_PARAMETERS}
+        
     def set_overlay(self, overlay):
         """ Provide the hypergal.utils.geometry.Overlay object """
         self._overlay = overlay
@@ -101,11 +105,39 @@ class SliceScene( object ):
     def set_psf(self, psf):
         """ """
         self._psf = psf
+
+    def update(self, **kwargs):
+        """ """
+        baseparams = {}
+        psfparams = {}
+        geometryparams = {}
+        for k,v in kwargs.items():
+            # Change the baseline scene
+            if k in self.BASE_PARAMETERS:
+                baseparams[k] = v
+                
+            # Change the scene PSF
+            elif k in self.PSF_PARAMETERS:
+                psfparams[k] = v
+                
+            # Change the scene geometry                
+            elif k in self.GEOMETRY_PARAMETERS:
+                geometryparams[k] = v
+                
+            # or crash
+            else:
+                raise ValueError(f"Unknow input parameter {k}={v}")
+
+        self.set_baseparams(baseparams)
+        if len(geometryparams)>0:
+            self.overlay.change_comp(**geometryparams)
+        if len(psfparams)>0:
+            self.psf.update_parameters(**psfparams)
         
     # --------- #
     #  GETTER   #
     # --------- #
-    def get_model(self, ampl=1, background=0,
+    def get_model(self, ampl=None, background=None,
                       overlayparam=None,
                       psfparam=None):
         """ Convolves and project flux_in into the 
@@ -122,6 +154,12 @@ class SliceScene( object ):
         -------
         flux
         """
+        if ampl is None:
+            ampl = self.baseparams["ampl"]
+            
+        if background is None:
+            background = self.baseparams["background"]
+            
         # 1.
         # Change position of the comp grid if needed
         #   - if the overlayparam are the same as already know, no update made.
@@ -139,12 +177,11 @@ class SliceScene( object ):
         # 4. Out
         return ampl*modelflux + background
     
-    def get_convolved_flux_in(self, psfconv):
+    def get_convolved_flux_in(self, psfconv=None):
         """ """
-        if psfconv is None or len(psfconv)==0:
-            return self.flux_in
-        
-        self.psf.update_parameters(**psfconv)
+        if psfconv is not None:
+            self.psf.update_parameters(**psfconv)
+            
         return self.psf.convolve(self._flux_in2d).flatten()
 
     def guess_parameters(self):
@@ -188,6 +225,13 @@ class SliceScene( object ):
         
         return self._psf
 
+    @property
+    def baseparams(self):
+        """ """
+        if not hasattr(self, "_baseparams"):
+            self._baseparams = {}
+        return self._baseparams
+    
     @property
     def norm_in(self):
         """ """ # No test to gain time

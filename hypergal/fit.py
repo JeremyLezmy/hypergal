@@ -20,7 +20,7 @@ class Priors( object ):
     # ============== #
     #  Methods       #
     # ============== #
-    def get_priors(self):
+    def get_product(self):
         """ """
         priors = []
         if self.has_ellipticity_param():
@@ -43,12 +43,17 @@ class Priors( object ):
     # ============== #
     #  Statics       #
     # ============== #
-
+    
     @staticmethod
-    def get_ellipticity_prior(a, b, max_ratio=0.9):
+    def get_ellipticity_prior(a, b, max_ratio=0.9, q_troncnorm={"loc":0, "scale":0.15, "a":0, "b":4 }):
         """ """
         if b>max_ratio * np.sqrt(a):
-            return self.BOUND_VALUE
+            return 0
+
+        numerator = np.sqrt( (1-a)**2 + 4*b**2) - (1+a)
+        denominator = -np.sqrt( (1-a)**2 + 4*b**2) - (1+a)
+        q = (1-numerator/denominator)
+        
         return 1
 
     # ============== #
@@ -73,7 +78,7 @@ class Priors( object ):
 # ===================== #
 
 class SceneFitter( object ):
-    def __init__(self, scene, fix_params=["scale","rotation"], priors=None):
+    def __init__(self, scene, fix_params=["scale","rotation"], priors=None, debug=False):
         """ """
         if scene is not None:
             self.set_scene(scene)
@@ -83,6 +88,7 @@ class SceneFitter( object ):
         if priors is None:
             priors = Priors()
         self.set_priors(priors)
+        self._debug = debug
         
     # ============== #
     # Initialisation #
@@ -140,6 +146,8 @@ class SceneFitter( object ):
             raise ValueError(f"you must provide {self.nfree_parameters} parameters, you gave {len(parameters)}")
             
         dfreeparam = {k:v for k, v in zip(self.free_parameters, parameters)}
+        if self._debug:
+            print(f"setting: {dfreeparam}")
         return self.update_parameters(**dfreeparam)
 
     def set_priors(self, priors):
@@ -179,7 +187,7 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=[0.01, None], pos_limits=4):
+    def get_limits(self, a_limit=[0.5, None], pos_limits=4):
         """ """
         param_names = self.free_parameters
         param_guess = self.get_guesses(free_only=True, as_array=True)
@@ -212,31 +220,40 @@ class SceneFitter( object ):
         """ """
         if parameters is not None:
             self.set_freeparameters(parameters)
-            
+    
         return self.scene.get_model(**self._base_parameters,
-                                       overlayparam = self._geometry_parameters, 
-                                       psfparam = self._psf_parameters)
+                                    overlayparam = self._geometry_parameters, 
+                                    psfparam = self._psf_parameters)
 
     # ------------ #
     #  FITTING     #
     # ------------ #
     # - chi2 = -2log(Likelihood)
-    def get_chi2(self, parameters):
+    def get_chi2(self, parameters=None):
         """ """
         model = self.get_model(parameters).values
         return np.sum( (self.scene.flux_comp - model)**2/self.scene.variance_comp )
     
     # - priors = -2log(prod_of_priors)
-    def get_logprior(self):
-        """ -2*np.log(prod_of_priors)"""
+    def get_prior(self):
+        """ priors.get_product() """
         self.priors.set_parameters( self.get_parameters(free_only=True) )
-        return -2*np.log(self.priors.get_priors())
+        return self.priors.get_product()
 
     # - prob = Likelihood*prod_of_priors
     #   logprob =-2log(prob) = -2log(Likelihood) + -2log(prod_of_priors) 
-    def get_logprob(self, parameters):
+    def get_logprob(self, parameters=None, bound_value=1e13):
         """ """
-        return self.get_chi2(parameters) + self.get_logprior()
+        if parameters is not None:
+            self.set_freeparameters(parameters)
+            
+        prior = self.get_prior()
+        if prior == 0: # this way, avoid the NaN inside get_chi2()
+            if self._debug:
+                print("prior=0, returning {bound_value}")
+            return bound_value
+        
+        return self.get_chi2() -2*np.log(prior)
 
 
     # - fitting over logprob
@@ -247,13 +264,13 @@ class SceneFitter( object ):
         if limit is None: limit = {}
         guess = self.get_guesses(free_only=True, as_array=True, **guess)
         limit = self.get_limits(**limit)
-        if verbose:
+        if verbose or self._debug:
             print(f"param names {self.free_parameters}")
             print(f"guess {guess}")
             print(f"limits {limit}")
         
         m = Minuit.from_array_func(self.get_logprob, guess, limit=limit,
-                                    name= hscene.free_parameters, 
+                                    name= self.free_parameters, 
                                    **kwargs)
         return m
         
