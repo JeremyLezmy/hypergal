@@ -142,8 +142,7 @@ class CutOut( WCSHolder ):
         return WCSCube.from_cutouts(self, header_id=header_id, influx=influx,
                                         binfactor=binfactor, xy_center=xy_center, **kwargs)
 
-    
-    def to_dataframe( self, which=['data','err'], filters=None, influx=True):
+    def to_dataframe( self,  which = ['data','err'], binfactor = 2, filters = None, influx = True):
         """
         Get Panda DataFrame from Cutouts
         Parameters
@@ -152,6 +151,10 @@ class CutOut( WCSHolder ):
             What do you want in your dataframe
             Might be 'data', 'err', 'var'
             Default is ['data', 'err']
+
+        binfactor: [int]
+            If >1, apply binning on the images data/err/var.
+            Default is 2.
 
         filters: [string/list of string]
             For which filter(s) do you want [which]. 
@@ -164,8 +167,18 @@ class CutOut( WCSHolder ):
 
         Return
         ----------
-        Pandas DataFrame
+        Pandas DataFrame with ravels datas
         """
+        import warnings
+        if binfactor is not None:
+            binfactor = int(binfactor)
+            if binfactor==1:
+                warnings.warn("binfactor=1, this means nothing to do.")
+        else:
+            binfactor = 1
+
+        from ..utils import array
+        import pandas as pd
         df = pd.DataFrame()
         which = which.split() if type(which)==str else which
         filters = filters.split() if type(filters)==str else filters
@@ -176,14 +189,25 @@ class CutOut( WCSHolder ):
 
         for w in which:
             to_add = self._get_which_(w, filters, influx)
-            to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
 
             if w=='data':
+                if binfactor>1:
+                    to_add = np.sum(array.restride(to_add, (1, binfactor, binfactor)),axis=(-2,-1))
+                to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
                 df = df.assign(**dict(zip(filters , to_add)))
-            else:
+            elif w in ['err', 'error']:
+                if binfactor>1:
+                    to_add = np.sum(array.restride(to_add, (1, binfactor, binfactor)),axis=(-2,-1))
+                to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
+                df = df.assign(**dict(zip([s + '_'+ w for s in filters] , to_add)))
+            elif w in ['var','variance']:
+                if binfactor>1:
+                    to_add = np.sum(array.restride(to_add**0.5, (1, binfactor, binfactor)),axis=(-2,-1))**2
+                to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
                 df = df.assign(**dict(zip([s + '_'+ w for s in filters] , to_add)))
 
         return df
+
             
     # -------- #
     #  SETTER  #
