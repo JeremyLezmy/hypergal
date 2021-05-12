@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/02/04 14:20:22 $
-# Modified on:       2021/05/10 10:39:18
+# Modified on:       2021/05/12 15:12:44
 # Copyright:         2019, Jeremy Lezmy
 # $Id: setup.py, 2021/02/04 14:20:22  JL $
 ################################################################################
@@ -110,7 +110,8 @@ if __name__ == "__main__":
           install_requires=install_requires,
           packages=packages,
           scripts=["hypergal/scripts/FullProcess.py"] ,
-          package_data={},
+          package_data={'':['hypergal/spectroscopy/config/cigale.json']},
+          include_package_data=True,
           classifiers=[
               'Intended Audience :: Science/Research',
               'Programming Language :: Python :: 2.7',

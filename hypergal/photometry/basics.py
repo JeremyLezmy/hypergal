@@ -142,7 +142,7 @@ class CutOut( WCSHolder ):
         return WCSCube.from_cutouts(self, header_id=header_id, influx=influx,
                                         binfactor=binfactor, xy_center=xy_center, **kwargs)
 
-    def to_dataframe( self,  which = ['data','err'], binfactor = 2, filters = None, influx = True):
+    def to_dataframe( self,  which = ['data','err'], binfactor = 2, filters = None, influx = True, as_cigale = True):
         """
         Get Panda DataFrame from Cutouts
         Parameters
@@ -163,6 +163,10 @@ class CutOut( WCSHolder ):
 
         influx: [bool]
             Do you want [which] in flux (erg/s/cm2/AA) or in counts
+            Default is True
+
+        as_cigale: [bool]
+            In case you intend to use this dataframe from Cigale SedFitting, replace '.' by '_'
             Default is True
 
         Return
@@ -205,6 +209,9 @@ class CutOut( WCSHolder ):
                     to_add = np.sum(array.restride(to_add**0.5, (1, binfactor, binfactor)),axis=(-2,-1))**2
                 to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
                 df = df.assign(**dict(zip([s + '_'+ w for s in filters] , to_add)))
+
+        if as_cigale:
+            df.columns = df.columns.str.replace(".", "_")
 
         return df
 

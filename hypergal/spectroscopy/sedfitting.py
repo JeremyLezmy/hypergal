@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 13:36:18 $
-# Modified on:       2021/05/11 19:55:02
+# Modified on:       2021/05/12 15:15:34
 # Copyright:         2019, Jeremy Lezmy
 # $Id: sedfitting.py, 2021/05/11 13:36:18  JL $
 ################################################################################
@@ -29,13 +29,17 @@ import os
 import sys
 import datetime
 import numpy as np
-import utils
+from .utils import * 
 from configobj import ConfigObj
 import json
 from astropy.io import fits
 from astropy.table import Table
 from scipy.interpolate import interp1d
 from astropy.convolution import Box1DKernel, convolve
+import geopandas
+import pkg_resources
+
+JSON_PATH = pkg_resources.resource_filename('hypergal', 'spectroscopy/config/')
 
 PS1_FILTER=['ps1_g', 'ps1_r', 'ps1_i', 'ps1_z', 'ps1_y']
 PS1_FILTER_err=['ps1_g_err','ps1_r_err', 'ps1_i_err', 'ps1_z_err', 'ps1_y_err']
@@ -66,7 +70,7 @@ class SEDFitter():
             Threshold Signal over Noise ratio for all the bands, for which the pixel won't be selected for the sedfitting. 
         Returns
         --------
-        """
+        """        
         if type(dataframe)==geopandas.geodataframe.GeoDataFrame:       
             self.set_dataframe(pd.DataFrame(dataframe))            
         else:
@@ -94,10 +98,10 @@ class SEDFitter():
         --------
         
         """
-        df = self.input_dataframe.copy()
+        df = self.input_df.copy()
         
         for col in df:
-            if col not in PS1_FILTER + PS1_FILTER_err or col not in [k.replace('_','.') for k in PS1_FILTER + PS1_FILTER_err] :
+            if col not in PS1_FILTER + PS1_FILTER_err and col not in [k.replace('_','.') for k in PS1_FILTER + PS1_FILTER_err] :
                 df.pop(col)
                 
         lst=list(df.columns)
@@ -112,8 +116,8 @@ class SEDFitter():
 
         self.set_clean_df(df)
         filt = [ele for ele in lst  if ('err' not in ele)]
-        self.filters = filt
-        idx = df.loc[ np.logical_and.reduce([ df[i].values / df[i + '_err'].values > snr for i in filt])].index
+        self._filters = filt
+        idx = df.loc[ np.logical_and.reduce([ df[i].values / df[i + '_err'].values > self.snr for i in filt])].index
         df_threshold = df.loc[idx].copy()
         self.set_input_sedfitter(df_threshold)
                
@@ -137,56 +141,56 @@ class SEDFitter():
         """ 
         Set original dataframe before setup
         """
-        self.input_df = dataframe
+        self._input_df = dataframe
 
     def set_snr(self, snr):
         """ 
         Set signal over noise ratio as threshold (used for all filters)
         """
-        self.snr_threshold = snr
+        self._snr = snr
 
-    def set_redshift(self, reshift):
+    def set_redshift(self, redshift):
         """ 
         Set redshift (will be shared for all the pixel)
         """
-        self.redshift = redshift
+        self._redshift = redshift
 
     def set_clean_df(self, dataframe):
         """ 
         Set dataframe already in the format (column order, columns names etc) asked by the sedfitter. This is before SNR selection applied
         """
-        self.clean_df = datafame
+        self._clean_df = dataframe
 
     def set_input_sedfitter(self, dataframe):
         """ 
         Set dataframe which will be directly used by the sedfitter (after setup, SNR selection, and flux compatible)
         """
-        self.input_sedfitter = datafame
+        self._input_sedfitter = dataframe
         
     # ================ #
     #  Properties      #
     # ================ #
     
     @property
-    def input_dataframe(self):
+    def input_df(self):
         """ 
         Original dataframe before setup
         """
-        return self.input_df
+        return self._input_df
 
     @property
-    def snr_threshold(self):
+    def snr(self):
         """
         Signal over noise ratio as threshold (used for all filters)
         """
-        return self.snr_threshold
+        return self._snr
 
     @property
     def redshift(self):
         """ 
         redshift (shared for all the pixel)
         """
-        return self.redshift
+        return self._redshift
 
     @property
     def clean_df(self):
@@ -195,7 +199,7 @@ class SEDFitter():
         """
         if not hasattr(self, 'clean_df'):
             return None
-        return self.clean_df
+        return self._clean_df
 
     @property
     def input_sedfitter(self):
@@ -204,10 +208,10 @@ class SEDFitter():
         """
         if not hasattr(self, 'input_sedfitter'):
             return None
-        return self.input_sedfitter
+        return self._input_sedfitter
 
     @property
-    def _dfpath(self):
+    def dfpath(self):
         """ 
         Path of the dataframe read by te sedfitter
         """
@@ -216,7 +220,7 @@ class SEDFitter():
         return self._dfpath
 
     @property
-    def _idx_used(self):
+    def idx_used(self):
         """ 
         Indices of the object which passed the SNR selection
         """
@@ -231,7 +235,7 @@ class SEDFitter():
         """
         if not hasattr(self, 'filters'):
             return None
-        return self.filters
+        return self._filters
     
 
 class Cigale(SEDFitter):
@@ -240,9 +244,10 @@ class Cigale(SEDFitter):
     #  Methods      #
     # ============= #
 
-    def __init__(self):
-
-        self._sedfitter_name('cigale')
+    def __init__(self, dataframe, redshift = 0.001, snr = None):
+        
+        super().__init__(dataframe = dataframe, redshift = redshift, snr = snr)
+        self._sedfitter_name = 'cigale'
 
     def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None ):
         """ 
@@ -271,14 +276,14 @@ class Cigale(SEDFitter):
                 os.makedirs(working_dir, exist_ok = True)
             os.chdir(working_dir)
         else :
-            working_dir = self._currentpwd
+            working_dir = self.currentpwd
 
         self._working_dir = os.path.abspath(working_dir)
             
-        utils.command_cigale('init')
+        command_cigale('init')
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
         
-        config['data_file'] = self._dfpath
+        config['data_file'] = self.dfpath
         
         if sed_modules=='default':
             config['sed_modules'] = DEFAULT_CIGALE_MODULES
@@ -295,20 +300,21 @@ class Cigale(SEDFitter):
         
         config.write()
         
-        utils.command_cigale('genconf')
+        command_cigale('genconf')
 
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
 
         if sed_modules=='default':
-            with open(os.path.join('config',
+            with open(os.path.join(JSON_PATH,
                        'cigale.json')) as data_file:
+               
                 params = json.load(data_file)
                 
-            config = utils.update(config,params)
+            config = update(config,params)
         config['sed_modules_params'][[k for k in config['sed_modules_params'].keys() if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
         
         config.write()            
-        self.config = config
+        self._config = config
 
 
     def run(self, path_result=None, result_dir_name='out/'):
@@ -317,7 +323,7 @@ class Cigale(SEDFitter):
         Results will be stored in self._working_dir, and a directory 'out/' will be created.
         """
         
-        utils.command_cigale('run')
+        command_cigale('run')
 
         #### Should be Removed or at least reworked #####
         
@@ -346,7 +352,7 @@ class Cigale(SEDFitter):
             self._path_result = path_result
             
         else:
-            self._path_result = os.path.abspath(self._working_dir)
+            self._path_result = os.path.abspath(self.working_dir)
             
             self._out_dir = 'out/'
 
@@ -398,7 +404,7 @@ class Cigale(SEDFitter):
                 if valid_spec=='yes' :                                      
                     lbda_full = np.array(data['wavelength']) * 10 #nm  ->  AA
                     lbda = lbda_full[(lbda_full<lbda_sample[-1]+2000) & (lbda_full>lbda_sample[0]-2000)]
-                    spec_data_cg[i] = utils.flux_hz_to_aa(np.array(data['Fnu'])[(lbda_full<lbda_sample[-1]+2000) & (lbda_full>lbda_sample[0]-2000)] * 10**(-26), lbda) #mJy ->  erg.s^-1.cm^-2.Hz^-1  ->  erg.s^-1.cm^-2.AA^-1                     
+                    spec_data_cg[i] = flux_hz_to_aa(np.array(data['Fnu'])[(lbda_full<lbda_sample[-1]+2000) & (lbda_full>lbda_sample[0]-2000)] * 10**(-26), lbda) #mJy ->  erg.s^-1.cm^-2.Hz^-1  ->  erg.s^-1.cm^-2.AA^-1                     
                     f=interp1d(lbda, spec_data_cg[i], kind = interp_kind)
                     spec_data_interp[i] = convolve( f (np.linspace(lbda_sample[0],lbda_sample[-1],len(lbda_sample)*box_ker_size) ),kerbox,boundary='extend',normalize_kernel=True)[::10]
                                       
@@ -419,7 +425,7 @@ class Cigale(SEDFitter):
             np.savez(save_file, spec=spec_data_interp, lbda=lbda_sample)
         if as_cube:
 
-            return (self.get_3D_cube())
+            return
                     
         return(spec_data_interp,lbda_sample)
 
@@ -470,10 +476,10 @@ class Cigale(SEDFitter):
         """
         if not hasattr(self, 'config'):
             return None
-        return self.config
+        return self._config
 
     @property
-    def _working_dir(self):
+    def working_dir(self):
         """
         Working directory
         """
@@ -482,13 +488,15 @@ class Cigale(SEDFitter):
         return self._working_dir
 
     @property
-    def _currentpwd(self):
+    def currentpwd(self):
         """
         Current path 
         """
         if not hasattr(self, '_currentpwd'):
             return None
         return self._currentpwd
+
+   
     
     
 # End of sedfitting.py ========================================================
