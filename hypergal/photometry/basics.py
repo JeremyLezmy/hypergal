@@ -121,7 +121,8 @@ class CutOut( WCSHolder ):
         xy_center: [optional] -optional-
             center coordinates (in pixel) or the returned cube.
             - if None: this is ignored
-            - if string: 'target', this will convert the self.ra and self.dec into xy_center and set it
+            - if string: 'target', this will convert the self.ra and self.dec 
+              into xy_center and set it
             - else; used as centroid
 
         influx: [bool]  -optional-
@@ -206,7 +207,8 @@ class CutOut( WCSHolder ):
                 df = df.assign(**dict(zip([s + '_'+ w for s in filters] , to_add)))
             elif w in ['var','variance']:
                 if binfactor>1:
-                    to_add = np.sum(array.restride(to_add**0.5, (1, binfactor, binfactor)),axis=(-2,-1))**2
+                    to_add = np.sum(array.restride(to_add**0.5, (1, binfactor, binfactor)),
+                                        axis=(-2,-1))**2
                 to_add = to_add.reshape( (to_add.shape[0], to_add.shape[-1]*to_add.shape[-2]) )
                 df = df.assign(**dict(zip([s + '_'+ w for s in filters] , to_add)))
 
@@ -215,7 +217,6 @@ class CutOut( WCSHolder ):
 
         return df
 
-            
     # -------- #
     #  SETTER  #
     # -------- #
@@ -368,13 +369,70 @@ class CutOut( WCSHolder ):
         data *= coef
         # returns
         if filters is None or filters in ["*","all"]:
-            return data
+            return np.asarray(data)
         
-        return data[self.get_index(filters)]
+        return np.asarray(data)[self.get_index(filters)]
 
     # -------- #
     #  Apply   #
     # -------- #
+    def extract_sources(self, filter_, thres=2, show=False, savefile=None, figprop={}, **kwargs):
+        """ """
+        import sep
+        from astropy import table
+
+        flux = np.squeeze(self.get_data(filters=filter_))
+        err  = np.squeeze(self.get_error(filters=filter_))
+        
+        sources = table.Table(sep.extract(flux, thres, err=err, **kwargs)).to_pandas()
+        if show:
+            self.show(filter_=filter_, sourcedf=sources, savefile=savefile, **figprop)
+            
+        return sources
+    # -------- #
+    # PLOTTER  #
+    # -------- #
+    def show(self, ax=None, filter_=None, vmin="1", vmax="99",
+                 sourcedf=None, sourcescale=5, propsource={},
+                 savefile=None, **kwargs):
+        """ """
+        import matplotlib.pyplot as mpl
+        from ..utils.tools import parse_vmin_vmax
+        if filter_ is None:
+            filter_ = self.filters[0]
+            warnings.warn(f"no filter given, first used: {filter_}")
+
+        flux = np.squeeze(self.get_data(filters=filter_))
+
+        if ax is None:
+            fig = mpl.figure(figsize=[6,6])
+            ax = fig.add_subplot(111)
+        else:
+            fig = ax.figure
+
+        if vmin is None: vmin="1"
+        if vmax is None: vmax="99"
+        vmin, vmax = parse_vmin_vmax(flux, vmin, vmax)
+        prop = dict(origin="lower", vmin=vmin, vmax=vmax, cmap="cividis")
+        sc = ax.imshow(flux, **{**prop,**kwargs})
+
+        if sourcedf is not None:
+            from matplotlib.patches import Ellipse
+            from matplotlib.collections import PatchCollection
+            
+            prop = {**dict(facecolor="None", edgecolor="C1"),**propsource}
+            e = [Ellipse((d.x,d.y), d.a*sourcescale, d.b*sourcescale, d.theta*180/np.pi, **prop)
+                     for d in sourcedf.itertuples()]
+            _= [ax.add_patch(e_) for e_ in e]
+
+        if savefile is not None:
+            fig.savefig(savefile)
+            
+        return ax
+        
+            
+        
+                                           
     # ================ #
     #  Internal        #
     # ================ #
@@ -386,7 +444,8 @@ class CutOut( WCSHolder ):
         ----------
         
         what: [String]
-            Which attribut do you want to get from the intrument object (for instance 'lbda', 'bandname', 'mab0' ...)
+            Which attribut do you want to get from the intrument object 
+            (for instance 'lbda', 'bandname', 'mab0' ...)
 
         isfun : [bool]
             Does the atribut you want is callable

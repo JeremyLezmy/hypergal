@@ -51,7 +51,7 @@ class SliceScene( object ):
     # --------- #
     #  SETTER   #
     # --------- #
-    def set_slice(self, slice_, which, norm="nanmean"):
+    def set_slice(self, slice_, which, norm="99", bkgd="50"):
         """ set the 'in' or 'comp' geometry
         
         Parameters
@@ -68,13 +68,21 @@ class SliceScene( object ):
         -------
         None
         """
-        if type(norm) is str:
-            norm = getattr(np, norm)(slice_.data, axis=0)
+        data = slice_.data.copy()
+        if type(bkgd) is str:
+            bkgd  = np.percentile(data, float(bkgd))
             
+        data -= bkgd
+        if type(norm) is str:
+            norm = np.percentile(data, float(norm))
+            
+        data /= norm
+        
         if which == "in":
             self._slice_in = slice_
+            self._bkgd_in = bkgd
             self._norm_in = norm
-            self._flux_in = slice_.data/norm
+            self._flux_in = data
             nshape = int(np.sqrt(len(self._flux_in)))
             self._flux_in2d = self._flux_in.reshape(nshape,nshape)
             if slice_.has_variance():
@@ -84,8 +92,9 @@ class SliceScene( object ):
                 
         elif which == "comp":
             self._slice_comp = slice_
+            self._bkgd_comp = norm            
             self._norm_comp = norm
-            self._flux_comp = slice_.data/norm
+            self._flux_comp = data
             if slice_.has_variance():
                 self._variance_comp = slice_.variance/norm**2
             else:
@@ -186,19 +195,18 @@ class SliceScene( object ):
 
     def guess_parameters(self):
         """ """
-        bkgd_in = np.percentile(self.flux_in, 10)
-        bkgd_comp = np.percentile(self.flux_comp, 10)
-        flux_ratio = (np.nansum(self.flux_comp)-bkgd_comp) / (np.nansum(self.flux_in)-bkgd_in)
-
+        ampl = 1
+        bkgd = 0
         base_guess = {**{k:None for k in self.BASE_PARAMETERS},
-                      **{"ampl":flux_ratio, "background": bkgd_comp-flux_ratio*bkgd_in}
+                      **{"ampl":ampl, "background": bkgd}
                       }
         geom_guess = self.overlay.geoparam_comp
         psf_guess  = self.psf.guess_parameters()
         return {**base_guess, **geom_guess, **psf_guess}
 
 
-    def show(self, savefile=None, titles=True):
+    def show(self, savefile=None, titles=True, res_as_ratio=True, cutout_convolved=True,
+                 vmin="1", vmax="99"):
         """ """
         import matplotlib.pyplot as mpl
         from ..utils import tools
@@ -213,19 +221,28 @@ class SliceScene( object ):
         axifu = [axm, axd, axr]
 
         # Convolved image flux
-        flux_conv = self.get_convolved_flux_in()
-        self.overlay.show(ax=ax, flux_in = flux_conv, lw_in=0, adjust=True)
+        flux_in = self.get_convolved_flux_in() if cutout_convolved else self.flux_in
+        self.overlay.show(ax=ax, flux_in = flux_in, lw_in=0, adjust=True)
 
         # Model flux (=convolved *ampl + background)
         flux_model = self.get_model().values
-        vmin, vmax = tools.parse_vmin_vmax(flux_model, "1","99")
+        vmin, vmax = tools.parse_vmin_vmax(flux_model, vmin, vmax)
+        
         prop = {"cmap":"cividis", "vmin":vmin, "vmax":vmax, "lw":0.1, "edgecolor":"0.7","adjust":True}
         self.overlay.show_mpoly("comp", ax=axm, flux=flux_model, **prop)
         self.overlay.show_mpoly("comp", ax=axd, flux=self.flux_comp, **prop)
-        res = (self.flux_comp-flux_model)/flux_model
-        self.overlay.show_mpoly("comp", ax=axr, flux=res, **{**prop,**{"vmin":-0.5, "vmax":0.5, "cmap":"coolwarm"}})
+
+        res = (self.flux_comp-flux_model)
+        if res_as_ratio:
+            res /=  flux_model
+            prop = {**prop,**{"vmin":-0.5, "vmax":0.5, "cmap":"coolwarm"}}
+            title_res = "Residual (data-scene)/scene [±50%]"
+        else:
+            title_res = "Residual (data-scene)"
+            
+        self.overlay.show_mpoly("comp", ax=axr, flux=res, **prop)
         
-        clearwhich = ["left","right","top","bottom"]    
+        clearwhich = ["left","right","top","bottom"]
         for ax_ in axifu:
             ax_.set_yticks([])
             ax_.set_xticks([])        
@@ -233,10 +250,10 @@ class SliceScene( object ):
 
         if titles:
             prop = dict(loc="left", color="0.5", fontsize="small")
-            ax.set_title("Projection", **prop)
+            ax.set_title("Projection"+ " (convolved)" if cutout_convolved else "", **prop)
             axm.set_title("Projected Scene", **prop)
             axd.set_title("Data", **prop)
-            axr.set_title("Residual (data-scene)/scene [±50%]", **prop)
+            axr.set_title(title_res, **prop)
 
         if savefile is not None:
             fig.savefig(savefile)
@@ -278,21 +295,17 @@ class SliceScene( object ):
         if not hasattr(self, "_baseparams"):
             self._baseparams = {}
         return self._baseparams
-    
+
+    # // _in prop
     @property
     def norm_in(self):
-        """ """ # No test to gain time
+        """ original _in data""" # No test to gain time
         return self._norm_in
     
     @property
-    def norm_comp(self):
+    def bkgd_in(self):
         """ """ # No test to gain time
-        return self._norm_in
-
-    @property
-    def norm_comp(self):
-        """ """ # No test to gain time
-        return self._flux_comp
+        return self._bkgd_in
 
     @property
     def flux_in(self):
@@ -300,14 +313,25 @@ class SliceScene( object ):
         return self._flux_in
 
     @property
-    def flux_comp(self):
-        """ """ # No test to gain time
-        return self._flux_comp
-    
-    @property
     def variance_in(self):
         """ """ # No test to gain time
         return self._variance_in
+
+    # // _comp prop
+    @property
+    def norm_comp(self):
+        """ given data = data*norm + back""" # No test to gain time
+        return self._norm_comp
+    
+    @property
+    def bkgd_comp(self):
+        """ """ # No test to gain time
+        return self._bkgd_comp
+
+    @property
+    def flux_comp(self):
+        """ """ # No test to gain time
+        return self._flux_comp
 
     @property
     def variance_comp(self):

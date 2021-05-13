@@ -1,5 +1,6 @@
 
 import numpy as np
+from scipy import stats
 from iminuit import Minuit
 
 
@@ -53,9 +54,9 @@ class Priors( object ):
         numerator = np.sqrt( (1-a)**2 + 4*b**2) - (1+a)
         denominator = -np.sqrt( (1-a)**2 + 4*b**2) - (1+a)
         q = (1-numerator/denominator)
-        
-        return 1
+        return stats.truncnorm.pdf(q, **q_troncnorm)
 
+    
     # ============== #
     #  Properties    #
     # ============== #
@@ -187,7 +188,7 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=[0.5, None], pos_limits=4):
+    def get_limits(self, a_limit=None, pos_limits=4, sigma_limit=[0,5]):
         """ """
         param_names = self.free_parameters
         param_guess = self.get_guesses(free_only=True, as_array=True)
@@ -204,6 +205,10 @@ class SceneFitter( object ):
         if "a" in param_names:
             id_ = param_names.index("a")
             limits[id_] = a_limit
+
+        if "sigma" in param_names:
+            id_ = param_names.index("sigma")
+            limits[id_] = sigma_limit
             
         return limits 
         
@@ -232,7 +237,7 @@ class SceneFitter( object ):
     def get_chi2(self, parameters=None):
         """ """
         model = self.get_model(parameters).values
-        return np.sum( (self.scene.flux_comp - model)**2/self.scene.variance_comp )
+        return np.nansum( (self.scene.flux_comp - model)**2/self.scene.variance_comp )
     
     # - priors = -2log(prod_of_priors)
     def get_prior(self):
@@ -250,16 +255,19 @@ class SceneFitter( object ):
         prior = self.get_prior()
         if prior == 0: # this way, avoid the NaN inside get_chi2()
             if self._debug:
-                print("prior=0, returning {bound_value}")
+                print(f"prior=0, returning {bound_value}")
             return bound_value
+
+        chi2 = self.get_chi2()
+        if self._debug:
+            print(f"chi2 = {chi2} (dof={self.dof} | chi2_dof={chi2/self.dof})")
         
         return self.get_chi2() -2*np.log(prior)
 
 
     # - fitting over logprob
-    def fit(self, guess=None, limit=None, verbose=False, **kwargs):
+    def fit(self, guess=None, limit=None, verbose=False, error=None, **kwargs):
         """ """
-        from scipy import optimize
         if guess is None: guess = {}
         if limit is None: limit = {}
         guess = self.get_guesses(free_only=True, as_array=True, **guess)
@@ -270,7 +278,7 @@ class SceneFitter( object ):
             print(f"limits {limit}")
         
         m = Minuit.from_array_func(self.get_logprob, guess, limit=limit,
-                                    name= self.free_parameters, 
+                                    name= self.free_parameters, error=error,
                                    **kwargs)
         return m
         
@@ -291,6 +299,11 @@ class SceneFitter( object ):
     def nfree_parameters(self):
         """ """
         return len(self.free_parameters)
+
+    @property
+    def dof(self):
+        """ """
+        return len(self.scene.flux_comp) - self.nfree_parameters
     
     @property
     def fixed_parameters(self):

@@ -28,7 +28,7 @@ class Gauss2D( PSF2D ):
     def guess_parameters(self):
         """ """
         return {**{"a":1.,"b":0.},
-                **{"sigma":2.}
+                **{"sigma":1}
                 }
 
     

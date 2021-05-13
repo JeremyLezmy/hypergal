@@ -71,3 +71,18 @@ class WCSCube( Cube, WCSHolder ):
             target_pos = sedmtools.get_target_position(self)
             
         return sedmtools.remove_target_spx(self, target_pos, radius=radious, store=store, **kwargs)
+
+    def get_sourcecube(self, sourcedf, slice_id=None, sourcescale=10):
+        """ extract a partial cube containing the spaxels within the source provided in the sourcedf
+        """
+        from matplotlib.patches import Ellipse
+        from shapely import geometry 
+        e = [Ellipse((d.x,d.y), d.a*sourcescale, d.b*sourcescale, d.theta*180/np.pi)
+             for d in sourcedf.itertuples()]
+        polys = [geometry.Polygon(e_.get_verts()) for e_ in e]
+        spaxels = np.unique(np.concatenate([self.get_spaxels_within_polygon(poly_) for poly_ in polys]))
+
+        if slice_id is None:
+            slice_id  = np.arange( len(self.lbda) )
+
+        return self.get_partial_cube(spaxels,  slice_id)
