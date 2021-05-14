@@ -17,7 +17,32 @@ class SliceScene( object ):
     
     def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
                      psf=None, **kwargs):
-        """ """
+        """ 
+        Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
+        Many transformations might be done to simulate the output scene, such as psf convolution, geometrical projection, background addition and amplitude factor application.
+        
+        Attributes
+        ---------
+        slice_in: [pyifu.Slice]
+             Slice that you want to project in the out geometry.
+
+        slice_comp: [pyifu.Slice]
+             Slice on which you want your new scene.
+
+        xy_in, xy_comp: [2d-array (float) or None]
+             reference coordinates (target position) for the _in and _comp geometries
+             e.g. xy_comp = [3.1,-1.3]
+        
+        load_overlay: [bool]
+             Set overlay information for an exact projection between the pixels of each slice (purely geometric)
+             Default is True.
+
+        psf: [hypergal.psf]
+             Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.
+
+        kwargs go to self.load_overlay
+        
+        """
         self.set_slice(slice_in, "in")
         self.set_slice(slice_comp, "comp")
         
@@ -29,7 +54,32 @@ class SliceScene( object ):
             
     @classmethod
     def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psf=None, **kwargs):
-        """ """
+        """ 
+        Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
+        Many transformations might be done to simulate the output scene, such as psf convolution, geometrical projection, background addition and amplitude factor application.
+        
+        Attributes
+        ---------
+        slice_in: [pyifu.Slice]
+             Slice that you want to project in the out geometry.
+
+        slice_comp: [pyifu.Slice]
+             Slice on which you want your new scene.
+        
+         xy_in, xy_comp: [2d-array (float) or None]
+             reference coordinates (target position) for the _in and _comp geometries
+             e.g. xy_comp = [3.1,-1.3]
+       
+        load_overlay: [bool]
+             Set overlay information for an exact projection between the pixels of each slice (purely geometric)
+             Default is True.
+
+        psf: [hypergal.psf]
+             Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.
+
+        kwargs go to self.load_overlay
+        
+        """
         return cls(slice_in, slice_comp,
                        xy_in=xy_in, xy_comp=xy_comp, psf=psf,
                        **kwargs)
@@ -40,7 +90,24 @@ class SliceScene( object ):
     def load_overlay(self,  xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
                        scale_in=None, scale_comp=DEFAULT_SCALE_RATIO):
-        """ """
+        """ 
+        Load and set the overlay object from slice_in and slice_out (see hypergal/utils/geometry.Overlay() ).
+        Parameters
+        ----------
+        xy_in, xy_comp: [2d-array (float) or None]
+             reference coordinates (target position) for the _in and _comp geometries
+             e.g. xy_comp = [3.1,-1.3]
+
+        rotation_in, rotation_comp: [float or None]
+             rotation (in degree) or the _in and _comp geomtries
+        
+         scale_in, scale_comp:  [float or None]
+             scale of the _in and _comp geometries
+        
+        Returns
+        -------
+        
+        """
         # get all the inputs and drop the self.
         klocal = locals()
         _ = klocal.pop("self")
@@ -61,7 +128,7 @@ class SliceScene( object ):
 
         which: [string]
             Which geometry are you providing ?
-            - in or which.
+            - in or comp.
             a ValueError is raise if which is not 'in' or 'comp'
 
         Returns
@@ -92,7 +159,7 @@ class SliceScene( object ):
                 
         elif which == "comp":
             self._slice_comp = slice_
-            self._bkgd_comp = norm            
+            self._bkgd_comp = bkgd            
             self._norm_comp = norm
             self._flux_comp = data
             if slice_.has_variance():
@@ -104,7 +171,9 @@ class SliceScene( object ):
             raise ValueError(f"which can be 'in' or 'comp', {which} given")
 
     def set_baseparams(self, parameters):
-        """ """
+        """ 
+        Set parameters from self.BASE_PARAMETERS (amplitude and background)
+        """
         self._baseparams = {k:v for k,v in parameters.items() if k in self.BASE_PARAMETERS}
         
     def set_overlay(self, overlay):
@@ -112,11 +181,14 @@ class SliceScene( object ):
         self._overlay = overlay
 
     def set_psf(self, psf):
-        """ """
+        """ Provide the hypergal.psf object. Might be PSF_2D or PSF_3D """
         self._psf = psf
 
     def update(self, **kwargs):
-        """ """
+        """ 
+        Can update any parameter through kwarg option.
+        Might be self.BASE_PARAMETER, self.PSF_PARAMETERS or self.GEOMETRY_PARAMETERS
+        """
         baseparams = {}
         psfparams = {}
         geometryparams = {}
@@ -187,14 +259,28 @@ class SliceScene( object ):
         return ampl*modelflux + background
     
     def get_convolved_flux_in(self, psfconv=None):
-        """ """
+        """ 
+        Compute and return the slice_in data convolved with the setted psf object.
+        Parameters
+        ----------
+        psfconf: [dict] -optional-
+             Goes to self.psf.update_parameters() to update the psf parameters.
+             Default is None.
+        
+        Return
+        ----------
+        Convolved data 2D-array
+        """
         if psfconv is not None:
             self.psf.update_parameters(**psfconv)
             
         return self.psf.convolve(self._flux_in2d).flatten()
 
     def guess_parameters(self):
-        """ """
+        """ 
+        Return guessed parameters for all the parameters.
+        Include BASE_PARAMETERS (amplitude and background), geometrical parameters (scale, xy_in etc) and psf parameters (shape and ellipticity)       
+        """
         ampl = 1
         bkgd = 0
         base_guess = {**{k:None for k in self.BASE_PARAMETERS},
@@ -207,7 +293,38 @@ class SliceScene( object ):
 
     def show(self, savefile=None, titles=True, res_as_ratio=True, cutout_convolved=True,
                  vmin="1", vmax="99"):
-        """ """
+        """
+        General plot of the process. Will show 4 Axes. 
+        First one is slice_in + empty geometry of slice_out.
+        Second one is the new scene (after projection + if choosen convolution).
+        Third one is the slice_comp.
+        Fourth one is residual between new scene and slice_comp.
+        
+        Parameters
+        ----------
+        savefile: [string]
+                Where to save if not None.
+                Default is None.
+        
+        titles: [bool]
+                Display title for each Axes?
+        
+        res_as_ratio: [bool]
+                If True, divide the residual by the model values.
+
+        cutout_convolved: [bool]
+                If True, display the convolved slice_in instead of the original slice_in in the first Axes.
+        
+        vmin, vmax: [string or float/int]
+                For the colormap scale.
+                - if string, the corresponding percentile is computed
+                otherwise, directly use the input values.
+       
+        Return
+        ----------
+        Figure
+        
+        """
         import matplotlib.pyplot as mpl
         from ..utils import tools
         fig = mpl.figure(figsize=[9,2.7])
@@ -266,24 +383,32 @@ class SliceScene( object ):
     # ============= #
     @property
     def slice_in(self):
-        """ """
+        """ 
+        Slice_in object.
+        """
         return self._slice_in
     
     @property    
     def slice_comp(self):
-        """ """
+        """ 
+        Slice_comp object.
+        """
         return self._slice_comp
 
     @property
     def overlay(self):
-        """ """
+        """ 
+        Overlay object between slice_in and slice_com.
+        """
         if not hasattr(self,"_overlay"):
             raise AttributeError("No Overlay set ; see self.set/load_overlay()")
         return self._overlay
 
     @property
     def psf(self):
-        """ """
+        """ 
+        PSF object to convolve on slice_in.
+        """
         if not hasattr(self, "_psf"):
             raise AttributeError("No PSF set ; see self.set_psf()")
         
@@ -291,7 +416,9 @@ class SliceScene( object ):
 
     @property
     def baseparams(self):
-        """ """
+        """ 
+        Base parameters (amplitude and background)
+        """
         if not hasattr(self, "_baseparams"):
             self._baseparams = {}
         return self._baseparams
@@ -299,43 +426,59 @@ class SliceScene( object ):
     # // _in prop
     @property
     def norm_in(self):
-        """ original _in data""" # No test to gain time
+        """ 
+        Norm used to scale _in data
+        """ # No test to gain time
         return self._norm_in
     
     @property
     def bkgd_in(self):
-        """ """ # No test to gain time
+        """ 
+        Estimated _in background.
+        """ # No test to gain time
         return self._bkgd_in
 
     @property
     def flux_in(self):
-        """ """ # No test to gain time
+        """ 
+        original _in data minus bkgd_in and divided by norm_in.
+        """ # No test to gain time
         return self._flux_in
 
     @property
     def variance_in(self):
-        """ """ # No test to gain time
+        """ 
+        Variance of _in scaled by norm_in.
+        """ # No test to gain time
         return self._variance_in
 
     # // _comp prop
     @property
     def norm_comp(self):
-        """ given data = data*norm + back""" # No test to gain time
+        """ 
+        Norm used to scale _comp data.
+        """ # No test to gain time
         return self._norm_comp
     
     @property
     def bkgd_comp(self):
-        """ """ # No test to gain time
+        """ 
+        Estimated _comp background.
+        """ # No test to gain time
         return self._bkgd_comp
 
     @property
     def flux_comp(self):
-        """ """ # No test to gain time
+        """ 
+        original _comp data minus bkgd_comp and divided by norm_comp.
+        """ # No test to gain time
         return self._flux_comp
 
     @property
     def variance_comp(self):
-        """ """ # No test to gain time
+        """ 
+        Variance of _comp scaled by norm_comp.
+        """ # No test to gain time
         return self._variance_comp
 
     # ----------- #
@@ -343,17 +486,23 @@ class SliceScene( object ):
     # ----------- #
     @property
     def PSF_PARAMETERS(self):
-        """ """
+        """ 
+        PSF parameters (shape + ellipticity).
+        """
         return self.psf.PARAMETER_NAMES
     
     @property
     def GEOMETRY_PARAMETERS(self):
-        """ """
+        """ 
+        Geometry parameters of slices (xy_in/out, scale_in/out, rotation).
+        """
         return self.overlay.PARAMETER_NAMES
     
     @property
     def PARAMETER_NAMES(self):
-        """ """
+        """ 
+        All parameters names currently setted
+        """
         return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS
     
 # ================= #
