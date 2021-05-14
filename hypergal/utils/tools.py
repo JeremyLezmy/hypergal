@@ -13,12 +13,23 @@ class bcolors:
     UNDERLINE = '\033[4m'    
 
 def parse_vmin_vmax(data, vmin, vmax):
-    """ """
+    """ 
+    Compute the vmin-th and the vmax-th percentile of the data.
+    Parameters
+    ----------
+    data: [array]      
+    vmin: [string]
+    vmax: [string]
+    Return
+    ----------
+    2 floats, vmin-th and vmax-th percentile of the given datas.
+    """
     if vmax is None: vmax="99"
     if vmin is None: vmin = "1"
                 
     if type(vmax) == str:
         vmax=np.nanpercentile(data, float(vmax))
+        
     if type(vmin) == str:
         vmin=np.nanpercentile(data, float(vmin))
         

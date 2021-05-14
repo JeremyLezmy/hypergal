@@ -259,6 +259,7 @@ class CutOut( WCSHolder ):
         filters: [String or list of strings]
             Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
             If filters is None or in ['*, 'all'], return all the indices.
+            Default is None.
 
         Returns
         -------- 
@@ -279,10 +280,12 @@ class CutOut( WCSHolder ):
         filters : [String or list of strings]
             Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
             If filters is None or in ['*, 'all'], consider all the available filters.
+            Default is None.
 
         influx : [bool] -optional-
             If True, return datas in flux in erg.s-1.cm-2.AA-1
             If False, return datas in counts.
+            Default is False.
            
         Returns
         -------- 
@@ -299,10 +302,12 @@ class CutOut( WCSHolder ):
         filters : [String or list of strings]
             Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
             If filters is None or in ['*, 'all'], consider all the available filters.
+            Default is None.
 
         influx : [bool] -optional-
             If True, return errors in flux in erg.s-1.cm-2.AA-1
             If False, return errors in counts.
+            Default is False.
            
         Returns
         -------- 
@@ -319,10 +324,12 @@ class CutOut( WCSHolder ):
         filters : [String or list of strings]
             Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
             If filters is None or in ['*, 'all'], consider all the available filters.
+            Default is None.
 
         influx : [bool] -optional-
             If True, return variances in flux in erg.s-1.cm-2.AA-1
             If False, return variances in counts.
+            Default is False.
            
         Returns
         -------- 
@@ -343,10 +350,12 @@ class CutOut( WCSHolder ):
         filters : [String or list of strings]
             Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
             If filters is None or in ['*, 'all'], consider all the available filters.
+            Default is None.
 
         influx : [bool] -optional-
             If True, return [which] in flux in erg.s-1.cm-2.AA-1
             If False, return [which] in counts.
+            Default is False.
            
         Returns
         -------- 
@@ -377,7 +386,32 @@ class CutOut( WCSHolder ):
     #  Apply   #
     # -------- #
     def extract_sources(self, filter_, thres=2, show=False, savefile=None, figprop={}, **kwargs):
-        """ """
+        """ 
+        Extract sources datas from cutouts. Use sep package to delimit a threshold area around the object.
+        Parameters
+        ----------
+        filter_: [string/list of string]
+             Which filter(s) do you want to consider?
+
+        thres: [float]
+             Threshold pixel value for detection. 
+             Interpreted as a relative threshold: the absolute threshold at pixel (j, i) will be thresh * err[j, i]
+             Default is 2.
+
+        show: [bool]
+             Boolean option to show or not the extracted sources with its sep contour
+             Default is False
+
+        savefile: [string]
+             If *show* == True, save the plot at *savefile*.
+             Default is None.
+
+        **kwargs: Go to sep.extract
+        
+        Return
+        ---------
+        Dataframe of extracted sources.
+        """
         import sep
         from astropy import table
 
@@ -395,7 +429,40 @@ class CutOut( WCSHolder ):
     def show(self, ax=None, filter_=None, vmin="1", vmax="99",
                  sourcedf=None, sourcescale=5, propsource={},
                  savefile=None, **kwargs):
-        """ """
+        """ 
+        Show function for a given filter.
+        Parameters
+        ----------
+        ax: [Matplotlib.Axes] -optional-
+            If given, dim(ax) should be 1.
+
+        filter_: [string]
+            Which band do you want to plot? -optional-
+            Default is the first available
+        
+        vmin: [string, float] -optional-
+            If string, set colormap scale min below *vmin* percentile.
+            If float, set colormap scale min below *vmin*.
+            Default is '1'.
+
+        vmax: [string, float] -optional-
+            If string, set colormap scale max above *vmax* percentile.
+            If float, set colormap scale max above *vmax*.
+            Default is '99'.
+
+        sourcedf: [Pandas.DataFrame] -optional-
+            Dataframe with extracted source information (see self.extract_sources for instance). 
+            Will draw an Ellipse around the detected sources.
+
+        savefile: [string] -optional-
+            Where do you want to save the plot?
+            Default is None (not saved)
+        
+        Return
+        ---------
+        Matplotlib.Axes
+            
+        """
         import matplotlib.pyplot as mpl
         from ..utils.tools import parse_vmin_vmax
         if filter_ is None:
