@@ -440,12 +440,14 @@ class CutOut( WCSHolder ):
             Which band do you want to plot? -optional-
             Default is the first available
         
-        vmin: [string] -optional-
-            Colormap scale min below *vmin* percentile.
+        vmin: [string, float] -optional-
+            If string, set colormap scale min below *vmin* percentile.
+            If float, set colormap scale min below *vmin*.
             Default is '1'.
 
-        vmax: [string] -optional-
-            Colormap scale max above *vmax* percentile.
+        vmax: [string, float] -optional-
+            If string, set colormap scale max above *vmax* percentile.
+            If float, set colormap scale max above *vmax*.
             Default is '99'.
 
         sourcedf: [Pandas.DataFrame] -optional-

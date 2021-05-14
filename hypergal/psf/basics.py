@@ -9,7 +9,14 @@ class PSF2D( object ):
     PROFILE_PARAMETERS = []
     
     def __init__(self, **kwargs):
-        """ """
+        """ 
+        Create a PSF 2D object.
+        Parameters
+        ----------
+        kwargs : [dict] -optional-
+             allow to update existings parameters.
+             Key(s) is/are parameter(s), value(s) the value(s).
+        """
         self._ellipticity_params = {k:1 for k in self.ELLIPTICITY_PARAMETERS}
         self._profile_params = {}
         self.update_parameters(**kwargs)
@@ -18,7 +25,16 @@ class PSF2D( object ):
     #  Methods      #
     # ============= #
     def update_parameters(self, **kwargs):
-        """ """
+        """ 
+        Update existing parameters.
+        Parameters
+        ----------
+        kwargs : [dict] -optional-
+             allow to update existings parameters.
+             Key(s) is/are parameter(s), value(s) the value(s).
+        Return
+        ---------
+        """
         for k,v in kwargs.items():
             # Change the ellipticity
             if k in self.ELLIPTICITY_PARAMETERS:
@@ -31,7 +47,24 @@ class PSF2D( object ):
                 raise ValueError(f"Unknow input parameter {k}={v}")
         
     def evaluate(self, x, y, x0=0, y0=0, **kwargs):
-        """ """
+        """ 
+        Evaluate the radial profile of the defined psf model with its current parameters.
+        Parameters
+        ----------
+        x: [array]
+            x-axis of the grid where you want to evaluate the psf.
+        y: [array]
+            y-axis of the grid where you want to evaluate the psf.
+        x0: [float]
+           Centroid position on the x-axis.
+        y0: [float]
+           Centroid position on the y-axis.
+        kwargs: [dict]
+           Go to self.update_parameters()
+        Return
+        ---------
+        Array of the radial profile.
+        """
         self.update_parameters(**kwargs)
         dx = x-x0
         dy = y-y0
@@ -39,20 +72,60 @@ class PSF2D( object ):
         return self.get_radial_profile(r)
 
     def get_radial_profile(self, r):
-        """ """
+        """ 
+        Get radial profile according to the choosen psf and its elliptical radius.
+        Parameters
+        ----------
+        r: [array]
+           Elliptical radius
+        Return
+        ---------
+        Array of the radial profile at the *r* position.
+        """
         raise NotImplementedError("You must define your PSF self.get_radial_profile()")
 
     def get_stamp(self, psfwindow=17, **kwargs):
-        """ """
+        """ 
+        Evaluate psf on a 2D-grid of size *psfwindow*, centered on x0=y0=0.
+        Parameters
+        ----------
+        psfwindow: [float]
+             Size of the stamp.
+             Default is 17 pix.
+        kwargs: [dict]
+             Go to self.update_parameters().
+        Return
+        ---------
+        2D-Array of the evaluate PSF on this stamp.
+        """
         x, y = np.mgrid[-psfwindow/2:psfwindow/2, -psfwindow/2:psfwindow/2]+0.5
         return self.evaluate(x, y, **kwargs)
     
     def convolve(self, arr2d, psfwindow=17, **kwargs):
-        """ """
+        """ 
+        Convolve some 2D-array with the 2D PSF.
+        Parameters
+        ----------
+        arr2d: [2D-array]
+             Datas on which you want to apply the convolution
+        psfwindow: [float]
+             Size on the stamp on which you want to generate the psf (see self.get_stamp() )
+             Default is 17 pix.
+        kwargs: [dict]
+             Go to self.update_parameters()
+        Return
+        ----------
+        The 2D-array datas convolved.
+        
+        """
         return convolve(arr2d, self.get_stamp(psfwindow=psfwindow, **kwargs), normalize_kernel=False)
 
     def guess_parameters(self):
-        """ """
+        """ 
+        Initial parameters for the ellipticity of the psf.
+        Used as initial condition for an eventual fit.
+        Guess parameters are a==1 and b=0 (no ellipticity).
+        """
         return {**{"a":1,"b":0}, **{k:None for k in self.PROFILE_PARAMETERS}}
     
     # -------- #
@@ -60,7 +133,19 @@ class PSF2D( object ):
     # -------- #
     def show(self, ax=None, psfwindow=17, **kwargs):
         """ 
-        kwargs goes to imshow()
+        Show 2D PSF with current parameters.
+        Parameters
+        ----------
+        ax: [Matplotlib.Axes] -optional-
+            Choice to use an existing Axes (dim=1)
+        psfwindow: [float]
+            Size of the stamp where the PSF will be display
+            Default is 17 pix.
+        kwargs: [dict]
+            goes to imshow()
+        Return
+        ---------
+        Figure
         """
         import matplotlib.pyplot as mpl
         if ax is None:
@@ -88,14 +173,25 @@ class PSF2D( object ):
     
     @property
     def PARAMETER_NAMES(self):
-        """ """
+        """ 
+        Name of the PSF parameters: Ellipticity + Shape
+        """
         return self.ELLIPTICITY_PARAMETERS + self.PROFILE_PARAMETERS
     
     
 class PSF3D( PSF2D ):
 
     def __init__(self, lbdaref=6000, **kwargs):
-        """ """
+        """ 
+        3D PSF. Inherited from 2D PSF, with wavelength parameter as 3rd dimension.
+        Parameters
+        ----------
+        lbdaref: [float] -optional-
+              Reference wavelength for chromatic parameters.
+              Default is 6000 (AA)
+        Result
+        ---------
+        """
         _ = super().__init__(**kwargs)
         self.set_lbdaref(lbdaref)
         return _
@@ -104,7 +200,26 @@ class PSF3D( PSF2D ):
     #  Methods      #
     # ============= #
     def evaluate(self, x, y, lbda, x0=0, y0=0, **kwargs):
-        """ """
+        """ 
+        Evaluate the radial profile of the defined psf model with its current parameters.
+        Parameters
+        ----------
+        x: [array]
+            x-axis of the grid where you want to evaluate the psf.
+        y: [array]
+            y-axis of the grid where you want to evaluate the psf.
+        lbda: [array]
+            Wavelength 3rd dimension.
+        x0: [float]
+           Centroid position on the x-axis.
+        y0: [float]
+           Centroid position on the y-axis.
+        kwargs: [dict]
+           Go to self.update_parameters()
+        Return
+        ---------
+        Array of the radial profile.
+        """
         self.update_parameters(**kwargs)
         dx = x-x0
         dy = y-y0
@@ -112,11 +227,22 @@ class PSF3D( PSF2D ):
         return self.get_radial_profile(r, lbda)
 
     def get_radial_profile(self, r, lbda):
-        """ """
+        """ 
+        Get radial profile according to the choosen psf and its elliptical radius.
+        Parameters
+        ----------
+        r: [array]
+           Elliptical radius
+        Return
+        ---------
+        Array of the radial profile at the *r* position.
+        """
         raise NotImplementedError("You must define your PSF self.get_radial_profile()")
     
     def set_lbdaref(self, lbda):
-        """ """
+        """ 
+        Set new reference wavelength
+        """
         self._lbdaref = float(lbda)
         
     # ============= #
@@ -124,6 +250,8 @@ class PSF3D( PSF2D ):
     # ============= #
     @property
     def lbdaref(self):
-        """ """
+        """ 
+        Reference wavelength
+        """
         self._lbdaref
     

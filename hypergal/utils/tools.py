@@ -18,8 +18,8 @@ def parse_vmin_vmax(data, vmin, vmax):
     Parameters
     ----------
     data: [array]      
-    vmin: [int/float/string]
-    vmax: [int/float/string]
+    vmin: [string]
+    vmax: [string]
     Return
     ----------
     2 floats, vmin-th and vmax-th percentile of the given datas.
@@ -29,13 +29,9 @@ def parse_vmin_vmax(data, vmin, vmax):
                 
     if type(vmax) == str:
         vmax=np.nanpercentile(data, float(vmax))
-    elif type(vmax) in [int, float]:
-        vmax=np.nanpercentile(data, vmax)
         
     if type(vmin) == str:
         vmin=np.nanpercentile(data, float(vmin))
-    elif type(vmin) in [int, float]:
-        vmax=np.nanpercentile(data, vmin)
         
     return vmin, vmax
         
