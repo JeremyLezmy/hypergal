@@ -417,13 +417,11 @@ class CutOut( WCSHolder ):
         sc = ax.imshow(flux, **{**prop,**kwargs})
 
         if sourcedf is not None:
-            from matplotlib.patches import Ellipse
-            from matplotlib.collections import PatchCollection
-            
+            from .astrometry import get_source_ellipses
             prop = {**dict(facecolor="None", edgecolor="C1"),**propsource}
-            e = [Ellipse((d.x,d.y), d.a*sourcescale, d.b*sourcescale, d.theta*180/np.pi, **prop)
-                     for d in sourcedf.itertuples()]
-            _= [ax.add_patch(e_) for e_ in e]
+            e_xy = get_source_ellipses(sourcedf=sourcedf, sourcescale=sourcescale,
+                                           system="xy", **prop)
+            _= [ax.add_patch(e_) for e_ in e_xy]
 
         if savefile is not None:
             fig.savefig(savefile)
