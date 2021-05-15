@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/15 16:47:02 $
-# Modified on:       2021/05/15 19:18:45
+# Modified on:       2021/05/15 19:26:22
 # Copyright:         2019, Jeremy Lezmy
 # $Id: adr.py, 2021/05/15 16:47:02  JL $
 ################################################################################
@@ -127,17 +127,17 @@ class ADRFitter(ADR):
                                   
             return (np.sum((datas-model)**2 / err**2))
 
-        scaletest=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]) )
+        adrfit=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]) )
 
-        if scaletest.success:
+        if adrfit.success:
             self._set_state("Success Fit")
-        if not scaletest.success:
+        if not adrfit.success:
             self._set_state("Reject Fit")
         
-        self._fit_airmass = scaletest.x[1]
-        self._fit_parangle = scaletest.x[0]
-        self._fit_xref = scaletest.x[2]
-        self._fit_yref = scaletest.x[3]
+        self._fit_airmass = adrfit.x[1]
+        self._fit_parangle = adrfit.x[0]
+        self._fit_xref = adrfit.x[2]
+        self._fit_yref = adrfit.x[3]
         
         if show:
             self.show(**kwargs)
