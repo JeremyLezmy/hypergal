@@ -56,6 +56,7 @@ class WCSCube( Cube, WCSHolder ):
 
         
         # Data
+        filters = np.asarray(hgcutout.filters)[sort_lbda]
         lbda = lbda[sort_lbda]
         data = hgcutout.get_data(influx=influx)[sort_lbda]
         variance = hgcutout.get_variance(influx=influx)[sort_lbda]
@@ -74,10 +75,15 @@ class WCSCube( Cube, WCSHolder ):
             
         # Header
         header = hgcutout.instdata[header_id].header
+        header[f"FROMPHOT"] = True
+        header[f"RESTRIDE"] = binfactor
+        
         if cleanheader:
             from astropy.io import fits
             header = fits.Header({k:v for k,v in dict(header).items()
                                       if "." not in k and k not in ["HISTORY", "COMMENT"]})
+        for i,filter_ in enumerate(filters):
+            header[f"FILTER{i}"] = filter_
             
         # Mapping
         xsize, ysize = np.asarray(data[header_id].shape)

@@ -175,12 +175,18 @@ class SliceScene( object ):
         else:
             raise ValueError(f"which can be 'in' or 'comp', {which} given")
         
-    def set_baseparams(self, parameters):
+    def update_baseparams(self, **kwargs):
         """ 
         Set parameters from self.BASE_PARAMETERS (amplitude and background)
         """
-        self._baseparams = {k:v for k,v in parameters.items() if k in self.BASE_PARAMETERS}
-        
+        for k,v in kwargs.items():
+            if k in self.BASE_PARAMETERS:
+                self.baseparams[k] = v
+            else:
+                warnings.warn(f"{k} is not a base parameters, ignored")
+                continue
+            
+
     def set_overlay(self, overlay):
         """ Provide the hypergal.utils.geometry.Overlay object """
         self._overlay = overlay
@@ -214,7 +220,7 @@ class SliceScene( object ):
             else:
                 raise ValueError(f"Unknow input parameter {k}={v}")
 
-        self.set_baseparams(baseparams)
+        self.update_baseparams(**baseparams)
         if len(geometryparams)>0:
             self.overlay.change_comp(**geometryparams)
         if len(psfparams)>0:
@@ -297,7 +303,14 @@ class SliceScene( object ):
                       }
         geom_guess = self.overlay.geoparam_comp
         psf_guess  = self.psf.guess_parameters()
-        return {**base_guess, **geom_guess, **psf_guess}
+        guess_step1 =  {**base_guess, **geom_guess, **psf_guess}
+        self.update(**guess_step1)
+        
+        model_comp = self.get_model()
+        bkgd = np.median(self.flux_comp)-np.median(model_comp)
+        ampl = np.sum(self.flux_comp)/np.sum(model_comp)
+        
+        return {**guess_step1, **{"ampl":ampl, "background":bkgd}}
 
 
     def show(self, savefile=None, titles=True, res_as_ratio=True, cutout_convolved=True,
@@ -439,7 +452,7 @@ class SliceScene( object ):
     def baseparams(self):
         """  Base parameters (e.g. amplitude and background) """
         if not hasattr(self, "_baseparams"):
-            self._baseparams = {}
+            self._baseparams = {k:1. if k in ["ampl"] else 0. for k in self.BASE_PARAMETERS}
         return self._baseparams
 
     # // _in prop

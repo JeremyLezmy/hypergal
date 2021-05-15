@@ -154,6 +154,17 @@ class SceneFitter( object ):
     def set_priors(self, priors):
         """ """
         self._priors = priors
+            
+    def set_bestfit(self, dictparameters):
+        """ """
+        if dictparameters is None:
+            self._bestfit = {}
+            self._bestfit_values = {}
+            self._bestfit_errors = {}
+        else:
+            self._bestfit = dictparameters
+            self._bestfit_values = {k:v for k,v in dictparameters.items() if not k.endswith("_err")}
+            self._bestfit_errors = {k:v for k,v in dictparameters.items() if k.endswith("_err")}
         
     def update_parameters(self, **kwargs):
         """ """
@@ -230,13 +241,23 @@ class SceneFitter( object ):
                                     overlayparam = self._geometry_parameters, 
                                     psfparam = self._psf_parameters)
 
+    def get_bestfit_parameters(self, incl_err=True):
+        """ """
+        if not self.has_bestfit():
+            raise AttributeError("No bestfit set. see set_bestfit() or fit()")
+        
+        return self._bestfit if incl_err else self._bestfit_values
+            
     # ------------ #
     #  FITTING     #
     # ------------ #
     # - chi2 = -2log(Likelihood)
-    def get_chi2(self, parameters=None):
+    def get_chi2(self, parameters=None, leastsq=False):
         """ """
         model = self.get_model(parameters).values
+        if leastsq:
+            return np.nansum( (self.scene.flux_comp - model)**2 )
+        
         return np.nansum( (self.scene.flux_comp - model)**2/self.scene.variance_comp )
     
     # - priors = -2log(prod_of_priors)
@@ -247,7 +268,7 @@ class SceneFitter( object ):
 
     # - prob = Likelihood*prod_of_priors
     #   logprob =-2log(prob) = -2log(Likelihood) + -2log(prod_of_priors) 
-    def get_logprob(self, parameters=None, bound_value=1e13):
+    def get_logprob(self, parameters=None, bound_value=1e13, leastsq=False):
         """ """
         if parameters is not None:
             self.set_freeparameters(parameters)
@@ -258,15 +279,15 @@ class SceneFitter( object ):
                 print(f"prior=0, returning {bound_value}")
             return bound_value
 
-        chi2 = self.get_chi2()
+        chi2 = self.get_chi2(leastsq=leastsq)
         if self._debug:
             print(f"chi2 = {chi2} (dof={self.dof} | chi2_dof={chi2/self.dof})")
         
-        return self.get_chi2() -2*np.log(prior)
+        return chi2 - 2*np.log(prior)
 
-
-    # - fitting over logprob
-    def fit(self, guess=None, limit=None, verbose=False, error=None, **kwargs):
+    # - fitting over logprob or chi2, see use_priors
+    def fit(self, guess=None, limit=None, verbose=False, error=None,
+                use_priors=True, runmigrad=True, **kwargs):
         """ """
         if guess is None: guess = {}
         if limit is None: limit = {}
@@ -277,10 +298,21 @@ class SceneFitter( object ):
             print(f"guess {guess}")
             print(f"limits {limit}")
         
-        m = Minuit.from_array_func(self.get_logprob, guess, limit=limit,
+        m = Minuit.from_array_func(self.get_logprob if use_priors else self.get_chi2, guess, limit=limit,
                                     name= self.free_parameters, error=error,
                                    **kwargs)
-        return m
+        if not runmigrad:
+            self.set_bestfit(None)
+            return m
+
+        migradout = m.migrad()
+        if not migradout[0].is_valid:
+            warnings.warn("migrad() is not valid.")
+            
+        self.set_bestfit({**dict(m.values),**{k+"_err":v for k,v in m.errors.items()}})
+        # setup the scene at the best values
+        self.scene.update(**dict(m.values))
+        return migradout
         
     # ============== #
     #  Parameters    #
@@ -319,3 +351,18 @@ class SceneFitter( object ):
     def PARAMETER_NAMES(self):
         """ """
         return self.scene.PARAMETER_NAMES
+
+    # ------- #
+    #  Fit    #
+    # ------- #
+    @property
+    def bestfit(self):
+        """ """
+        if not hasattr(self,"_bestfit") or self._bestfit is None or len(self._bestfit)==0:
+            return None
+        return self._bestfit
+    
+    def has_bestfit(self):
+        """ Test if a bestfit values dictionary has been set. """
+        return self.bestfit is not None
+        
