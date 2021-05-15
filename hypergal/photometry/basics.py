@@ -8,6 +8,20 @@ import pandas as pd
 from .astrometry import WCSHolder
 
 
+def get_filter(name, as_dataframe=True, sep=" ", **kwargs):
+    """ """        
+    import os
+    from .. import _PACKAGE_ROOT
+    
+    file_ = os.path.join(_PACKAGE_ROOT,f"data/filters/{name}.dat")
+    if not os.path.isfile(file_):
+        raise IOError(f"not such file {file_}")
+    if as_dataframe:
+        return pandas.read_csv(file_, sep=sep, header=None, names=["lbda", "trans"], **kwargs)
+    
+    return np.asarray([l.split(sep) for l in open(file_).read().splitlines()], dtype="float").T
+
+
 class CutOut( WCSHolder ):
 
     def __init__(self, instdata=None, radec=None):

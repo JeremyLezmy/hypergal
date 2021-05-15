@@ -97,7 +97,7 @@ class SceneFitter( object ):
     @classmethod
     def from_slices(cls, slice_in, slice_comp, psf, whichscene="HostSlice",
                         xy_in=None, xy_comp=None, 
-                    fix_params=["scale","rotation"], **kwargs):
+                    fix_params=["scale","rotation"], debug=False, **kwargs):
         """ """
         if whichscene == "HostSlice":
             from .scene import host
@@ -107,13 +107,36 @@ class SceneFitter( object ):
         else:
             raise NotImplementedError("Only HostSlice scene has been implemented.")
         
-        return cls.from_scene(scene, fix_params=fix_params)
+        return cls.from_scene(scene, fix_params=fix_params, debug=debug)
     
     @classmethod
-    def from_scene(cls, scene, fix_params=["scale","rotation"]):
+    def from_scene(cls, scene, fix_params=["scale","rotation"], debug=False, **kwargs):
         """ """
-        return cls(scene, fix_params=fix_params)
+        return cls(scene, fix_params=fix_params, debug=debug, **kwargs)
+
+    # ============== #
+    # Class Method   #
+    # ============== #
+    @classmethod
+    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice",
+                                  xy_in=None, xy_comp=None, 
+                                  fix_params=["scale","rotation"], debug=False,
+                                  guess=None, limit=None, error=None, use_priors=True,
+                                  savefile=None, result_as_dataframe=True):
+        """ """
+        this = cls.from_slices(slice_in, slice_comp,  psf=psf,
+                                   whichscene=whichscene,
+                                   xy_in=xy_in, xy_comp=xy_comp, 
+                                   fix_params=fix_params, debug=debug)
+        migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
+                                 runmigrad=True)
+        if savefile is not None:
+            this.scene.show(savefile=savefile)
+            
+        return this.get_bestfit_parameters(as_dataframe=result_as_dataframe)
     
+        
+        
     # ============== #
     #   Methods      #
     # ============== #
@@ -241,10 +264,16 @@ class SceneFitter( object ):
                                     overlayparam = self._geometry_parameters, 
                                     psfparam = self._psf_parameters)
 
-    def get_bestfit_parameters(self, incl_err=True):
+    def get_bestfit_parameters(self, incl_err=True, as_dataframe=True):
         """ """
         if not self.has_bestfit():
             raise AttributeError("No bestfit set. see set_bestfit() or fit()")
+        
+        if as_dataframe:
+            df =  pandas.DataFrame({"values":self._bestfit_values,
+                                     "errors":{k.replace("_err",""):v for k,v in self._bestfit_errors.items()}
+                                     })
+            return df if incl_err else df["values"]
         
         return self._bestfit if incl_err else self._bestfit_values
             
@@ -287,7 +316,7 @@ class SceneFitter( object ):
 
     # - fitting over logprob or chi2, see use_priors
     def fit(self, guess=None, limit=None, verbose=False, error=None,
-                use_priors=True, runmigrad=True, **kwargs):
+                use_priors=True, runmigrad=True, errordef=0.5, **kwargs):
         """ """
         if guess is None: guess = {}
         if limit is None: limit = {}
@@ -297,9 +326,10 @@ class SceneFitter( object ):
             print(f"param names {self.free_parameters}")
             print(f"guess {guess}")
             print(f"limits {limit}")
-        
+
+            
         m = Minuit.from_array_func(self.get_logprob if use_priors else self.get_chi2, guess, limit=limit,
-                                    name= self.free_parameters, error=error,
+                                    name= self.free_parameters, error=error,errordef=errordef,
                                    **kwargs)
         if not runmigrad:
             self.set_bestfit(None)

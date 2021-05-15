@@ -313,7 +313,7 @@ class SliceScene( object ):
         return {**guess_step1, **{"ampl":ampl, "background":bkgd}}
 
 
-    def show(self, savefile=None, titles=True, res_as_ratio=True, cutout_convolved=True,
+    def show(self, savefile=None, titles=True, res_as_ratio=False, cutout_convolved=True,
                  vmin="1", vmax="99", cmap="cividis", cmapproj=None):
         """
         General plot of the process. Will show 4 Axes. 
@@ -452,7 +452,7 @@ class SliceScene( object ):
     def baseparams(self):
         """  Base parameters (e.g. amplitude and background) """
         if not hasattr(self, "_baseparams"):
-            self._baseparams = {k:1. if k in ["ampl"] else 0. for k in self.BASE_PARAMETERS}
+            self._baseparams = {k:1 if k in ["ampl"] else 0. for k in self.BASE_PARAMETERS}
         return self._baseparams
 
     # // _in prop

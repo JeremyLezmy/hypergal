@@ -110,7 +110,7 @@ if __name__ == "__main__":
           install_requires=install_requires,
           packages=packages,
           scripts=["hypergal/scripts/FullProcess.py"] ,
-          package_data={'hypergal':['config/cigale.json']},
+          package_data={'hypergal':['config/cigale.json', 'data/filters/*']},
           include_package_data=True,
           classifiers=[
               'Intended Audience :: Science/Research',
