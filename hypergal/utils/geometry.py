@@ -7,7 +7,7 @@ import geopandas
 from shapely import geometry, vectorized, affinity
 
 
-def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None):
+def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, origin=(0,0)):
     """ use shapely.affinity to translate, rotate or scale the input geometry.
 
     Parameters
@@ -34,10 +34,10 @@ def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None):
         geom = affinity.translate(geom, -xoff, -yoff)
         
     if rotation is not None:
-        geom = affinity.rotate(geom, rotation)
+        geom = affinity.rotate(geom, rotation, origin=origin)
 
     if scale is not None:
-        geom = affinity.scale(geom, xfact=scale, yfact=scale)
+        geom = affinity.scale(geom, xfact=scale, yfact=scale, origin=origin)
 
     return geom
 
@@ -304,7 +304,8 @@ class Overlay( object ):
         return dfout_.groupby("id_comp")["outflux"].sum()*norm
     
     @classmethod
-    def get_overlaydf(cls, mpoly_in, mpoly_comp, use_overlapping=True):
+    def get_overlaydf(cls, mpoly_in, mpoly_comp, use_overlapping=True,
+                          area_ok=1e-3, warn_ifok=False):
         """ """
         id_in = np.arange(len(mpoly_in))
         if use_overlapping:
@@ -319,10 +320,15 @@ class Overlay( object ):
         
         interect =  geopandas.overlay(geoin, geocomp, 
                                      how='intersection')
-        if len(geoin.area.unique())==1:
+        unique_area = geoin.area.unique()
+        if len(unique_area)==1:
             area_ = geoin.area[0]
+        elif np.all(np.diff(unique_area)<area_ok):
+            if warn_ifok:
+                warnings.warn(f"areas are almost unique (vary by less than {area_ok}) | mean used.")
+            area_ = np.mean(unique_area)
         else:
-            warnings.warn("all area are not unique | Normalisation not implemented ; 1 used")
+            warnings.warn(f"all area are not unique {unique_area} | Normalisation not implemented ; 1 used")
             area_ = 1
             
         interect["area"] = interect.area / area_

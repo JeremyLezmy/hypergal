@@ -2,7 +2,7 @@
 import warnings
 import numpy as np
 
-from ..photometry.astrometry import WCSHolder
+from ..photometry.astrometry import WCSHolder, get_source_ellipses
 from pyifu.spectroscopy import Cube
 
 class WCSCube( Cube, WCSHolder ):
@@ -37,21 +37,24 @@ class WCSCube( Cube, WCSHolder ):
         nheader = {k:cube.header[k] for k in keys}
         cube.set_header(fits.Header({**nheader,**wcsdict}))
         
-        return cls.from_data(data=cube.data, 
+        this = cls.from_data(data=cube.data, 
                              variance=cube.variance, 
                              lbda=cube.lbda,header=cube.header,
                              spaxel_vertices=cube.spaxel_vertices,
-                                spaxel_mapping=cube.spaxel_mapping)
+                             spaxel_mapping=cube.spaxel_mapping)
     
-        
+        this.set_filename(cube.filename)
+        return this
         
     @classmethod
-    def from_cutouts(cls, hgcutout, header_id=0, influx=True, binfactor=None, xy_center=None):
+    def from_cutouts(cls, hgcutout, header_id=0, influx=True, binfactor=None, xy_center=None,
+                         cleanheader=True):
         """ """
         
         lbda = np.asarray(hgcutout.lbda)
         sort_lbda = np.argsort(lbda)
 
+        
         # Data
         lbda = lbda[sort_lbda]
         data = hgcutout.get_data(influx=influx)[sort_lbda]
@@ -71,7 +74,11 @@ class WCSCube( Cube, WCSHolder ):
             
         # Header
         header = hgcutout.instdata[header_id].header
-
+        if cleanheader:
+            from astropy.io import fits
+            header = fits.Header({k:v for k,v in dict(header).items()
+                                      if "." not in k and k not in ["HISTORY", "COMMENT"]})
+            
         # Mapping
         xsize, ysize = np.asarray(data[header_id].shape)
         pixels_ = np.mgrid[0:xsize*binfactor:binfactor,0:ysize*binfactor:binfactor]
@@ -118,11 +125,12 @@ class WCSCube( Cube, WCSHolder ):
         if wcsout is None:
             wcsout = self.wcs
 
-        e_out = astrometry.get_source_ellipses(sourcedf, wcs=wcsin,  wcsout=wcsout, system="out", 
+        e_out = get_source_ellipses(sourcedf, wcs=wcsin,  wcsout=wcsout, system="out", 
                                                sourcescale=sourcescale)
         if boundingrect:
             [xmin, ymin], [xmax, ymax] = np.percentile(np.concatenate([e_.xy for e_ in e_out]), [0,100], axis=0)
             polys = [Polygon([[xmin, ymin],[xmin, ymax],[xmax, ymax], [xmax, ymin]])]
+            
         else:
             polys = [Polygon(e_.xy) for e_ in e_out]
 
@@ -130,4 +138,7 @@ class WCSCube( Cube, WCSHolder ):
         if slice_id is None:
             slice_id  = np.arange( len(self.lbda) )
 
-        return self.get_partial_cube(spaxels,  slice_id)
+        newcube = self.get_partial_cube(spaxels,  slice_id)
+        newcube.header["NAXIS1"] = xmax-xmin
+        newcube.header["NAXIS2"] = ymax-ymin
+        return newcube

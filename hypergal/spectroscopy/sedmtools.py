@@ -16,7 +16,7 @@ def get_target_position(cube, warn=False, **kwargs):
     """
     return astrometry.position_source(cube, warn=warn,  **kwargs)[0]
 
-def remove_target_spx(cube, xy, radius=3, store=True, get_filename=True):
+def remove_target_spx(cube, xy, radius=3, store=False, get_filename=False):
     
     """ Remove spaxels around the target position
 
