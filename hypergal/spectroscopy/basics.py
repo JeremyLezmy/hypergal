@@ -6,17 +6,41 @@ from ..photometry.astrometry import WCSHolder, get_source_ellipses
 from pyifu.spectroscopy import Cube
 
 class WCSCube( Cube, WCSHolder ):
-    """ """
+    """ 
+    Inherits from pyifu.spectroscopy.Cube() object and ztfimg.astrometry.WCSHolder() object.
+    Load existing 3D cube or create one from cutout images.
+    Allow to manipulate spaxels (remove, select etc) and bring WCS solution associate to the cube.
+    """
 
     @classmethod
     def read_sedmfile(cls, cubefile):
-        """ """
+        """ 
+        Instantiate WCSCube object from filename
+        Parameters
+        ----------
+        cubefile: [string]
+            Filename of the cube to load.
+        Return
+        ----------
+        WCSCube object
+        
+        """
         from pysedm import get_sedmcube
         return cls.from_sedmcube( get_sedmcube(cubefile) )
         
     @classmethod
     def from_sedmcube(cls, cube):
-        """ """
+        """ 
+        Instantiate WCSCube object from pyifu.Cube object.
+        Parameters
+        ----------
+        cube: [pyifu.Cube]
+            Cube to load.
+        Return
+        ----------
+        WCSCube object
+        
+        """
         from pysedm import astrometry
         from astropy.io import fits
         
@@ -49,7 +73,37 @@ class WCSCube( Cube, WCSHolder ):
     @classmethod
     def from_cutouts(cls, hgcutout, header_id=0, influx=True, binfactor=None, xy_center=None,
                          cleanheader=True):
-        """ """
+        """ 
+        Instantiate WCSCube object from hypergal.photometry.CutOuts() object.
+        Parameters
+        ----------
+        hgcutout: [CutOuts]
+            cutouts to use.
+        
+        header_id: [int]
+            Index of the list of avalables cutouts to use to global header.
+            Default is 0.
+
+        influx: [bool]
+            Load cutouts data in flux unit (erg/s/cm2/AA) or in counts.
+            Default is True
+
+        binfactor: [int]
+            Binning factor to use on the cutouts to restride the datas.
+            Default is None (==1)
+
+        xy_center: [array]
+            If not None must be 2 elements. Translate the cube get the center at xy_center
+            Default is None.
+
+        cleanheader: [bool]
+            If True, clean the Header informations which only consern the individuals images.
+            Default is True
+        Return
+        ----------
+        WCSCube object
+        
+        """
         
         lbda = np.asarray(hgcutout.lbda)
         sort_lbda = np.argsort(lbda)
@@ -107,26 +161,77 @@ class WCSCube( Cube, WCSHolder ):
     #   Methods        #
     # ================ #
     def set_header(self, header, *args, **kwargs):
-        """ """
+        """ 
+        Set header to the WCSCube.
+        Parameters
+        ----------
+        header: [dict]
+            Header to set
+        """
         _ = super().set_header(header)
         
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.load_wcs(header)
         
-    def get_target_removed(self, target_pos=None, radious=3, store=False, **kwargs):
-        """ """
+    def get_target_removed(self, target_pos=None, radius=3, store=False, **kwargs):
+        """ 
+        Return a partial cube by removing spaxels around a given region.
+        Parameters
+        ----------
+        target_pos: [Array]
+            2 elements array for x/y coordinates (in spx unit). Correpond to the center of the region you want to remove.
+
+        radius: [float]:
+            Radius (in spx unit) of the area you want to remove.
+            Default is 3 spx.
+        
+        store: [bool]
+            If True, store the cube with target removed.
+            Default is False
+        
+        Return
+        ----------
+        Cube with target removed.
+        """
         from . import sedmtools
         if target_pos is None:
             target_pos = sedmtools.get_target_position(self)
             
-        return sedmtools.remove_target_spx(self, target_pos, radius=radious, store=store, **kwargs)
+        return sedmtools.remove_target_spx(self, target_pos, radius=radius, store=store, **kwargs)
 
 
 
     def get_extsource_cube(self, sourcedf, wcsin, wcsout=None, sourcescale=5, 
                           boundingrect=False, slice_id=None):
-        """ """
+        """ 
+        Return a partial cube by removing spaxels outisde a given source delimitation.
+        Parameters
+        ----------
+        sourcedf: [DataFrame]
+            Dataframe of spaxels which delimits the sources. (see hypergal.photomotry.basics.CutOuts() ) 
+
+        wcsin, wcsout: [astropy WCS]
+            astropy WCS solution instance to convert xy<->radec            
+            if wcsout is None (Default), then wcsout == self.wcs
+           
+        sourcescale: [float] -optional-
+            this multiply a and b. 1 means second moment (1 sigma)
+        
+        boundingrect: [bool] -optional-
+            If True, will reshape the sources geometry into rectangular slices
+            Otherwise, slices will have shape of the sources delimitation.
+            Default is False.
+            
+        slice_id: [int/list]
+            If None (Default), will return a cube all the slices of WCSCube instance.
+            Else, will only consider the given slice index.
+
+        Return
+        ---------
+        New WCSCube
+
+        """
         from shapely.geometry import Polygon
         if wcsout is None:
             wcsout = self.wcs
@@ -145,6 +250,11 @@ class WCSCube( Cube, WCSHolder ):
             slice_id  = np.arange( len(self.lbda) )
 
         newcube = self.get_partial_cube(spaxels,  slice_id)
-        newcube.header["NAXIS1"] = xmax-xmin
-        newcube.header["NAXIS2"] = ymax-ymin
+
+        if boundingrect:
+            newcube.header["NAXIS1"] = xmax-xmin
+            newcube.header["NAXIS2"] = ymax-ymin
+        else:
+            newcube.header["NAXIS1"] = len(newcube.spaxel_mapping)
+            newcube.header["NAXIS2"] = None
         return newcube
