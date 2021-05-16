@@ -1,41 +1,15 @@
-#/usr/bin/env python
-# -*- coding: utf-8 -*-
-################################################################################
-# Filename:          adr.py
-# Description:       script description
-# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
-# Author:            $Author: jlezmy $
-# Created on:        $Date: 2021/05/15 16:47:02 $
-# Modified on:       2021/05/15 19:26:22
-# Copyright:         2019, Jeremy Lezmy
-# $Id: adr.py, 2021/05/15 16:47:02  JL $
-################################################################################
-
-"""
-.. _adr.py:
-
-adr.py
-==============
 
 
-"""
-__license__ = "2019, Jeremy Lezmy"
-__docformat__ = 'reStructuredText'
-__author__ = 'Jeremy Lezmy <lezmy@ipnl.in2p3.fr>'
-__date__ = '2021/05/15 16:47:02'
-__adv__ = 'adr.py'
-
-import os
-import sys
-import datetime
-import pyifu
+import numpy as np
 from pyifu.adr import ADR
 
 IFU_SCALE = 0.558
 
 class ADRFitter(ADR):
 
-    def __init__(self, xpos, ypos, lbda, xpos_err=None, ypos_err=None, init_adr=None, **kwargs ):
+    def __init__(self, xpos, ypos, lbda,
+                     xpos_err=None, ypos_err=None,
+                     init_adr=None, **kwargs ):
         """
         Inherits from pyifu.adr.ADR() object. 
         Fit airmass and parallactic angle using position of an object along wavelength.
@@ -117,14 +91,14 @@ class ADRFitter(ADR):
             err =np.ones((2,len(self.xpos)))
 
         def minifit(X):
-            
+            """ """
             self.set( parangle=X[0] )
             self.set( airmass=X[1] )
             xref=X[2]
             yref=X[3] 
         
             model = self.refract( xref, yref,self.lbda, unit = IFU_SCALE)
-                                  
+               
             return (np.sum((datas-model)**2 / err**2))
 
         adrfit=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]) )
@@ -321,5 +295,3 @@ class ADRFitter(ADR):
         Might be Initial, Succes fit or Bad fit.
         """
         return self._state
-    
-# End of adr.py ========================================================
