@@ -5,6 +5,20 @@ import numpy as np
 from ..photometry.astrometry import WCSHolder, get_source_ellipses
 from pyifu.spectroscopy import Cube
 
+
+def sedmcube_to_wcscube(cube, store_data=False, get_filename=False):
+    """ """
+    wcscube = WCSCube.from_sedmcube(cube)
+    
+    if store_data:
+        wcscube.writeto(wcscube.filename)
+
+    if get_filename:
+        return wcscube.filename
+    
+    return wcscube
+
+
 class WCSCube( Cube, WCSHolder ):
     """ """
 
@@ -42,8 +56,9 @@ class WCSCube( Cube, WCSHolder ):
                              lbda=cube.lbda,header=cube.header,
                              spaxel_vertices=cube.spaxel_vertices,
                              spaxel_mapping=cube.spaxel_mapping)
-    
-        this.set_filename(cube.filename)
+
+        # hdf5 is a better format to store header with WCS for Cubes.
+        this.set_filename( cube.filename.replace(".fits",".h5") )
         return this
         
     @classmethod
@@ -114,13 +129,13 @@ class WCSCube( Cube, WCSHolder ):
             warnings.simplefilter("ignore")
             self.load_wcs(header)
         
-    def get_target_removed(self, target_pos=None, radious=3, store=False, **kwargs):
+    def get_target_removed(self, target_pos=None, radius=3, store=False, **kwargs):
         """ """
         from . import sedmtools
         if target_pos is None:
             target_pos = sedmtools.get_target_position(self)
             
-        return sedmtools.remove_target_spx(self, target_pos, radius=radious, store=store, **kwargs)
+        return sedmtools.remove_target_spx(self, target_pos, radius=radius, store=store, **kwargs)
 
 
 
@@ -145,6 +160,8 @@ class WCSCube( Cube, WCSHolder ):
             slice_id  = np.arange( len(self.lbda) )
 
         newcube = self.get_partial_cube(spaxels,  slice_id)
-        newcube.header["NAXIS1"] = xmax-xmin
-        newcube.header["NAXIS2"] = ymax-ymin
+        if boundingrect:
+            newcube.header["NAXIS1"] = xmax-xmin
+            newcube.header["NAXIS2"] = ymax-ymin
+            
         return newcube

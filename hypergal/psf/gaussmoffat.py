@@ -1,6 +1,9 @@
 import numpy as np
 from .basics import PSF2D, PSF3D
 
+__all__ = ["GaussMoffat2D"]
+
+
 def get_radial_gaussmoffat(r, alpha, beta, sigma, eta, a_ell=1, b_ell=1):
     """ 
     Get normalized radial profile for a gaussian (core) + Moffat (wings) psf profile.
@@ -8,21 +11,29 @@ def get_radial_gaussmoffat(r, alpha, beta, sigma, eta, a_ell=1, b_ell=1):
     ----------
     r: [array]
         Elliptical radius
+
     alpha: [float
         Moffat radius
+
     beta: [float]
         Moffat power
+
     sigma: [float]
         Radius of the gaussian
+
     eta: [float]
         Weight between Gaussian and Moffat such as PSF = eta*Gauss + Moff
+
     a_ell: [float]
         elliptical parameter
+
     b_ell: [float]
         elliptical parameter
+
     Return
     ---------
     Array of the normalized radial profile at the *r* position.
+
     Note
     ---------
     "a" and "b" descirbed simultaneously the orientation (angle) and the ratio of the two axes.

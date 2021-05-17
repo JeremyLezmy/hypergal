@@ -124,13 +124,15 @@ class PS1CutOuts( CutOut ):
              Provide a dask client for using Dask multiprocessing.
              If so, a list of futures will be returned.
              
-        
-    Returns
-    -------
-    List of cutouts, (Panstarrs Instrument object, see astrobject.instrument)
-    """
+        Returns
+        -------
+        List of cutouts, (Panstarrs Instrument object, see astrobject.instrument)
+        """
         if filters is None:
             filters=["g","r","i","z","y"]
+        else:
+            # safeout to accept {} or ps1.
+            filters = [f.replace("ps1.","") for f in filters]
             
         nfilters = len(filters)
         imgdata_url = get_ps_url(ra, dec, filters="".join(filters), size=size, type="stack")
@@ -143,5 +145,5 @@ class PS1CutOuts( CutOut ):
             if ignore_warnings:
                 warnings.simplefilter("ignore")
             return [panstarrs.PanSTARRS(data_, weightfilename=weights_, background=0)
-                        for data_, weights_ in zip(data, weights)]
+                    for data_, weights_ in zip(data, weights)]
 

@@ -1,6 +1,9 @@
 import numpy as np
 from .basics import PSF2D, PSF3D
 
+
+__all__ = ["Gauss2D"]
+
 def get_radial_gauss(r, sigma, a_ell=1, b_ell=1):
     """ 
     Get normalized radial profile according for gaussian psf profile.
