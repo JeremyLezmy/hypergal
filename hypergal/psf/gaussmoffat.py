@@ -1,7 +1,7 @@
 import numpy as np
 from .basics import PSF2D, PSF3D
 
-__all__ = ["GaussMoffat2D"]
+__all__ = ["GaussMoffat2D", "GaussMoffat3D"]
 
 
 def get_radial_gaussmoffat(r, alpha, beta, sigma, eta, a_ell=1, b_ell=1):

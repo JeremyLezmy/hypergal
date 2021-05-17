@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 15:38:49 $
-# Modified on:       2021/05/17 20:11:36
+# Modified on:       2021/05/17 20:57:11
 # Copyright:         2019, Jeremy Lezmy
 # $Id: utils.py, 2021/05/11 15:38:49  JG $
 ################################################################################
@@ -48,8 +48,6 @@ def command_cigale(command, file_path=None):
     command : string
         Available pcigale command are 'init', 'genconf', 'check', 'run'
 
-    Options
-    -------
     file_path : string
         Path to data, config and result files, if different from the current directory.\n
         Default is None.
@@ -123,8 +121,6 @@ def move_files(old_path, new_path, files, verbose=False):
     files : [string]
         Names of every files(and/or directories) to move.
 
-    Options
-    -------
     verbose : bool
         If True, print old and new locations.\n
         Default to False.

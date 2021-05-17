@@ -2,7 +2,7 @@ import numpy as np
 from .basics import PSF2D, PSF3D
 
 
-__all__ = ["Gauss2D"]
+__all__ = ["Gauss2D", "Gauss3D"]
 
 def get_radial_gauss(r, sigma, a_ell=1, b_ell=1):
     """ 
@@ -77,7 +77,7 @@ class Gauss2D( PSF2D ):
 
     
 
-class Gaus3D( PSF3D, Gauss2D ):
+class Gauss3D( PSF3D, Gauss2D ):
 
     # ============= #
     #  Methods      #
