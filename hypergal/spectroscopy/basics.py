@@ -20,17 +20,45 @@ def sedmcube_to_wcscube(cube, store_data=False, get_filename=False):
 
 
 class WCSCube( Cube, WCSHolder ):
-    """ """
+    """ 
+    Inherits from pyifu.spectroscopy.Cube() object and ztfimg.astrometry.WCSHolder() object.\n
+    Load existing 3D cube or create one from cutout images.\n
+    Allow to manipulate spaxels (remove, select etc) and bring WCS solution associate to the cube.\n
+    """
 
     @classmethod
     def read_sedmfile(cls, cubefile):
-        """ """
+        """ 
+        Instantiate WCSCube object from filename
+
+        Parameters
+        ----------
+        cubefile: string
+            Filename of the cube to load.
+
+        Returns
+        -------
+        WCSCube object
+        
+        """
         from pysedm import get_sedmcube
         return cls.from_sedmcube( get_sedmcube(cubefile) )
         
     @classmethod
     def from_sedmcube(cls, cube):
-        """ """
+        """ 
+        Instantiate WCSCube object from pyifu.Cube object.
+
+        Parameters
+        ----------
+        cube: pyifu.Cube
+            Cube to load.
+
+        Returns
+        -------
+        WCSCube object
+        
+        """
         from pysedm import astrometry
         from astropy.io import fits
         
@@ -64,7 +92,39 @@ class WCSCube( Cube, WCSHolder ):
     @classmethod
     def from_cutouts(cls, hgcutout, header_id=0, influx=True, binfactor=None, xy_center=None,
                          cleanheader=True):
-        """ """
+        """ 
+        Instantiate WCSCube object from hypergal.photometry.CutOuts() object.
+
+        Parameters
+        ----------
+        hgcutout: CutOuts
+            Cutouts to use.
+        
+        header_id: int
+            Index of the list of avalables cutouts to use to global header.\n
+            Default is 0.
+
+        influx: bool
+            Load cutouts data in flux unit (erg/s/cm2/AA) or in counts.\n
+            Default is True
+
+        binfactor: int
+            Binning factor to use on the cutouts to restride the datas.\n
+            Default is None (==1)
+
+        xy_center: array
+            If not None must be 2 elements. Translate the cube get the center at xy_center\n
+            Default is None.
+
+        cleanheader: bool
+            If True, clean the Header informations which only consern the individuals images.\n
+            Default is True
+
+        Returns
+        -------
+        WCSCube object
+        
+        """
         
         lbda = np.asarray(hgcutout.lbda)
         sort_lbda = np.argsort(lbda)
@@ -122,7 +182,18 @@ class WCSCube( Cube, WCSHolder ):
     #   Methods        #
     # ================ #
     def set_header(self, header, *args, **kwargs):
-        """ """
+        """ 
+        Set header to the WCSCube.
+
+        Parameters
+        ----------
+        header: dict
+            Header to set
+
+        Returns
+        -------
+
+        """
         _ = super().set_header(header)
         
         with warnings.catch_warnings():
@@ -130,7 +201,26 @@ class WCSCube( Cube, WCSHolder ):
             self.load_wcs(header)
         
     def get_target_removed(self, target_pos=None, radius=3, store=False, **kwargs):
-        """ """
+        """ 
+        Return a partial cube by removing spaxels around a given region.
+
+        Parameters
+        ----------
+        target_pos: array
+            2 elements array for x/y coordinates (in spx unit). Correpond to the center of the region you want to remove.
+
+        radius: float:
+            Radius (in spx unit) of the area you want to remove.\n
+            Default is 3 spx.
+        
+        store: bool
+            If True, store the cube with target removed.\n
+            Default is False
+        
+        Returns
+        -------
+        Cube with target removed.
+        """
         from . import sedmtools
         if target_pos is None:
             target_pos = sedmtools.get_target_position(self)
@@ -141,7 +231,35 @@ class WCSCube( Cube, WCSHolder ):
 
     def get_extsource_cube(self, sourcedf, wcsin, wcsout=None, sourcescale=5, 
                           boundingrect=False, slice_id=None):
-        """ """
+        """ 
+        Return a partial cube by removing spaxels outisde a given source delimitation.
+
+        Parameters
+        ----------
+        sourcedf: DataFrame
+            Dataframe of spaxels which delimits the sources. (see hypergal.photomotry.basics.CutOuts() ) 
+
+        wcsin,wcsout: astropy WCS
+            astropy WCS solution instance to convert xy<->radec \n    
+            If wcsout is None (Default), then wcsout == self.wcs
+           
+        sourcescale: float -optional-
+            This multiply a and b. 1 means second moment (1 sigma)
+        
+        boundingrect: bool -optional-
+            If True, will reshape the sources geometry into rectangular slices\n
+            Otherwise, slices will have shape of the sources delimitation.\n
+            Default is False.
+            
+        slice_id: int/list
+            If None (Default), will return a cube all the slices of WCSCube instance.\n
+            Else, will only consider the given slice index.
+
+        Returns
+        -------
+        New WCSCube
+
+        """
         from shapely.geometry import Polygon
         if wcsout is None:
             wcsout = self.wcs
@@ -160,8 +278,10 @@ class WCSCube( Cube, WCSHolder ):
             slice_id  = np.arange( len(self.lbda) )
 
         newcube = self.get_partial_cube(spaxels,  slice_id)
+
         if boundingrect:
             newcube.header["NAXIS1"] = xmax-xmin
             newcube.header["NAXIS2"] = ymax-ymin
+        # No else because it might mess-up with the WCS solution
             
         return newcube

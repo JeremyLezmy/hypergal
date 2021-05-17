@@ -7,31 +7,32 @@ __all__ = ["GaussMoffat2D"]
 def get_radial_gaussmoffat(r, alpha, beta, sigma, eta, a_ell=1, b_ell=1):
     """ 
     Get normalized radial profile for a gaussian (core) + Moffat (wings) psf profile.
+
     Parameters
     ----------
-    r: [array]
+    r: array
         Elliptical radius
 
-    alpha: [float
+    alpha: float
         Moffat radius
 
-    beta: [float]
+    beta: float
         Moffat power
 
-    sigma: [float]
+    sigma: float
         Radius of the gaussian
 
-    eta: [float]
+    eta: float
         Weight between Gaussian and Moffat such as PSF = eta*Gauss + Moff
 
-    a_ell: [float]
-        elliptical parameter
+    a_ell: float
+        Elliptical parameter
 
-    b_ell: [float]
-        elliptical parameter
+    b_ell: float
+        Elliptical parameter
 
-    Return
-    ---------
+    Returns
+    -------
     Array of the normalized radial profile at the *r* position.
 
     Note
@@ -56,12 +57,14 @@ class GaussMoffat2D( PSF2D ):
     def get_radial_profile(self, r):
         """ 
         Get gaussian + Moffat radial profile according to its elliptical radius and current parameters.
+
         Parameters
         ----------
-        r: [array]
-           Elliptical radius
-        Return
-        ---------
+        r: array
+            Elliptical radius
+
+        Returns
+        -------
         Array of the radial profile at the *r* position.
         """
         alpha = self.get_alpha()
@@ -81,14 +84,17 @@ class GaussMoffat2D( PSF2D ):
     def get_beta(self, b0=1.35, b1=0.22):
         """ 
         Return Moffat power. Beta is fixed by alpha value such as beta = b0*alpha + b1
+
         Parameters
         ----------
-        b0: [float]
+        b0: float
             Default is 1.35
-        b1: [float]
+
+        b1: float
             Default is 0.22 
-        Return
-        ----------
+
+        Returns
+        -------
         Beta Moffat power
         """
         return b0  + self.get_alpha() * b1 
@@ -126,14 +132,17 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
     def get_radial_profile(self, r, lbda):
         """ 
         Get gaussian + Moffat radial profile according to its elliptical radius and the wavelength (3rd dimension).
+
         Parameters
         ----------
-        r: [array]
-           Elliptical radius
-        lbda: [float]
-           wavelength, used for chromatic parameters.
-        Return
-        ---------
+        r: array
+            Elliptical radius
+
+        lbda: float
+            Wavelength, used for chromatic parameters.
+
+        Returns
+        -------
         Array of the radial profile at the *r* position and the *lbda* wavelength.
         """
         # Most likely r -> r[:,None]
@@ -150,15 +159,21 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
     # ---------- #
     def get_sigma(self, lbda, rho=-1.5):
         """ 
-        Chromatic shape parameter for the gaussian radius.
+        Chromatic shape parameter for the gaussian radius.\n
         Power law such as sigma = sigmaref * (lbda/lbdaref)^rho
+
         Parameters
         ----------
-        lbda: [float]
-            wavelength (should be same unit than self.lbdaref)
+        lbda: float
+            Wavelength (should be same unit than self.lbdaref)
+
         rho: [float]
-            power of the wavelength power law
+            Power of the wavelength power law\n
             Default is -1.5
+        
+        Returns
+        -------
+        Float
         """
         sigmaref = super().get_sigma()
         return sigmaref * (lbda/self.lbdaref)**rho

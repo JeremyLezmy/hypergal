@@ -13,29 +13,25 @@ class bcolors:
     UNDERLINE = '\033[4m'    
 
 def parse_vmin_vmax(data, vmin, vmax):
-    """ parse the input vmin vmax given the data.
-    
-    if float or int given, this does nothing, 
-    if string given, this computes the corresponding percentile of the data.
-
-    e.g. 
-
-    vmin_, vmax_ = parse_vmin_vmax(data, 40, '90')
-    -> the input vmin is not a string, so it is returned as such
-    -> the inout vmax is a string, so the returned vmax_ corresponds to the 
+    """ Parse the input vmin vmax given the data.\n    
+    If float or int given, this does nothing \n
+    If string given, this computes the corresponding percentile of the data.\n
+    e.g. parse_vmin_vmax(data, 40, '90')\n
+    -> the input vmin is not a string, so it is returned as such\n
+    -> the input vmax is a string, so the returned vmax corresponds to the 
        90-th percent value of data.
 
     Parameters
     ----------
-    data: [array]      
+    data: array     
         data (float array)
 
-    vmin, vmax: [string or float/int]
-        - if string, the corresponding percentile is computed
-        otherwise, nothing happends.
+    vmin,vmax: string or float/int
+        If string, the corresponding percentile is computed\n
+        Otherwise, nothing happends.
 
-    Return
-    ------
+    Returns
+    -------
     float, float
     """
     if vmax is None: vmax="99"

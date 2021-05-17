@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 13:36:18 $
-# Modified on:       2021/05/12 15:44:34
+# Modified on:       2021/05/17 18:00:52
 # Copyright:         2019, Jeremy Lezmy
 # $Id: sedfitting.py, 2021/05/11 13:36:18  JL $
 ################################################################################
@@ -60,14 +60,14 @@ class SEDFitter():
 
         Parameters
         ----------
-        dataframe: [Pandas.Dataframe]
-            dataframe with flux data and flux errors for each filter you want to use.
+        dataframe: Pandas.Dataframe
+            Dataframe with flux data and flux errors for each filter you want to use.
 
-        redshift: [float]  -optional-
-            redshift of the object. Will be the same for each row of the dataframe
+        redshift: float -optional-
+            Redshift of the object. Will be the same for each row of the dataframe\n
             Default is 0.001
 
-        snr: [float]  -optional-
+        snr: float -optional-
             Threshold Signal over Noise ratio for all the bands, for which the pixel won't be selected for the sedfitting. 
         Returns
         --------
@@ -81,19 +81,23 @@ class SEDFitter():
         self.set_redshift(redshift)
 
         
-    def setup_df(self, path_to_save = None):
+    def setup_df(self, path_to_save = None, to_mJy = True):
         
         """ 
         Make the input dataframe compatible with the sedfitter.
 
         Parameters
         ----------
-        path_to_save: [string]
-            Where you want to store the dataframe which will be the input of the sedfitter.
+        path_to_save: string
+            Where you want to store the dataframe which will be the input of the sedfitter.\n
             For Cigale must be .txt file.
 
-        which: [string] 
-            Which sedfitter are you using. If Cigale (default), it will reorder the columns, and add one with ID for each pixel.
+        which: string]
+            Which sedfitter are you using. \n
+            If Cigale (default), it will reorder the columns, and add one with ID for each pixel.
+
+        to_mJy: bool
+            
            
         Returns
         --------
@@ -189,7 +193,7 @@ class SEDFitter():
     @property
     def redshift(self):
         """ 
-        redshift (shared for all the pixel)
+        Redshift (shared for all the pixel)
         """
         return self._redshift
 
@@ -232,7 +236,7 @@ class SEDFitter():
     @property
     def filters(self):
         """ 
-        filters used for the sedfitting
+        Filters used for the sedfitting
         """
         if not hasattr(self, '_filters'):
             return None
@@ -253,21 +257,23 @@ class Cigale(SEDFitter):
     def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None ):
         """ 
         Initiate Cigale (not launch yet)
+
         Parameters
         ---------
 
-        sed_modules: [list of string] 
-               Name of each sed module you want to use. See Cigale Doc. 
-               Default is ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dale2014', 'redshifting']
+        sed_modules: list of string
+            Name of each sed module you want to use. See Cigale Doc. \n
+            Default is ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dale2014', 'redshifting']
 
-        cores: [int]
-               How many cores do you want to use for the sedfitting?
-               Default is number available - 2 (1 if you only have 1 or 2 cores)
+        cores: int
+            How many cores do you want to use for the sedfitting?\n
+            Default is number available - 2 (1 if you only have 1 or 2 cores)
 
-        working_dir: [string]
-               Where do you want to run cigale?
-               If None, will be in current pwd.
-               Default is None.
+        working_dir: string
+            Where do you want to run cigale?\n
+            If None, will be in current pwd.\n
+            Default is None.
+
         """
 
         self._currentpwd = os.getcwd()
@@ -320,7 +326,7 @@ class Cigale(SEDFitter):
 
     def run(self, path_result=None, result_dir_name='out/'):
         """
-        Run Cigale.
+        Run Cigale.\n
         Results will be stored in self._working_dir, and a directory 'out/' will be created.
         """
         
@@ -364,29 +370,30 @@ class Cigale(SEDFitter):
         
         Parameters
         ----------
-        lbda_sample : [1D array]
-              wavelength space where you want to get the spectra.
-              Default is SEDM wavelength space == np.linspace(3700,9300,220)
+        lbda_sample : 1D array
+            Wavelength space where you want to get the spectra.\n
+            Default is SEDM wavelength space == np.linspace(3700,9300,220)
 
-        interp_kind : [string]
-              interpolation method to get an analytical function of the cigale fitted spectra.
-              Goes to scipy.interpolate.interp1d
-              Default is linear. (Issue with cubic since some fitted points by cigale have same wavelength, which breaks the monotony of the fonction)
+        interp_kind : string
+            Interpolation method to get an analytical function of the cigale fitted spectra.\n
+            Goes to scipy.interpolate.interp1d\n
+            Default is linear. (Issue with cubic since some fitted points by cigale have same wavelength, which breaks the monotony of the fonction)
         
-        box_ker_size : [float]
-              Size in pixel of the door function. Used to convolve the interpolated datas.
-              Default is 10
+        box_ker_size : float
+            Size in pixel of the door function. Used to convolve the interpolated datas.\n
+            Default is 10
 
-        save_file : [string] format path/name.npz
-              If not None (Default), where to save the sample spectra? Will save the corresponding wavelength too.
+        save_file : string
+            If not None (Default), where to save the sample spectra? Will save the corresponding wavelength too.
               
-        as_cube : [bool]
-              If True, return a pyifu 3D cube. You must have set the geometry of the images first
-              Default is False
-        Return
-        ---------
-        If as_cube,return a pyifu 3D cube
-        If not as_cube, return spec and lbda 
+        as_cube : bool
+            If True, return a pyifu 3D cube. You must have set the geometry of the images first\n
+            Default is False
+
+        Returns
+        -------
+        If as_cube,return a pyif.Cube
+        If not as_cube, return 2 arrays 
         """
         kerbox = Box1DKernel( box_ker_size )       
         full_DF = self.clean_df.copy()     
@@ -436,8 +443,8 @@ class Cigale(SEDFitter):
 
     def clean_output(self):
         """
-        THIS COMMAND WILL DELETE self.working_dir, BE CAREFUL
-        Be sure you saved the cigale results before using this command.
+        THIS COMMAND WILL DELETE self.working_dir, BE CAREFUL \n
+        Be sure you saved the cigale results before using this command.\n
         Go back to the initial path (_currentpwd) before the cigale run, 
         then clean the directory where cigale has been run.
         """
@@ -476,7 +483,7 @@ class Cigale(SEDFitter):
     @property
     def config(self):
         """
-        config file
+        Config file
         """
         if not hasattr(self, '_config'):
             return None
