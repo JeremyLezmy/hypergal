@@ -8,21 +8,21 @@ from shapely import geometry, vectorized, affinity
 
 
 def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, origin=(0,0)):
-    """ use shapely.affinity to translate, rotate or scale the input geometry.
+    """ Use shapely.affinity to translate, rotate or scale the input geometry.
 
     Parameters
     ----------
-    rotation: [float, None] -optional-
-        rotation angle (in deg)
+    rotation: float, None -optional-
+        Rotation angle (in deg) \n
         - None means ignored
 
-    scale: [float, None] -optional-
-        scale the geometry (ref = centroid)
+    scale: float, None -optional-
+        Scale the geometry (ref = centroid) \n
         - None means ignored
 
-    xoff, yoff: [float, None] -optional-
-            shifts the centroid by -xoff and -yoff 
-            - None means ignored        
+    xoff,yoff: float, None -optional-
+        Shifts the centroid by -xoff and -yoff \n
+        - None means ignored        
 
     Returns
     -------
@@ -43,11 +43,12 @@ def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, or
 
 
 def get_mpoly(spaxelhandler, rotation=None, scale=None, xoff=None, yoff=None):
-    """ build the spaxels mutlipolygone out of a slice/clube 
+    """ Build the spaxels mutlipolygone out of a slice/clube 
     
     Returns
     -------
     shapely.geometry.Multipolyon
+
     """
     mpoly_in = spaxelhandler.get_spaxel_polygon(remove_nan=True, format="multipolygon")
     return transform_geometry(mpoly_in, xoff=xoff, yoff=yoff, rotation=rotation,  scale=scale)
@@ -55,23 +56,27 @@ def get_mpoly(spaxelhandler, rotation=None, scale=None, xoff=None, yoff=None):
     
 def show_polygon(poly, facecolor="C0", edgecolor="k", ax=None, adjust=False, **kwargs):
     """ 
-    Show shapely.Polygon object
+    Show shapely.Polygon object.
+
     Parameters
     ----------
-    facecolor, edgecolor: go to Matplotlib.patches.Polygon
+    facecolor,edgecolor: string
+        Go to Matplotlib.patches.Polygon \n
         Default is "C0" ad "k"
     
-    ax: [Matplotlib.Axes] -optional-
-        You can provide your own Axes
+    ax: Matplotlib.Axes -optional-
+        You can provide your own Axes \n
         Default is None
 
-    adjust: [bool]
-        If True, adjust the xlim/ylim of ax in to the extrem vertices of the Polygon
+    adjust: bool
+        If True, adjust the xlim/ylim of ax in to the extrem vertices of the Polygon \n
         Defult is False
 
-    kwargs goes to Matplotlib.patches.Polygon
-    Return
-    ---------
+    kwargs:
+        Goes to Matplotlib.patches.Polygon
+
+    Returns
+    -------
     Matplotlib.Axes
     
     """
@@ -100,14 +105,15 @@ class Overlay( object ):
     PARAMETER_NAMES = ["xoff", "yoff", "scale", "rotation"]
         
     def __init__(self, mpoly_in=None, mpoly_comp=None):
-        """  multipolygon _in to be projected into the multipolygon _comp 
+        """ Multipolygon _in to be projected into the multipolygon _comp 
+
         Attributes
         ----------
-        mpoly_in: [shapely.Multipolygon]
-            multipolygon to project
+        mpoly_in: shapely.Multipolygon
+            Multipolygon to project
         
-        mpoly_comp: [shapely.Multipolygon]
-            multipolygon where you want to project mpoly_in
+        mpoly_comp: shapely.Multipolygon
+            Multipolygon where you want to project mpoly_in
         
         """
         self.set_multipolygon(mpoly_in, "in")
@@ -120,22 +126,22 @@ class Overlay( object ):
                        xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
                        scale_in=None, scale_comp=None):
-        """ instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
+        """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
         
         Parameters
         ----------
-        slice_in, slice_comp: [SpaxelHandlers]
+        slice_in,slice_comp: SpaxelHandlers
             slice (or cube) _in to be projected into _comp's geometry
             
-         xy_in, xy_comp: [2d-array (float) or None]
-             reference coordinates (target position) for the _in and _comp geometries
+         xy_in,xy_comp: 2d-array (float) or None
+             Reference coordinates (target position) for the _in and _comp geometries
              e.g. xy_comp = [3.1,-1.3]
 
-         rotation_in, rotation_comp: [float or None]
-             rotation (in degree) or the _in and _comp geomtries
+         rotation_in,rotation_comp: float or None
+             Rotation (in degree) or the _in and _comp geomtries
 
-         scale_in, scale_comp:  [float or None]
-             scale of the _in and _comp geometries
+         scale_in,scale_comp:  float or None
+             Scale of the _in and _comp geometries
         
         Returns
         -------
@@ -164,17 +170,16 @@ class Overlay( object ):
     #  SETTER  #
     # -------- #
     def set_multipolygon(self, multipoly, which):
-        """ set the 'in' or 'comp' geometry
+        """ Set the 'in' or 'comp' geometry
         
         Parameters
         ----------
-        multipoly: [geometry]
+        multipoly: geometry
             Multipolygon (spaxels) defining the geometries or _in or _comp
 
-        which: [string]
-            Which geometry are you providing ?
-            - in or which.
-            a ValueError is raise if which is not 'in' or 'comp'
+        which: string
+            Which geometry are you providing (in or comp)? \n
+            A ValueError is raise if which is not 'in' or 'comp'
 
         Returns
         -------
@@ -188,18 +193,18 @@ class Overlay( object ):
             raise ValueError(f"which can be 'in' or 'comp', {which} given")
         
     def set_overlaydf(self, overlaydf):
-        """ sets the self.overlaydf containing the geopandas overlay dataframe"""
+        """ Sets the self.overlaydf containing the geopandas overlay dataframe"""
         self._overlaydf = overlaydf
         
     def reset_overlaydf(self):
-        """ sets self.overlaydf back to None. It will be re-evaluated the next time you need it. """
+        """ Sets self.overlaydf back to None. It will be re-evaluated the next time you need it. """
         self.set_overlaydf(None)
         
     # -------- #
     #  GETTER  #
     # -------- #
     def get_projected_flux(self, flux, **kwargs):
-        """ project a flux (from {}_in) into the {}_comp geometry using self.overlaydf 
+        """ Project a flux (from {}_in) into the {}_comp geometry using self.overlaydf \n
         (callling the classmethod self.project_flux() 
         """
         return self.project_flux(flux, self.overlaydf,  **kwargs)
@@ -208,8 +213,8 @@ class Overlay( object ):
     #  LOADER  #
     # -------- #
     def load_overlaydf(self, **kwargs):
-        """  measures the overlay df and set it.
-        uses self.get_overlaydf()
+        """ Measures the overlay df and set it. \n
+        Uses self.get_overlaydf()
         """
         self.set_overlaydf(self.get_overlaydf(self.mpoly_in, self.mpoly_comp, **kwargs))
         
@@ -221,21 +226,20 @@ class Overlay( object ):
         
         Parameters
         ----------
-        rotation: [float, None] -optional-
-            rotation angle (in deg)
+        rotation: float, None -optional-
+            Rotation angle (in deg)\n
             - None means ignored
 
-        scale: [float, None] -optional-
-            scale the geometry (ref = centroid)
+        scale: float, None -optional-
+            Scale the geometry (ref = centroid)\n
             - None means ignored
 
-        xoff, yoff: [float, None] -optional-
-            shifts the centroid by -xoff and -yoff 
+        xoff,yoff: float, None -optional-
+            Shifts the centroid by -xoff and -yoff \n
             - None means ignored        
             
-        //
-        reset_overlay: [bool] -optional-
-            shall this reset the overlay (you should)
+        reset_overlay: bool -optional-
+            Shall this reset the overlay (you should)
 
         Returns
         -------
@@ -263,21 +267,20 @@ class Overlay( object ):
         
         Parameters
         ----------
-        rotation: [float, None] -optional-
-            rotation angle (in deg)
+        rotation: float, None -optional-
+            Rotation angle (in deg)\n
             - None means ignored
 
-        scale: [float, None] -optional-
-            scale the geometry (ref = centroid)
+        scale: float, None -optional-
+            Scale the geometry (ref = centroid) \n
             - None means ignored
 
-        xoff, yoff: [float, None] -optional-
-            shifts the centroid by -xoff and -yoff 
+        xoff,yoff: float, None -optional-
+            Shifts the centroid by -xoff and -yoff \n
             - None means ignored        
             
-        //
-        reset_overlay: [bool] -optional-
-            shall this reset the overlay (you should)
+        reset_overlay: bool -optional-
+            Shall this reset the overlay (you should)
 
         Returns
         -------
@@ -308,22 +311,22 @@ class Overlay( object ):
                        xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
                        scale_in=None, scale_comp=None, use_overlapping=True):
-        """ instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler) and directly process to the projection.
+        """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler) and directly process to the projection.
        
         Parameters
         ----------
-        slice_in, slice_comp: [SpaxelHandlers]
-            slice (or cube) _in to be projected into _comp's geometry
+        slice_in,slice_comp: SpaxelHandlers
+            Slice (or cube) _in to be projected into _comp's geometry
             
-         xy_in, xy_comp: [2d-array (float) or None]
-             reference coordinates (target position) for the _in and _comp geometries
+        xy_in,xy_comp: 2d-array (float) or None
+             Reference coordinates (target position) for the _in and _comp geometries\n
              e.g. xy_comp = [3.1,-1.3]
 
-         rotation_in, rotation_comp: [float or None]
-             rotation (in degree) or the _in and _comp geomtries
+        rotation_in,rotation_comp: float or None
+             Rotation (in degree) or the _in and _comp geomtries
 
-         scale_in, scale_comp:  [float or None]
-             scale of the _in and _comp geometries
+        scale_in,scale_comp:  float or None
+             Scale of the _in and _comp geometries
         
         Returns
         -------
@@ -347,16 +350,17 @@ class Overlay( object ):
     def project_flux(flux, overlaydf, index=None, **kwargs):
         """ 
         Project the flux in mpoly_in to mpoly_comp according to the measured overlay between them.
+
         Paramaters
         ----------
-        flux: [array]
+        flux: array
             Flux in mpoly_in
 
-        overlaydf: [DataFrame]
+        overlaydf: DataFrame
             Measured overlay
 
-        Return
-        ----------
+        Returns
+        -------
         Pandas.Dataframe
         """
         norm = flux.mean()
@@ -373,26 +377,28 @@ class Overlay( object ):
        
         Parameters
         ----------
-        mpoly_in: [shapely.Multipolygon]
-            multipolygon to project
+        mpoly_in: shapely.Multipolygon
+            Multipolygon to project
         
-        mpoly_comp: [shapely.Multipolygon]
-            multipolygon where you want to project mpoly_in
+        mpoly_comp: shapely.Multipolygon
+            Multipolygon where you want to project mpoly_in
             
-        use_overlapping: [bool] -optional-
-             If True (Default), pre-process with a selection of polygons which will overlap each others
+        use_overlapping: bool -optional-
+            If True (Default), pre-process with a selection of polygons which will overlap each others
 
-        area_ok: [float] -optional-
-             Threshold on which we consider that overlapping areas are almost the same. We therefore consider the mean of these areas. Remind that area = 1 means full overlapping (same polygon).
+        area_ok: float -optional-
+            Threshold on which we consider that overlapping areas are almost the same. We therefore consider the mean of these areas.\n
+            Remind that area = 1 means full overlapping (same polygon).\n
             Default is 1e-3
 
-        warn_ifok: [bool] -optional-
-             Allow warning message if all uniques areas are below area_ok.
-             Default is False
+        warn_ifok: bool -optional-
+            Allow warning message if all uniques areas are below area_ok.\n
+            Default is False
         
         Returns
         -------
         Pandas.DataFrame()
+
         """
         id_in = np.arange(len(mpoly_in))
         if use_overlapping:
@@ -425,17 +431,19 @@ class Overlay( object ):
     def get_overlapping(mpolyin, contour):
         """ 
         Get Multipolygon of overlapping region according to a multipolygon_in and a contour of destination.
+
         Parameters
         ----------
-        mpolyin: [geometry]
+        mpolyin: geometry
             Multipolygon that we want to project 
 
-        contour: [geometry]
+        contour: geometry
             Contour of the out geometry where you want to project mpolyin
 
-        Return
-        ----------
+        Returns
+        -------
         shapely.geometry.Multipolygon()
+
         """
         # individual vertices on the multipolygin
         verts = np.asarray([m.exterior.xy  for m in list(mpolyin)])
@@ -458,26 +466,29 @@ class Overlay( object ):
     def show(self, ax=None, flux_in=None, lw_in=0.5, lw_comp=0.5, adjust=False, **kwargs):
         """ 
         Show mpoly_in and mpoly_comp on the same Axe.
+
         Parameters
         ----------
-        ax: [Matplotlib.Axes]
+        ax: Matplotlib.Axes
             You can provide your own Axe (one)
         
-        flux_in: [array] -optional-
-            Flux corresponding to self.mpoly_in
+        flux_in: array -optional-
+            Flux corresponding to self.mpoly_in \n
             Default is None.
         
-        lw_in, lw_comp: [float] -optional-
+        lw_in,lw_comp: float -optional-
             Linewidth param
 
-        adjust: [bool] -optional-
+        adjust: bool -optional-
             If True, adjust the xlim/ylim of ax with extrema values of the verticies.
 
-        kwargs go to self.show_mpoly()
+        kwargs:
+            Goes to self.show_mpoly()
         
-        Return
-        ---------
+        Returns
+        -------
         Matplotlib.Axes
+
         """
         import matplotlib.pyplot as mpl
         if ax is None:
@@ -502,24 +513,25 @@ class Overlay( object ):
     def show_projection(self, flux_in, savefile=None, axes=None, vmin=None, vmax=None):
         """ 
         Show the projected flux in the mpoly_comp geometry.
+
         Parameters
         ----------
-        flux_in: [array]
+        flux_in: array
             flux corresponding to self.mpoly_in (flux which has been projected before the process)
 
-        savefile: [string] -optional-
+        savefile: string -optional-
             If not None (Default), fig.savefile(savefile)
 
-        axes: [Axes] -optional-
-            You can provide 2 axes (one for before/ after projection of flux_in)
+        axes: Axes -optional-
+            You can provide 2 axes (one for before/ after projection of flux_in) \n
             Default is None.
 
-        vmin, vmax: [None or string or float/int] -optional-
-        - if string, the corresponding percentile is computed and used for colormap scaling.
-        otherwise, use the given value.
+        vmin,vmax: None or string or float/int -optional-
+            If string, the corresponding percentile is computed and used for colormap scaling. \n
+            Otherwise, use the given value.
 
-        Return
-        ----------
+        Returns
+        -------
         Figure
 
         """
@@ -554,32 +566,36 @@ class Overlay( object ):
                   flux=None, cmap="cividis", vmin=None, vmax=None, **kwargs):
         """ 
         Show multipolygon with its corresponding flux if provided.
+
         Parameters
         ----------
-        which: [string]
+        which: string
             "in" or "comp" multipolygon
         
-        ax: [Axes] -optional-
+        ax: Axes -optional-
             You can provide your own ax (one)
         
-        facecolor, edgecolor, cmap: go to Matplotlib parameters
+        facecolor,edgecolor,cmap: string
+            Go to Matplotlib parameters
 
-        flux: [array] -optional-
-            Flux corresponding to self.mpoly_*which*
+        flux: array -optional-
+            Flux corresponding to self.mpoly_*which* \n
             Default is None.
 
-        vmin, vmax: [float, None, string] -optional-
-            colorbar limits. 
-            = ignored if flux is None =
-            - string: used as flux percentile
-            - float: used value
+        vmin,vmax: float, None, string -optional-
+            Colorbar limits. 
+            - Ignored if flux is None \n
+            - String: used as flux percentile\n
+            - Float: used value\n
             - None: converted to '1' and '99'
         
-        kwargs go to geometry.show_polygon()
+        kwargs
+            Goes to geometry.show_polygon()
 
-        Return
-        ----------
+        Returns
+        -------
         Matplotlib.Axes    
+
         """
         import matplotlib.pyplot as mpl
         from .tools import parse_vmin_vmax

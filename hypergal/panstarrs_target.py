@@ -6,15 +6,15 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/18 10:38:37 $
-# Modified on:       2021/05/03 16:42:44
+# Modified on:       2021/05/17 20:06:10
 # Copyright:         2021, Jeremy Lezmy
 # $Id: Panstarrs_target.py, 2021/01/18 17:23:14  JL $
 ################################################################################
 
 """
-.. _Panstarrs_target.py:
+.. _panstarrs_target.py:
 
-Panstarrs_target.py
+panstarrs_target.py
 ==============
 
 
@@ -23,7 +23,7 @@ __license__ = "2021, Jeremy Lezmy"
 __docformat__ = 'reStructuredText'
 __author__ = 'Jeremy Lezmy <lezmy@ipnl.in2p3.fr>'
 __date__ = '2021/01/18 17:23:14'
-__adv__ = 'Panstarrs_target.py'
+__adv__ = 'panstarrs_target.py'
 
 import os
 import sys

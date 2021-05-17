@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/05/11 15:38:49 $
-# Modified on:       2021/05/11 19:44:33
+# Modified on:       2021/05/17 20:11:36
 # Copyright:         2019, Jeremy Lezmy
 # $Id: utils.py, 2021/05/11 15:38:49  JG $
 ################################################################################
@@ -39,9 +39,9 @@ import collections.abc
 
 def command_cigale(command, file_path=None):
     '''
-    Call pcigale commands through python function rather than shell commands.
+    Call pcigale commands through python function rather than shell commands.\n
     Note that the run command requires to work in current terminal directory,
-       data, config and results files are moved back after the operation.
+    data, config and results files are moved back after the operation.
 
     Parameters
     ----------
@@ -51,7 +51,7 @@ def command_cigale(command, file_path=None):
     Options
     -------
     file_path : string
-        Path to data, config and result files, if different from the current directory.
+        Path to data, config and result files, if different from the current directory.\n
         Default is None.
     '''
 
@@ -126,7 +126,7 @@ def move_files(old_path, new_path, files, verbose=False):
     Options
     -------
     verbose : bool
-        If True, print old and new locations.
+        If True, print old and new locations.\n
         Default to False.
     '''
     old_location = [old_path+l for l in files]
@@ -146,12 +146,18 @@ def move_files(old_path, new_path, files, verbose=False):
 def update(d, u):
     """
     Tools to update dict of dict without losing not changed values
+
     Parameters
     ----------
-    d: [dict]
-        dict to update
-    u: [dict]
-        dict used to update
+    d: dict
+        Dict to update
+
+    u: dict
+        Dict used to update
+    
+    Returns
+    -------
+    Dictionary
     """
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
@@ -167,14 +173,14 @@ def flux_aa_to_hz(flux, wavelength):
     Parameters
     ----------
     flux : float, array
-         flux to convert
+        Flux to convert
     
     wavelength : float
-         (effective) wavelength at which the flux correspond to.
+        (effective) wavelength at which the flux correspond to.
     
-    Return
-    ---------
-    Converted flux (same format of input)
+    Returns
+    -------
+    Float, Array
     """
     return flux * (wavelength**2 / constants.c.to("AA/s").value)
 
@@ -187,14 +193,14 @@ def flux_hz_to_aa(flux, wavelength):
     Parameters
     ----------
     flux : float, array
-         flux to convert
+        Flux to convert
     
     wavelength : float
-         (effective) wavelength at which the flux correspond to.
+        (effective) wavelength at which the flux correspond to.
     
-    Return
-    ---------
-    Converted flux (same format of input)
+    Returns
+    -------
+    Float, Array
     """
    
     return flux / (wavelength**2 / constants.c.to("AA/s").value)
@@ -211,7 +217,7 @@ def flux_hz_to_mjy(flux):
   
     Return
     ---------
-    Converted flux (same format of input)
+    Float, Array
     """
    
     return flux*10**26
@@ -223,11 +229,11 @@ def flux_mjy_to_hz(flux):
     Parameters
     ----------
     flux : float, array
-         flux to convert
+        Flux to convert
   
-    Return
-    ---------
-    Converted flux (same format of input)
+    Returns
+    -------
+    Float, Array
     """
    
     return flux*10**-26
@@ -236,23 +242,24 @@ def flux_mjy_to_hz(flux):
 def spec_to_3dcube( spec=None, lbda=None, spx_map=None, spx_vert=None):
     """ 
     Build 3d cube with pyifu method.
+
     Parameters
     ----------
-    spec: [array]
-        spectre of shape NxM where N is the number of spectra (spaxels), and M the number of wavelength (slices)
+    spec: array
+        Spectre of shape NxM where N is the number of spectra (spaxels), and M the number of wavelength (slices)
 
-    lbda: [array]
-        array of wavelength of shape M. Must match the 2nd dimension of spec.
+    lbda: array
+        Array of wavelength of shape M. Must match the 2nd dimension of spec.
 
-    spx_map: [dict]
-        spaxel mapping of length N. Must match the 1st dimension of spec
+    spx_map: dict
+        Spaxel mapping of length N. Must match the 1st dimension of spec
 
-    spx_vert: [array]
-        spaxel vertices, give the information of the spaxel shape (square, hexagonal etc)
+    spx_vert: array
+        Spaxel vertices, give the information of the spaxel shape (square, hexagonal etc)
 
-    Return
-    ---------
-    pyifu 3D cube
+    Returns
+    -------
+    pyifu.Cube
     """
     
     if len(spec)!=len(spx_map):

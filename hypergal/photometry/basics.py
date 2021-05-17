@@ -30,10 +30,10 @@ class CutOut( WCSHolder ):
 
         Parameters
         ----------
-        ra, dec: [floats]  -optional-
-            position in degrees
+        ra, dec: floats  -optional-
+            Position in degrees
 
-        instdata: [list of Instrument object]  -optional-
+        instdata: list of Instrument object  -optional-
         
         Returns
         --------
@@ -48,24 +48,24 @@ class CutOut( WCSHolder ):
     @classmethod
     def from_radec(cls, ra, dec, load_cutout=True, size=140, client=None,  filters=None):
         """ 
-        load cutout from ra, dec datas
+        Load cutout from ra, dec datas
 
         Parameters
         ----------
-        ra, dec: [floats] 
-            position in degrees
+        ra,dec: floats
+            Position in degrees
 
-        size: [float] 
-            image size in pixels
+        size: float
+            Image size in pixels\n
             Default is 140
 
-        filters: [strings]  -optional-
-            string with filters to include
-            if None, load all the filters
+        filters: strings -optional-
+            String with filters to include\n
+            If None, load all the filters
 
-        client: [dask Client]  -optional-
-             Provide a dask client for using Dask multiprocessing.
-             If so, a list of futures will be returned.
+        client: Dask Client -optional-
+            Provide a dask client for using Dask multiprocessing.\n
+            If so, a list of futures will be returned.
         
         Returns
         --------
@@ -82,24 +82,24 @@ class CutOut( WCSHolder ):
     @classmethod
     def from_sedmfile(cls, filename, load_cutout=True, size=140, client=None,  filters=["g","r","i","z","y"]):
         """ 
-        load cutout from SEDM file, according to the ra, dec information in the header
+        Load cutout from SEDM file, according to the ra, dec information in the header
 
         Parameters
         ----------
-        filename: [string] 
-            path of the sedm object
+        filename: string
+            Path of the sedm object
 
-        size: [float] 
-            image size in pixels
+        size: float
+            Image size in pixels\n
             Default is 140
 
-        filters: [strings]  -optional-
-            string with filters to include
-            if None, load all the filters
+        filters: strings  -optional-
+            String with filters to include \n
+            If None, load all the filters
 
-        client: [dask Client]  -optional-
-             Provide a dask client for using Dask multiprocessing.
-             If so, a list of futures will be returned.
+        client: Dask Client  -optional-
+            Provide a dask client for using Dask multiprocessing.\n
+            If so, a list of futures will be returned.
         
         Returns
         --------
@@ -132,18 +132,17 @@ class CutOut( WCSHolder ):
 
         Parameters
         ----------
-        xy_center: [optional] -optional-
-            center coordinates (in pixel) or the returned cube.
-            - if None: this is ignored
-            - if string: 'target', this will convert the self.ra and self.dec 
-              into xy_center and set it
+        xy_center: None or string or float -optional-
+            Center coordinates (in pixel) or the returned cube.\n
+            - if None: this is ignored\n
+            - if string: 'target', this will convert the self.ra and self.dec into xy_center and set it\n
             - else; used as centroid
 
-        influx: [bool]  -optional-
-            If True, return data in flux in erg.s-1.cm-2.AA-1
+        influx: bool  -optional-
+            If True, return data in flux in erg.s-1.cm-2.AA-1\n
             If False, return data in counts.
         
-        binfactor: [int] -optional-
+        binfactor: int -optional-
             Apply a binning [binfactor x binfactor] on the images
 
         Returns
@@ -160,32 +159,33 @@ class CutOut( WCSHolder ):
     def to_dataframe( self,  which = ['data','err'], binfactor = 2, filters = None, influx = True, as_cigale = True):
         """
         Get Panda DataFrame from Cutouts
+
         Parameters
         ----------
-        which: [string/list of string]
-            What do you want in your dataframe
-            Might be 'data', 'err', 'var'
+        which: string/list of string
+            What do you want in your dataframe\n
+            Might be 'data', 'err', 'var'\n
             Default is ['data', 'err']
 
-        binfactor: [int]
-            If >1, apply binning on the images data/err/var.
+        binfactor: int
+            If >1, apply binning on the images data/err/var.\n
             Default is 2.
 
-        filters: [string/list of string]
-            For which filter(s) do you want [which]. 
-            If None, '*', 'all', consider all availbales filters
+        filters: string/list of string
+            For which filter(s) do you want [which]. \n
+            If None, '*', 'all', consider all availbales filters\n
             Default is None
 
-        influx: [bool]
-            Do you want [which] in flux (erg/s/cm2/AA) or in counts
+        influx: bool
+            Do you want [which] in flux (erg/s/cm2/AA) or in counts\n
             Default is True
 
-        as_cigale: [bool]
-            In case you intend to use this dataframe from Cigale SedFitting, replace '.' by '_'
+        as_cigale: bool
+            In case you intend to use this dataframe from Cigale SedFitting, replace '.' by '_'\n
             Default is True
 
-        Return
-        ----------
+        Returns
+        -------
         Pandas DataFrame with ravels datas
         """
         import warnings
@@ -237,12 +237,17 @@ class CutOut( WCSHolder ):
     def set_instdata(self, instdata, load_wcs=True):
         """ 
         Set Instrument Data
+        
+        Parameters
+        ----------
  
-        instdata: [list of Instrument object] 
+        instdata: list of Instrument object 
 
-        load_wcs: [bool]
-             Do you want to load wcs information from Instrument header?
-            
+        load_wcs: bool
+            Do you want to load wcs information from Instrument header?
+        
+        Returns
+        -------
         """
         if instdata is None:
             return
@@ -255,24 +260,31 @@ class CutOut( WCSHolder ):
                 
     def set_radec(self, ra, dec):
         """ 
-        Set Right Ascension and Declination 
-        ra, dec: [floats] 
-            position in degrees
+        Set Right Ascension and Declination
+        
+        Parameters
+        ----------
+
+        ra, dec: floats
+            Position in degrees
+
+        Returns
+        -------
         """
         self._ra, self._dec = ra, dec
 
     # -------- #
     #  GETTER  #
     # -------- #
+    
     def get_index(self, filters = None):
-        """ 
-        Get cutout index from filter name information.
-
+        """ Get cutout index from filter name information.
+       
         Parameters
         ----------
         filters: [String or list of strings]
-            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
-            If filters is None or in ['*, 'all'], return all the indices.
+            Name of the filter(s) (for instance "ps1.r" or ["ps1.g", "ps1.i"])\n
+            If filters is None or in ['*', "all"], return all the indices.\n
             Default is None.
 
         Returns
@@ -291,14 +303,14 @@ class CutOut( WCSHolder ):
 
         Parameters
         ----------
-        filters : [String or list of strings]
-            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
-            If filters is None or in ['*, 'all'], consider all the available filters.
+        filters : string or list of strings
+            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']) \n
+            If filters is None or in ['*', 'all'], consider all the available filters.\n
             Default is None.
 
-        influx : [bool] -optional-
-            If True, return datas in flux in erg.s-1.cm-2.AA-1
-            If False, return datas in counts.
+        influx : bool -optional-
+            If True, return datas in flux in erg.s-1.cm-2.AA-1\n
+            If False, return datas in counts.\n
             Default is False.
            
         Returns
@@ -313,14 +325,14 @@ class CutOut( WCSHolder ):
 
         Parameters
         ----------
-        filters : [String or list of strings]
-            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
-            If filters is None or in ['*, 'all'], consider all the available filters.
+        filters : string or list of strings
+            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i'])\n
+            If filters is None or in ['*', 'all'], consider all the available filters.\n
             Default is None.
 
-        influx : [bool] -optional-
-            If True, return errors in flux in erg.s-1.cm-2.AA-1
-            If False, return errors in counts.
+        influx : bool -optional-
+            If True, return errors in flux in erg.s-1.cm-2.AA-1\n
+            If False, return errors in counts.\n
             Default is False.
            
         Returns
@@ -335,14 +347,14 @@ class CutOut( WCSHolder ):
 
         Parameters
         ----------
-        filters : [String or list of strings]
-            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
-            If filters is None or in ['*, 'all'], consider all the available filters.
+        filters : String or list of strings
+            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i'])\n
+            If filters is None or in ['*', 'all'], consider all the available filters.\n
             Default is None.
 
-        influx : [bool] -optional-
-            If True, return variances in flux in erg.s-1.cm-2.AA-1
-            If False, return variances in counts.
+        influx : bool -optional-
+            If True, return variances in flux in erg.s-1.cm-2.AA-1\n
+            If False, return variances in counts.\n
             Default is False.
            
         Returns
@@ -358,17 +370,17 @@ class CutOut( WCSHolder ):
         Parameters
         ----------
         
-        which: [String]
+        which: string
             Might be "data", "var"/"variance", "err"/"error"
 
-        filters : [String or list of strings]
-            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i']
-            If filters is None or in ['*, 'all'], consider all the available filters.
+        filters : string or list of strings
+            Name of the filter(s) (for instance 'ps1.r' or ['ps1.g', 'ps1.i'])\n
+            If filters is None or in ['*, 'all'], consider all the available filters.\n
             Default is None.
 
-        influx : [bool] -optional-
-            If True, return [which] in flux in erg.s-1.cm-2.AA-1
-            If False, return [which] in counts.
+        influx : bool -optional-
+            If True, return [which] in flux in erg.s-1.cm-2.AA-1\n
+            If False, return [which] in counts.\n
             Default is False.
            
         Returns
@@ -402,28 +414,30 @@ class CutOut( WCSHolder ):
     def extract_sources(self, filter_, thres=2, show=False, savefile=None, figprop={}, **kwargs):
         """ 
         Extract sources datas from cutouts. Use sep package to delimit a threshold area around the object.
+
         Parameters
         ----------
-        filter_: [string/list of string]
-             Which filter(s) do you want to consider?
+        filter_: string/list of string
+            Which filter(s) do you want to consider?
 
-        thres: [float]
-             Threshold pixel value for detection. 
-             Interpreted as a relative threshold: the absolute threshold at pixel (j, i) will be thresh * err[j, i]
-             Default is 2.
+        thres: float
+            Threshold pixel value for detection. \n
+            Interpreted as a relative threshold: the absolute threshold at pixel (j, i) will be thresh * err[j, i]\n
+            Default is 2.
 
-        show: [bool]
-             Boolean option to show or not the extracted sources with its sep contour
-             Default is False
+        show: bool
+            Boolean option to show or not the extracted sources with its sep contour\n
+            Default is False
 
-        savefile: [string]
-             If *show* == True, save the plot at *savefile*.
-             Default is None.
+        savefile: string
+            If *show* == True, save the plot at *savefile*.\n
+            Default is None.
 
-        **kwargs: Go to sep.extract
+        **kwargs:
+            Go to sep.extract
         
-        Return
-        ---------
+        Returns
+        -------
         Dataframe of extracted sources.
         """
         import sep
@@ -445,35 +459,36 @@ class CutOut( WCSHolder ):
                  savefile=None, **kwargs):
         """ 
         Show function for a given filter.
+
         Parameters
         ----------
-        ax: [Matplotlib.Axes] -optional-
+        ax: Matplotlib.Axes -optional-
             If given, dim(ax) should be 1.
 
-        filter_: [string]
-            Which band do you want to plot? -optional-
+        filter_: string -optional-
+            Which band do you want to plot?\n 
             Default is the first available
         
-        vmin: [string, float] -optional-
-            If string, set colormap scale min below *vmin* percentile.
+        vmin: string, float -optional-
+            If string, set colormap scale min below *vmin* percentile.\n
             If float, set colormap scale min below *vmin*.
             Default is '1'.
 
-        vmax: [string, float] -optional-
-            If string, set colormap scale max above *vmax* percentile.
+        vmax: string, float -optional-
+            If string, set colormap scale max above *vmax* percentile.\n
             If float, set colormap scale max above *vmax*.
             Default is '99'.
 
-        sourcedf: [Pandas.DataFrame] -optional-
-            Dataframe with extracted source information (see self.extract_sources for instance). 
+        sourcedf: Pandas.DataFrame -optional-
+            Dataframe with extracted source information (see self.extract_sources for instance). \n
             Will draw an Ellipse around the detected sources.
 
-        savefile: [string] -optional-
-            Where do you want to save the plot?
+        savefile: string -optional-
+            Where do you want to save the plot?\n
             Default is None (not saved)
         
-        Return
-        ---------
+        Returns
+        -------
         Matplotlib.Axes
             
         """
@@ -522,17 +537,18 @@ class CutOut( WCSHolder ):
         Parameters
         ----------
         
-        what: [String]
-            Which attribut do you want to get from the intrument object 
+        what: String
+            Which attribut do you want to get from the intrument object \n
             (for instance 'lbda', 'bandname', 'mab0' ...)
 
-        isfun : [bool]
+        isfun : bool
             Does the atribut you want is callable
 
-        index : [int or list of int] -optional-
+        index : int or list of int -optional-
             Index of the Instrument object to consider (see self.get_index)
         
-        *args, **kwargs go to callable attribut if isfunc is True   
+        *args,**kwargs: Arguments
+            Go to callable attribut if isfunc is True   
 
         Returns
         -------- 

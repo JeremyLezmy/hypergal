@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/01/28 16:26:31 $
-# Modified on:       2021/04/29 14:12:36
+# Modified on:       2021/05/17 18:44:48
 # Copyright:         2019, Jeremy Lezmy
 # $Id: Host_removing.py, 2021/01/28 16:26:31  JL $
 ################################################################################
@@ -47,7 +47,7 @@ from astropy.convolution import Box1DKernel, convolve
 import warnings
 import pyifu
 
-from hypergal import SED_Fitting as sedfit
+from hypergal import sed_fitting as sedfit
 from hypergal import Panstarrs_target as ps1targ
 from hypergal import sedm_target as sedtarg
 from hypergal import geometry_tool as geotool

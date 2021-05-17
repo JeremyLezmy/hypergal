@@ -7,31 +7,31 @@ from ztfimg.astrometry import WCSHolder, WCS
 def get_source_ellipses(sourcedf, sourcescale=5, system="xy",
                         wcs=None, wcsout=None, **kwargs):
     """ 
-    sourcedf: [pandas.Dataframe] 
-        sourcedf: [pandas.DataFrame]
-        this dataframe must contain the sep/sextractor ellipse information:
-        x,y for the centroid
-        a,b for the second moment (major and minor axis)
-        theta for the angle (in degree)
-        = must be in units of xy =
+    Parameters
+    ----------
+    sourcedf: pandas.DataFrame
+        This dataframe must contain the sep/sextractor ellipse information: \n
+        x,y for the centroid\n
+        a,b for the second moment (major and minor axis) \n
+        theta for the angle (in degree) \n
+        Must be in units of xy 
         
-    sourcescale: [float] -optional-
-        this multiply a and b. 1 means second moment (1 sigma)
+    sourcescale: float -optional-
+        This multiply a and b. 1 means second moment (1 sigma)
+           
+    system: string -optional-
+        Coordinate system of the returned ellipses \n
+        - xy: native coordinates of the input source dataframe \n
+        - radec: RA, Dec assuming the input wcs and the xy system.(xy->radec) \n
+        - out: xy system of an alternative wcs solution (wcsout).(xy->radec->out) 
         
-    
-    system: [string] -optional-
-        coordinate system of the returned ellipses
-        - xy: native coordinates of the input source dataframe
-        - radec: RA, Dec assuming the input wcs and the xy system. (xy->radec)
-        - out: xy system of an alternative wcs solution (wcsout). (xy->radec->out)
-        
-    wcs, wcsout: [astropy WCS] -optional-
-        astropy WCS solution instance to convert xy<->radec 
-        wcs is needed if system is 'radec' or 'out'
+    wcs,wcsout: astropy WCS -optional-
+        astropy WCS solution instance to convert xy<->radec \n
+        wcs is needed if system is 'radec' or 'out' \n
         wcsout is need if system is 'out'
 
-    Return
-    ------
+    Returns
+    -------
     matplotlib patch (Ellipse/Polygon)
     
     """

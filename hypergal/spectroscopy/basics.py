@@ -7,21 +7,23 @@ from pyifu.spectroscopy import Cube
 
 class WCSCube( Cube, WCSHolder ):
     """ 
-    Inherits from pyifu.spectroscopy.Cube() object and ztfimg.astrometry.WCSHolder() object.
-    Load existing 3D cube or create one from cutout images.
-    Allow to manipulate spaxels (remove, select etc) and bring WCS solution associate to the cube.
+    Inherits from pyifu.spectroscopy.Cube() object and ztfimg.astrometry.WCSHolder() object.\n
+    Load existing 3D cube or create one from cutout images.\n
+    Allow to manipulate spaxels (remove, select etc) and bring WCS solution associate to the cube.\n
     """
 
     @classmethod
     def read_sedmfile(cls, cubefile):
         """ 
         Instantiate WCSCube object from filename
+
         Parameters
         ----------
-        cubefile: [string]
+        cubefile: string
             Filename of the cube to load.
-        Return
-        ----------
+
+        Returns
+        -------
         WCSCube object
         
         """
@@ -32,12 +34,14 @@ class WCSCube( Cube, WCSHolder ):
     def from_sedmcube(cls, cube):
         """ 
         Instantiate WCSCube object from pyifu.Cube object.
+
         Parameters
         ----------
-        cube: [pyifu.Cube]
+        cube: pyifu.Cube
             Cube to load.
-        Return
-        ----------
+
+        Returns
+        -------
         WCSCube object
         
         """
@@ -75,32 +79,34 @@ class WCSCube( Cube, WCSHolder ):
                          cleanheader=True):
         """ 
         Instantiate WCSCube object from hypergal.photometry.CutOuts() object.
+
         Parameters
         ----------
-        hgcutout: [CutOuts]
-            cutouts to use.
+        hgcutout: CutOuts
+            Cutouts to use.
         
-        header_id: [int]
-            Index of the list of avalables cutouts to use to global header.
+        header_id: int
+            Index of the list of avalables cutouts to use to global header.\n
             Default is 0.
 
-        influx: [bool]
-            Load cutouts data in flux unit (erg/s/cm2/AA) or in counts.
+        influx: bool
+            Load cutouts data in flux unit (erg/s/cm2/AA) or in counts.\n
             Default is True
 
-        binfactor: [int]
-            Binning factor to use on the cutouts to restride the datas.
+        binfactor: int
+            Binning factor to use on the cutouts to restride the datas.\n
             Default is None (==1)
 
-        xy_center: [array]
-            If not None must be 2 elements. Translate the cube get the center at xy_center
+        xy_center: array
+            If not None must be 2 elements. Translate the cube get the center at xy_center\n
             Default is None.
 
-        cleanheader: [bool]
-            If True, clean the Header informations which only consern the individuals images.
+        cleanheader: bool
+            If True, clean the Header informations which only consern the individuals images.\n
             Default is True
-        Return
-        ----------
+
+        Returns
+        -------
         WCSCube object
         
         """
@@ -163,10 +169,15 @@ class WCSCube( Cube, WCSHolder ):
     def set_header(self, header, *args, **kwargs):
         """ 
         Set header to the WCSCube.
+
         Parameters
         ----------
-        header: [dict]
+        header: dict
             Header to set
+
+        Returns
+        -------
+
         """
         _ = super().set_header(header)
         
@@ -177,22 +188,24 @@ class WCSCube( Cube, WCSHolder ):
     def get_target_removed(self, target_pos=None, radius=3, store=False, **kwargs):
         """ 
         Return a partial cube by removing spaxels around a given region.
+
         Parameters
         ----------
-        target_pos: [Array]
+        target_pos: array
             2 elements array for x/y coordinates (in spx unit). Correpond to the center of the region you want to remove.
 
-        radius: [float]:
-            Radius (in spx unit) of the area you want to remove.
+        radius: float:
+            Radius (in spx unit) of the area you want to remove.\n
             Default is 3 spx.
         
-        store: [bool]
-            If True, store the cube with target removed.
+        store: bool
+            If True, store the cube with target removed.\n
             Default is False
         
-        Return
-        ----------
+        Returns
+        -------
         Cube with target removed.
+
         """
         from . import sedmtools
         if target_pos is None:
@@ -206,29 +219,30 @@ class WCSCube( Cube, WCSHolder ):
                           boundingrect=False, slice_id=None):
         """ 
         Return a partial cube by removing spaxels outisde a given source delimitation.
+
         Parameters
         ----------
-        sourcedf: [DataFrame]
+        sourcedf: DataFrame
             Dataframe of spaxels which delimits the sources. (see hypergal.photomotry.basics.CutOuts() ) 
 
-        wcsin, wcsout: [astropy WCS]
-            astropy WCS solution instance to convert xy<->radec            
-            if wcsout is None (Default), then wcsout == self.wcs
+        wcsin,wcsout: astropy WCS
+            astropy WCS solution instance to convert xy<->radec \n    
+            If wcsout is None (Default), then wcsout == self.wcs
            
-        sourcescale: [float] -optional-
-            this multiply a and b. 1 means second moment (1 sigma)
+        sourcescale: float -optional-
+            This multiply a and b. 1 means second moment (1 sigma)
         
-        boundingrect: [bool] -optional-
-            If True, will reshape the sources geometry into rectangular slices
-            Otherwise, slices will have shape of the sources delimitation.
+        boundingrect: bool -optional-
+            If True, will reshape the sources geometry into rectangular slices\n
+            Otherwise, slices will have shape of the sources delimitation.\n
             Default is False.
             
-        slice_id: [int/list]
-            If None (Default), will return a cube all the slices of WCSCube instance.
+        slice_id: int/list
+            If None (Default), will return a cube all the slices of WCSCube instance.\n
             Else, will only consider the given slice index.
 
-        Return
-        ---------
+        Returns
+        -------
         New WCSCube
 
         """

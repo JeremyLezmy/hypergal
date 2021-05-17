@@ -11,23 +11,26 @@ class ADRFitter(ADR):
                      xpos_err=None, ypos_err=None,
                      init_adr=None, **kwargs ):
         """
-        Inherits from pyifu.adr.ADR() object. 
+        Inherits from pyifu.adr.ADR() object. \n
         Fit airmass and parallactic angle using position of an object along wavelength.
-        Attributes
+
+        Parameters
         ----------
-        xpos, ypos: [array]
+        xpos,ypos: array
             Postion of the object in the IFU
 
-        xpos_err, ypos_err: [array]
+        xpos_err,ypos_err: array
             Error on xpos and ypos
 
-        lbda: [array]
+        lbda: array
             Wavelength corresponding to the previous positions
         
-        init_adr: [pyifu.adr.ADR()] -optional-
+        init_adr: pyifu.adr.ADR() -optional-
             A guess adr object, where the datas will be get back as init parameters
         
-        kwargs go to ADR.set()
+        kwargs: Argument
+            Go to ADR.set()
+
         """
         self.set_xpos(xpos)
         self.set_ypos(ypos)
@@ -45,23 +48,26 @@ class ADRFitter(ADR):
     @classmethod
     def from_centroids(cls, xpos, ypos, lbda, xpos_err=None, ypos_err=None, init_adr=None, **kwargs):
         """
-        Inherits from pyifu.adr.ADR() object. 
+        Inherits from pyifu.adr.ADR() object.\n 
         Fit airmass and parallactic angle using position of an object along wavelength.
-        Attributes
+
+        Parameters
         ----------
-        xpos, ypos: [array]
+        xpos,ypos: array
             Postion of the object in the IFU
 
-        xpos_err, ypos_err: [array]
+        xpos_err,ypos_err: array
             Error on xpos and ypos
 
-        lbda: [array]
+        lbda: array
             Wavelength corresponding to the previous positions
         
-        init_adr: [pyifu.adr.ADR()] -optional-
+        init_adr: pyifu.adr.ADR() -optional-
             A guess adr object, where the datas will be get back as init parameters
         
-        kwargs go to ADR.set()
+        kwargs: Argument
+            Go to ADR.set()
+       
         """
 
         return cls(xpos, ypos, lbda, xpos_err=xpos_err, ypos_err=xpos_err, init_adr=init_adr, **kwargs)
@@ -69,12 +75,15 @@ class ADRFitter(ADR):
     def fit_adr(self, show=False, **kwargs):
         """
         Fitter. New params will be directly accessible through self.data.
+
         Parameters
         ----------
-        show: [bool]
+        show: bool
             If True, plot of ypos(xpos) with best adr fit.
         
-        kwargs go to self.show()
+        kwargs: Argument
+            Go to ADR.set()
+        
         """
         
         for k in ad.PROPERTIES:
@@ -120,14 +129,19 @@ class ADRFitter(ADR):
     def show(self, ax=None, savefile=None):
         """
         Show position and current loaded adr (which is the fitted one if you've run self.fit_adr() ) .
+
         Parameters
         ----------
-        ax: [Matplotlib.Axes] -optional-
+        ax: Matplotlib.Axes -optional-
             You can provide your own Axe (one)
 
-        savefile: [string]
-            If not None, fig.figsave(savefile)
+        savefile: string
+            If not None, fig.figsave(savefile)\n
             Default is None.
+        
+        Returns
+        -------
+        Axes
         """
         
         if ax==None:
@@ -168,7 +182,7 @@ class ADRFitter(ADR):
 
     def guess_ref_pos(self):
         """ 
-        Guess reference x and y positions for the fit, according to self.lbdaref
+        Guess reference x and y positions for the fit, according to self.lbdaref\n
         Just select the xpos and ypos of the closest wavelength of self.lbdaref.
         """
         if self.lbdaref is not None:
@@ -248,7 +262,7 @@ class ADRFitter(ADR):
     @property
     def lbda(self):
         """
-        Array of wavelenght for each position.
+        Array of wavelenght for each position
         """
         return self._lbda
 
@@ -291,7 +305,7 @@ class ADRFitter(ADR):
     @property
     def state(self):
         """
-        State of the ADR object instance. 
+        State of the ADR object instance. \n
         Might be Initial, Succes fit or Bad fit.
         """
         return self._state

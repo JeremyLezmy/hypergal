@@ -20,13 +20,14 @@ class Priors( object ):
     def set_parameters(self, parameters):
         """ 
         Set parameters you want to constraint.
+
         Parameters
         ----------
-        parameters: [dict]
+        parameters: dict
             Key should be the name of the parameter (value its value)
 
-        Return
-        ----------
+        Returns
+        -------
         """
         self._parameters = parameters
         self._parameter_names = list(self.parameters.keys())
@@ -105,22 +106,23 @@ class SceneFitter( object ):
     def __init__(self, scene, fix_params=["scale","rotation"], priors=None, debug=False):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. 
-        Attributes
+
+        Parameters
         ----------
-        scene: [SliceScene/HostScene]
+        scene: SliceScene/HostScene
             Scene object instantiates with the slice/cube from photometric source and the data slice/cube from IFU you want to model
 
-        fix_params: [list of string] -optional-
-            Parameters you want to be fixed during the fit.
+        fix_params: list of string -optional-
+            Parameters you want to be fixed during the fit.\n
             Default is ["scale","rotation"]
 
-        priors: [.Priors()] -optional-
-            Prior object to constraint some parameter. 
-            Can be instantiate in .Priors()
+        priors: .Priors() -optional-
+            Prior object to constraint some parameter. \n
+            Can be instantiate in .Priors()\n
             Default is None
 
-        debug: [bool]
-            If True, will print steps informations  during the fit.
+        debug: bool
+            If True, will print steps informations  during the fit.\n
             Default is None.
         """
         if scene is not None:
@@ -142,30 +144,31 @@ class SceneFitter( object ):
                     fix_params=["scale","rotation"], debug=False, **kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
-        Attributes
+
+        Parameters
         ----------
-        slice_in: [pyifu.Slice]
+        slice_in: pyifu.Slice
              Slice you want to use to model slice_comp.
 
-        slice_comp: [pyifu.Slice]
+        slice_comp: pyifu.Slice
              Slice you want to model. 
         
-        psf: [hypergal.psf]
+        psf: hypergal.psf
              Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.
 
-        whichscene: [string]
+        whichscene: string
             Might be 'HostSlice' or 'SliceScene'
 
-        xy_in, xy_comp: [2d-array (float) or None]
-             reference coordinates (target position) for the _in and _comp geometries
+        xy_in, xy_comp: 2d-array (float) or None
+             Reference coordinates (target position) for the _in and _comp geometries\n
              e.g. xy_comp = [3.1,-1.3]
         
-        fix_params: [list of string] -optional-
-            Parameters you want to be fixed during the fit.
+        fix_params: list of string -optional-
+            Parameters you want to be fixed during the fit.\n
             Default is ["scale","rotation"]
 
-        debug: [bool]
-            If True, will print steps informations  during the fit.
+        debug: bool
+            If True, will print steps informations  during the fit.\n
             Default is None.
         """
         if whichscene == "HostSlice":
@@ -182,22 +185,23 @@ class SceneFitter( object ):
     def from_scene(cls, scene, fix_params=["scale","rotation"], debug=False, **kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. 
-        Attributes
+
+        Parameters
         ----------
-        scene: [SliceScene/HostScene]
+        scene: SliceScene/HostScene
             Scene object instantiates with the slice/cube from photometric source and the data slice/cube from IFU you want to model
 
-        fix_params: [list of string] -optional-
-            Parameters you want to be fixed during the fit.
+        fix_params: list of string -optional-
+            Parameters you want to be fixed during the fit.\n
             Default is ["scale","rotation"]
 
-        priors: [.Priors()] -optional-
-            Prior object to constraint some parameter. 
-            Can be instantiate in .Priors()
+        priors: .Priors() -optional-
+            Prior object to constraint some parameter. \n
+            Can be instantiate in .Priors()\n
             Default is None
 
-        debug: [bool]
-            If True, will print steps informations  during the fit.
+        debug: bool
+            If True, will print steps informations  during the fit.\n
             Default is None.
         """
         return cls(scene, fix_params=fix_params, debug=debug, **kwargs)
@@ -214,55 +218,56 @@ class SceneFitter( object ):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
         Directly fit the scene after the instantiation.
-        Attributes
+
+        Parameters
         ----------
-        slice_in: [pyifu.Slice]
+        slice_in: pyifu.Slice
              Slice you want to use to model slice_comp.
 
-        slice_comp: [pyifu.Slice]
+        slice_comp: pyifu.Slice
              Slice you want to model. 
         
-        psf: [hypergal.psf]
+        psf: hypergal.psf
              Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.
 
-        whichscene: [string]
+        whichscene: string
             Might be 'HostSlice' or 'SliceScene'
 
-        xy_in, xy_comp: [2d-array (float) or None]
+        xy_in,xy_comp: 2d-array (float) or None
              reference coordinates (target position) for the _in and _comp geometries
              e.g. xy_comp = [3.1,-1.3]
         
-        fix_params: [list of string] -optional-
-            Parameters you want to be fixed during the fit.
+        fix_params: list of string -optional-
+            Parameters you want to be fixed during the fit.\n
             Default is ["scale","rotation"]
 
-        debug: [bool] -optional-
-            If True, will print steps informations  during the fit.
+        debug: bool -optional-
+            If True, will print steps informations  during the fit.\n
             Default is None.
 
-        guess: [dict] -optional-
-            Guess values for the parameters to fit. Keys are names of parameters.
+        guess: dict -optional-
+            Guess values for the parameters to fit. Keys are names of parameters.\n
             Default is None.
 
-        limit: [dict] -optional-
-            Limit values (bounds) for the parameters to fit.  Keys are names of parameters.
+        limit: dict -optional-
+            Limit values (bounds) for the parameters to fit.  Keys are names of parameters.\n
             Default is None.
 
-        error: [array] -optional-
-            Access parameter parabolic errors via an array-like view (see Minuit.error)
+        error: array -optional-
+            Access parameter parabolic errors via an array-like view (see Minuit.error)\n
             Defaut is None.
 
-        use_prior: [bool] -optional-
+        use_prior: bool -optional-
             If True (Default), will use setted priors and therefore maximize likelihood instead of minimize Chi square.
 
-        savefile: [string] -optional-
+        savefile: string -optional-
             If not None, will save the plot which shows the model and residual scene after the minimisation.
             
-        result_as_dataframe: [bool] -optional-
+        result_as_dataframe: bool -optional-
             If True (Default), will return the best fitted parameters as a DataFrame
 
-        Return
-        ---------
+        Returns
+        -------
         Dict or DataFrame            
         """
         this = cls.from_slices(slice_in, slice_comp,  psf=psf,
@@ -287,10 +292,14 @@ class SceneFitter( object ):
     def set_scene(self, scene):
         """ 
         Set Scene object (see hypergal.scene).
+
         Parameters
         ----------
-        scene: [SliceScene/HostScene]
+        scene: SliceScene/HostScene
             Scene object instantiates with the slice/cube from photometric source and the data slice/cube from IFU you want to model
+
+        Returns
+        -------
         """
         self._scene = scene
         self._base_parameters = {k:None for k in self.scene.BASE_PARAMETERS}
@@ -300,10 +309,12 @@ class SceneFitter( object ):
     def set_fixed_params(self, list_of_params):
         """ 
         Set parameters you want to be fixed during the fit.
+
         Parameters
         ----------
-        list_of_params: [list of string]
+        list_of_params: list of string
             List of parameters to be fixed (e.g. ["scale","rotation"] ) 
+
         """
         if list_of_params is None or len(list_of_params)==0:
             self._fixedparams = []
@@ -320,10 +331,12 @@ class SceneFitter( object ):
     def set_freeparameters(self, parameters):
         """ 
         Set free parameters value. 
+
         Parameters
         ----------
-        parameters: [dict]
+        parameters: dict
              Dict of all free parameters, key being the name, value the value.
+
         """
         if len(parameters) != self.nfree_parameters:
             raise ValueError(f"you must provide {self.nfree_parameters} parameters, you gave {len(parameters)}")
@@ -342,10 +355,13 @@ class SceneFitter( object ):
     def set_bestfit(self, dictparameters):
         """ 
         Set the bestfit parameters values. Automatically call at the end of the fit method, but you can set it if you already know these values.
+
         Parameters
         ----------
-        dictparameters: [dict]
-            Dictionary of parameters. If keys end with '_err', will update the property self.bestfit_errors, else will update the property self.bestfit_values
+        dictparameters: dict
+            Dictionary of parameters. \n
+            If keys end with '_err', will update the property self.bestfit_errors, else will update the property self.bestfit_values
+
         """
         if dictparameters is None:
             self._bestfit = {}
@@ -384,18 +400,19 @@ class SceneFitter( object ):
     def get_guesses(self, free_only=False, as_array=False, **kwargs):
         """ 
         Get guesses values for the availables parameters.
+
         Parameters
         ----------
-        free_only: [bool] -optional-
-            If True, return guesses only for free parameters (setted in self.free_parameters)
+        free_only: bool -optional-
+            If True, return guesses only for free parameters (setted in self.free_parameters)\n
             Default is False.
         
-        as_array: [bool] -optional-
-            If True, return array of guesses values. Else return full dictionnary.
+        as_array: bool -optional-
+            If True, return array of guesses values. Else return full dictionnary.\n
             Default is False.
         
-        Return
-        ---------
+        Returns
+        -------
         Dict or Array
         """
         dict_guess = {**self.scene.guess_parameters(), **kwargs}
@@ -410,22 +427,23 @@ class SceneFitter( object ):
     def get_limits(self, a_limit=None, pos_limits=4, sigma_limit=[0,5]):
         """ 
         Get limits values (bounds) as list for free parameters.
+
         Parameters
         ----------
-        a_limit: [list of 2 floats/None] -optional-
-            Bounds for ellipticity parameters
+        a_limit: list of 2 floats/None -optional-
+            Bounds for ellipticity parameters\n
             Default is None
 
-        pos_limits: [float]
-            Shift (in spx) from guess value for the target position parameters (x0 and y0).
+        pos_limits: float
+            Shift (in spx) from guess value for the target position parameters (x0 and y0).\n
             Default is 4.
 
-        sigma_limit: [list of 2 floats/None] -optional-
-            Bounds for the psf shape parameter (radius of the gaussian)
+        sigma_limit: list of 2 floats/None -optional-
+            Bounds for the psf shape parameter (radius of the gaussian)\n
             Default is [0,5].
         
-        Return
-        ---------
+        Returns
+        -------
         List
         """
         param_names = self.free_parameters
@@ -453,14 +471,15 @@ class SceneFitter( object ):
     def get_parameters(self, free_only=False):
         """ 
         Get all parameters.
+
         Parameters
         ----------
-        free_only: [bool] -optional-
-            If True, return only free parameters
+        free_only: bool -optional-
+            If True, return only free parameters\n
             Default is False
         
-        Return
-        ---------
+        Returns
+        -------
         Dictionary
         """
         all_params = {**self._base_parameters,
@@ -473,15 +492,17 @@ class SceneFitter( object ):
     def get_model(self, parameters=None):
         """ 
         Get scene model according to the setted parameters.
+
         Parameters
         ----------
-        parameters: [dict] -optional-
-            Allow to update the free parameters currently load in self.
+        parameters: dict -optional-
+            Allow to update the free parameters currently load in self.\n
             If None (Default), will use parameters in self.free_parameters.
 
-        Return
-        ----------
+        Returns
+        -------
         Array of model flux.
+
         """
         if parameters is not None:
             self.set_freeparameters(parameters)
@@ -493,16 +514,17 @@ class SceneFitter( object ):
     def get_bestfit_parameters(self, incl_err=True, as_dataframe=True):
         """ 
         Get bestfit parameters in self.bestfit.
+
         Parameters
         ----------
-        incl_err: [bool] -optional-
+        incl_err: bool -optional-
             If True (Default), include errors on the best fit parameters.
 
-        as_dataframe: [bool] -optional-
+        as_dataframe: bool -optional-
             If True (Default), return Dataframe.
 
-        Return
-        ----------
+        Returns
+        -------
         Dict or Dataframe
         """
         if not self.has_bestfit():
@@ -523,19 +545,21 @@ class SceneFitter( object ):
     def get_chi2(self, parameters=None, leastsq=False):
         """ 
         Get Chi square value.
+
         Parameters
         ----------
-        parameters: [dict] -optional-
-             If None (Default) will compute model with current load parameters in self.free_parameters.
+        parameters: dict -optional-
+             If None (Default) will compute model with current load parameters in self.free_parameters.\n
              Otherwise you can provide new parameters.
         
-        leastsq: [bool] -optional-
-             If True, don't consider errors (Least Square).
+        leastsq: bool -optional-
+             If True, don't consider errors (Least Square).\n
              Default is False.
 
-        Return
-        ---------
+        Returns
+        -------
         Float
+
         """
         model = self.get_model(parameters).values
         if leastsq:
@@ -554,23 +578,25 @@ class SceneFitter( object ):
     def get_logprob(self, parameters=None, bound_value=1e13, leastsq=False):
         """ 
         Get logprob value ( = -2log(Likelihood) + -2log(prod_of_priors) ).
+
         Parameters
         ----------
-        parameters: [dict] -optional-
-             If None (Default) will compute model with current load parameters in self.free_parameters.
+        parameters: dict -optional-
+             If None (Default) will compute model with current load parameters in self.free_parameters.\n
              Otherwise you can provide new parameters.
         
-        bound_values: [float] -optional-
-             Used to avoid Nan in log(prod_of_priors) if prior=0. (Must be high)
+        bound_values: float -optional-
+             Used to avoid Nan in log(prod_of_priors) if prior=0. (Must be high)\n
              Default is 1e13
         
-        leastsq: [bool] -optional-
-             If True, don't consider errors (Least Square).
+        leastsq: bool -optional-
+             If True, don't consider errors (Least Square).\n
              Default is False.
         
-        Return
-        ----------
+        Returns
+        -------
         Float
+
         """
         if parameters is not None:
             self.set_freeparameters(parameters)
@@ -592,38 +618,40 @@ class SceneFitter( object ):
                 use_priors=True, runmigrad=True, errordef=0.5, **kwargs):
         """ 
         Fitter.
+
         Parameters
         ----------
-        guess: [dict] -optional-
-             Guess values for the free_parameters.
-             If None (Default), automatically estimates them (see self.scene.guess_parameters() )
+        guess: dict -optional-
+            Guess values for the free_parameters.\n
+            If None (Default), automatically estimates them (see self.scene.guess_parameters() )
 
-        limit: [dict] -optional-
-             Bounds values for the free_parameters.
-             If None (Default), use default values in self.get_limits.
+        limit: dict -optional-
+            Bounds values for the free_parameters.\n
+            If None (Default), use default values in self.get_limits.
 
-        verbose: [bool] -optional-
-             Print parameters name, guess and bounds before the fit.
-             Default is False
+        verbose: bool -optional-
+            Print parameters name, guess and bounds before the fit.\n
+            Default is False
 
-        error: [array] -optional-
-            Access parameter parabolic errors via an array-like view (see Minuit.error)
+        error: array -optional-
+            Access parameter parabolic errors via an array-like view (see Minuit.error)\n
             Defaut is None.
 
-        use_prior: [bool] -optional-
+        use_prior: bool -optional-
             If True (Default), will use setted priors and therefore maximize likelihood instead of minimize usual Chi square.
 
-        runmigrad: [bool] -optional-
+        runmigrad: bool -optional-
             If True (Default), run Minuit.migrad(). If False return Minuit.from_array_func() object without runninf the fit
 
-        errordef: [float] -optional-
-            errordef=1 for least-squares score function
+        errordef: float -optional-
+            errordef=1 for least-squares score function \n
             errordef=0.5 for maximum-likelihood score function (Default)
 
-        kwargs goes to Minuit.from_array_func()
+        kwargs:
+            Goes to Minuit.from_array_func()
 
-        Return
-        ----------
+        Returns
+        -------
         Minuit.from_array_func() if not runmigrad
         Minuit.from_array_func().migrad() if runmigrad
         """
