@@ -13,6 +13,8 @@ from configobj import ConfigObj
 from astropy.io import fits
 from astropy.table import Table
 from scipy.interpolate import interp1d
+from astropy.convolution import Box1DKernel, convolve
+
 from glob import glob
 
 from .. import _PACKAGE_ROOT
@@ -370,20 +372,21 @@ class Cigale( SEDFitter ):
             
             utils.move_files(actual_path, path_result, files)
             
+            self._path_result = path_result            
             self._out_dir = result_dir_name
-            self._path_result = path_result
-            
+
         else:
             self._path_result = os.path.abspath(self.working_dir)
             self._out_dir = 'out/'
 
-
+        return os.path.join(self._path_result, self._out_dir)
+    
     def read_cigale_specout(self, id_, as_raw=False, lbda_range=[1000, 12000], 
                             columns=None, flux_units="aa"):
         """ """
         try:
             datafile = fits.open( os.path.join(self._path_result,self._out_dir,f'{id_}_best_model.fits'))
-            data = table.Table(datafile[1].data).to_pandas()
+            data = Table(datafile[1].data).to_pandas()
         except:
             warnings.warn(f"Cannot read the corresponding output {id_}")
             return None if columns is None else pandas.DataFrame(columns=columns)
@@ -420,7 +423,7 @@ class Cigale( SEDFitter ):
         newflux = convolve( f_hres, kerbox, boundary='extend', normalize_kernel=True)[::res]
         return pandas.DataFrame({"wavelength":lbda, "flux":newflux})
 
-    def get_sample_spectra(self, lbda_sample=None, interp_kind='linear', res=10):
+    def get_sample_spectra(self, bestmodel_dir=None, lbda_sample=None, interp_kind='linear', res=10, client=None):
         """
         Get spectra fitted by Cigale in the wavelength space of your choice. 
         
@@ -452,29 +455,42 @@ class Cigale( SEDFitter ):
             lbda_sample = SEDM_LBDA
 
         # find files
-        outloc =  os.path.join(self._path_result, self._out_dir)
-        cigale_output = np.sort(glob( os.path.join(outloc,"/*_best_model.fits") ))
+        if bestmodel_dir is None:
+            bestmodel_dir =  os.path.join(self._path_result, self._out_dir)
+            
+        cigale_output = np.sort(glob( os.path.join(bestmodel_dir,"*_best_model.fits") ))
         
         # Build the datafile
         datafile = pandas.DataFrame(cigale_output, columns=["outputfile"])
-        datafile["id"] = datafile["outputfile"].str.split("/", expand=True
-                                                              )[1].str.split("_", expand=True)[0].rename({"0":"id"}, axis=1)
+        datafile["id"] = datafile["outputfile"].astype("str").str.split("/", expand=True
+                                                              ).iloc[:,-1].astype("str").str.split("_", expand=True).iloc[:,0].rename({"0":"id"}, axis=1)
         datafile["id"] = datafile["id"].astype("int")
         datafile = datafile.set_index("id").sort_index()
 
         #
         # Build the Output DataFrame and convolve at the requested lbda_sample
-        dictout = {k: self.cigale_as_lbda( self.read_cigale_specout(k, columns=["wavelength", "flux"]),
-                                          lbda_sample, interp_kind=interp_kind, res=res)
-                       for k in datafile.index}
-        dflux = pandas.concat(dictout)["flux"]
+        if client is not None:
+            from dask import delayed
+            d_dout = {}
+            for id_ in datafile.index:
+                cigale_dl = delayed(self.read_cigale_specout)(id_, columns=["wavelength", "flux"])
+                d_dout[id_] = delayed(self.cigale_as_lbda)(cigale_dl, lbda_sample, interp_kind=interp_kind, res=res)
+
+            dictdout = client.compute(d_dout).result()
+        else:
+            dictdout = {k: self.cigale_as_lbda( self.read_cigale_specout(k, columns=["wavelength", "flux"]),
+                                            lbda_sample, interp_kind=interp_kind, res=res)
+                                            for k in datafile.index}
+                                                        
+         
+        dflux = pandas.concat(dictdout)["flux"]
         
         #
         # get the data
         data = [np.zeros( len(lbda_sample) ) if id_ not in datafile.index else dflux.xs(id_).values
-                for id_ in sfitter.input_df.index]
+                for id_ in self.input_df.index]
             
-        return np.asarray(data.values()).T, lbda
+        return np.asarray(data).T, lbda_sample
         
 
 
