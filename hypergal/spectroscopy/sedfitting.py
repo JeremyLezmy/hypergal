@@ -1,60 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-################################################################################
-# Filename:          sedfitting.py
-# Description:       script description
-# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
-# Author:            $Author: jlezmy $
-# Created on:        $Date: 2021/05/11 13:36:18 $
-# Modified on:       2021/05/17 18:00:52
-# Copyright:         2019, Jeremy Lezmy
-# $Id: sedfitting.py, 2021/05/11 13:36:18  JL $
-################################################################################
 
-"""
-.. _sedfitting.py:
-
-sedfitting.py
-==============
-
-
-"""
-__license__ = "2019, Jeremy Lezmy"
-__docformat__ = 'reStructuredText'
-__author__ = 'Jeremy Lezmy <lezmy@ipnl.in2p3.fr>'
-__date__ = '2021/05/11 13:36:18'
-__adv__ = 'sedfitting.py'
 
 import os
-import sys
-import datetime
-import numpy as np
-from .utils import * 
-from configobj import ConfigObj
 import json
+import warnings
+import pandas
+import numpy as np
+from configobj import ConfigObj
+
+
 from astropy.io import fits
 from astropy.table import Table
 from scipy.interpolate import interp1d
-from astropy.convolution import Box1DKernel, convolve
-import geopandas
-#import pkg_resources
+from glob import glob
 
-#JSON_PATH = pkg_resources.resource_filename('hypergal', 'spectroscopy/config/')
-JSON_PATH = os.path.dirname(os.path.realpath(__file__))
+from .. import _PACKAGE_ROOT
+from . import utils
+
+
 
 PS1_FILTER=['ps1_g', 'ps1_r', 'ps1_i', 'ps1_z', 'ps1_y']
 PS1_FILTER_err=['ps1_g_err','ps1_r_err', 'ps1_i_err', 'ps1_z_err', 'ps1_y_err']
 
-LBDA_SEDM = np.linspace(3700, 9300, 220)
+
+# = np.linspace(3700, 9300, 220)
+
+
+
 ORDER = "ugrizy"
 POS = {c:p for (p, c) in enumerate(ORDER)}
 
 DEFAULT_CIGALE_MODULES = ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dale2014', 'redshifting']
+CIGALE_CONFIG_PATH  = os.path.join(_PACKAGE_ROOT,'config/cigale.json')
 
 
 class SEDFitter():
-
-    def __init__(self, dataframe, redshift = 0.001, snr = None):
+    
+    FITTER_NAME = "unknown"
+    
+    def __init__(self, dataframe, redshift, snr=None, setup=True, tmp_inputpath=None):
         """ 
         Initiate SEDFitter with a dataframe.
 
@@ -64,40 +49,33 @@ class SEDFitter():
             Dataframe with flux data and flux errors for each filter you want to use.
 
         redshift: float -optional-
-            Redshift of the object. Will be the same for each row of the dataframe\n
-            Default is 0.001
+            Redshift of the object. Will be the same for each row of the dataframe
 
         snr: float -optional-
             Threshold Signal over Noise ratio for all the bands, for which the pixel won't be selected for the sedfitting. 
         Returns
         --------
         """        
-        if type(dataframe)==geopandas.geodataframe.GeoDataFrame:       
-            self.set_dataframe(pd.DataFrame(dataframe))            
-        else:
-            self.set_dataframe(dataframe)
-
+        self.set_dataframe(dataframe)
         self.set_snr(snr)
         self.set_redshift(redshift)
-
+        if setup:
+            self.setup_df(tmp_inputpath=tmp_inputpath)
         
-    def setup_df(self, path_to_save = None, to_mJy = True):
+    def setup_df(self, tmp_inputpath=None):
         
         """ 
         Make the input dataframe compatible with the sedfitter.
 
         Parameters
         ----------
-        path_to_save: string
+        tmp_inputpath: string
             Where you want to store the dataframe which will be the input of the sedfitter.\n
             For Cigale must be .txt file.
 
         which: string]
             Which sedfitter are you using. \n
             If Cigale (default), it will reorder the columns, and add one with ID for each pixel.
-
-        to_mJy: bool
-            
            
         Returns
         --------
@@ -115,7 +93,7 @@ class SEDFitter():
         df = df[lst]
         df['redshift']=np.array([self.redshift]*len(df))
 
-        if hasattr(self, '_sedfitter_name') and self._sedfitter_name=='cigale':      
+        if self.FITTER_NAME in ['cigale']:
             df['id']=df.index        
             df = df.reindex(columns=(['id','redshift'] + list([a for a in df.columns if a not in ['id','redshift']]) ))
 
@@ -126,21 +104,22 @@ class SEDFitter():
         df_threshold = df.loc[idx].copy()
         self.set_input_sedfitter(df_threshold)
                
-        if path_to_save==None:
+        if tmp_inputpath is None:
             df_threshold.to_csv('in_sedfitter.txt', header=True, index=None, sep='\t', mode='w+')
-            self._dfpath = 'in_sedfitter.txt'
+            self._dfpath = os.path.abspath('in_sedfitter.txt')
         else:
-            dirout = os.path.dirname(path_to_save)
+            dirout = os.path.dirname(tmp_inputpath)
             if not os.path.isdir(dirout) :
                 os.makedirs(dirout, exist_ok = True)
-            df_threshold.to_csv(path_to_save, header=True, index=None, sep='\t', mode='w+')
-            self._dfpath = os.path.abspath(path_to_save)
+            df_threshold.to_csv(tmp_inputpath, header=True, index=None, sep='\t', mode='w+')
+            self._dfpath = os.path.abspath(tmp_inputpath)
         
         self._idx_used = idx
          
     # -------- #
     #  SETTER  #
     # -------- #
+
     
     def set_dataframe(self, dataframe):
         """ 
@@ -243,20 +222,55 @@ class SEDFitter():
         return self._filters
     
 
-class Cigale(SEDFitter):
+class Cigale( SEDFitter ):
+
+    FITTER_NAME = "cigale"
 
     # ============= #
     #  Methods      #
     # ============= #
-
-    def __init__(self, dataframe, redshift = 0.001, snr = None):
-        
-        super().__init__(dataframe = dataframe, redshift = redshift, snr = snr)
-        self._sedfitter_name = 'cigale'
-
-    def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None ):
+    @classmethod
+    def from_cube_cutouts(cls, cubeouts, redshift, snr=3, in_unit="aa",
+                              tmp_inputpath=None, **kwargs):
         """ 
-        Initiate Cigale (not launch yet)
+        **kwargs goes to __init__
+           -> setup
+        """
+        import pandas
+        try:
+            bands = [cubeouts.header[f"FILTER{i}"] for i in range(len(cubeouts.data))]
+        except:
+            raise TypeError("the given cube is not a cutout cube, no FILTER{i} entries in the header")
+        
+        cigale_bands = [b.replace(".","_") for b in bands]
+        #
+        # Build the input dataframe
+        pdict = cubeouts.to_pandas()
+        
+        df = pandas.concat({"data":pdict["data"], "variance":pdict["variance"]}, )
+        
+        df = pdict["data"].rename({k:v for k,v in enumerate(cigale_bands)}, axis=1) # correct column names
+        df_err = pandas.DataFrame(np.sqrt(pdict["variance"].values), index=df.index, 
+                columns=[k+"_err" for k in df.columns]) # errors and not variance
+        #
+        # good unit if necessary
+        if in_unit is not None and in_unit != "mjy":
+            if in_unit == 'aa':
+                convertion = getattr(utils,f"flux_{in_unit}_to_mjy")(1, cubeouts.lbda)
+            else:
+                convertion = getattr(utils,f"flux_{in_unit}_to_mjy")(1)
+                
+            df *= convertion
+            df_err *= convertion
+        
+        df = df.merge(df_err, right_index=True, left_index=True) # combined them
+        
+        return cls(dataframe=df, redshift=redshift, snr=snr,
+                       tmp_inputpath=tmp_inputpath, **kwargs)
+        
+        
+    def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None ):
+        """  Initiate Cigale (not launch yet)
 
         Parameters
         ---------
@@ -276,18 +290,21 @@ class Cigale(SEDFitter):
 
         """
 
-        self._currentpwd = os.getcwd()
+        self._currentpwd = os.getcwd() # is absolute already
         
         if working_dir is not None:
+            working_dir = os.path.abspath(working_dir) # make it absolute
             if not os.path.isdir(working_dir) :
                 os.makedirs(working_dir, exist_ok = True)
+                
             os.chdir(working_dir)
-        else :
-            working_dir = self.currentpwd
-
-        self._working_dir = os.path.abspath(working_dir)
             
-        command_cigale('init')
+        else:
+            working_dir = self._currentpwd
+
+        self._working_dir = working_dir
+            
+        utils.command_cigale('init')
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
         
         config['data_file'] = self.dfpath
@@ -303,21 +320,19 @@ class Cigale(SEDFitter):
             
         self.set_nb_process(cores)
         config['analysis_method'] = 'pdf_analysis'
-        config['cores'] = self._nb_process
-        
+        config['cores'] = self._nb_process        
         config.write()
         
-        command_cigale('genconf')
+        utils.command_cigale('genconf')
 
         config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
 
         if sed_modules=='default':
-            with open(os.path.join(JSON_PATH,'..','config',
-                       'cigale.json')) as data_file:
-               
+            with open( CIGALE_CONFIG_PATH ) as data_file:
                 params = json.load(data_file)
                 
-            config = update(config,params)
+            config = utils.update_config(config, params)
+            
         config['sed_modules_params'][[k for k in config['sed_modules_params'].keys() if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
         
         config.write()            
@@ -330,11 +345,12 @@ class Cigale(SEDFitter):
         Results will be stored in self._working_dir, and a directory 'out/' will be created.
         """
         
-        command_cigale('run')
+        utils.command_cigale('run')
 
         #### Should be Removed or at least reworked #####
-        
         if path_result is not None:
+            import datetime
+            warnings.warn("path_result is None. DEPRECATED")
             actual_path = os.getcwd()+'/'
             if os.path.exists(path_result+ result_dir_name):
                 name = path_result+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
@@ -352,19 +368,59 @@ class Cigale(SEDFitter):
                 shutil.move(name, actual_path+'out/')
                 files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt',result_dir_name]
             
-            move_files(actual_path, path_result, files)
+            utils.move_files(actual_path, path_result, files)
             
             self._out_dir = result_dir_name
-             
             self._path_result = path_result
             
         else:
             self._path_result = os.path.abspath(self.working_dir)
-            
             self._out_dir = 'out/'
 
 
-    def get_sample_spectra(self, lbda_sample = LBDA_SEDM, interp_kind = 'linear', box_ker_size=10, save_file = None, as_cube = False):
+    def read_cigale_specout(self, id_, as_raw=False, lbda_range=[1000, 12000], 
+                            columns=None, flux_units="aa"):
+        """ """
+        try:
+            datafile = fits.open( os.path.join(self._path_result,self._out_dir,f'{id_}_best_model.fits'))
+            data = table.Table(datafile[1].data).to_pandas()
+        except:
+            warnings.warn(f"Cannot read the corresponding output {id_}")
+            return None if columns is None else pandas.DataFrame(columns=columns)
+
+        if as_raw:
+            return data
+
+        data["wavelength"] *= 10 # nn-> AA
+        data = data[data["wavelength"].between(*lbda_range)]
+        if flux_units == "aa":
+            data["Fnu"] *= utils.flux_mjy_to_aa(1, data["wavelength"])
+            data.rename({"Fnu":"flux"}, axis=1,inplace=True)
+        elif flux_units == "hz":
+            data["Fnu"] *= utils.flux_mjy_to_hz(1)
+            data.rename({"Fnu":"flux"}, axis=1,inplace=True)
+        elif flux_units is not None and flux_units != "mjy":
+            raise ValueError(f"Cannot parse the input flux_units {flux_units} ; aa, hz or mjy implemented")
+        else:
+            data.rename({"Fnu":"flux"}, axis=1,inplace=True)
+
+        if columns is None:
+            return data
+
+        return data[columns]
+
+    @staticmethod
+    def cigale_as_lbda(cigale_df, lbda, interp_kind="linear", res=10):
+        """ """
+        f = interp1d(cigale_df["wavelength"].values,
+                     cigale_df["flux"].values, kind=interp_kind)
+        
+        f_hres  =  f(np.linspace(lbda[0], lbda[-1], len(lbda)*res) )
+        kerbox  = Box1DKernel( res )
+        newflux = convolve( f_hres, kerbox, boundary='extend', normalize_kernel=True)[::res]
+        return pandas.DataFrame({"wavelength":lbda, "flux":newflux})
+
+    def get_sample_spectra(self, lbda_sample=None, interp_kind='linear', res=10):
         """
         Get spectra fitted by Cigale in the wavelength space of your choice. 
         
@@ -386,56 +442,41 @@ class Cigale(SEDFitter):
         save_file : string
             If not None (Default), where to save the sample spectra? Will save the corresponding wavelength too.
               
-        as_cube : bool
-            If True, return a pyifu 3D cube. You must have set the geometry of the images first\n
-            Default is False
-
         Returns
         -------
         If as_cube,return a pyif.Cube
         If not as_cube, return 2 arrays 
         """
-        kerbox = Box1DKernel( box_ker_size )       
-        full_DF = self.clean_df.copy()     
-        spec_data_cg=np.empty(shape=(len( full_DF )), dtype='object')
-        spec_data_interp=np.zeros(shape=(len( full_DF ),len(lbda_sample)))       
-        fitind=0           
-        for i in range(len( full_DF )):          
-            if i in ( self.idx_used ):               
-                valid_spec = 'yes'               
-                try:
-                    datafile = fits.open( os.path.join(self._path_result,self._out_dir,f'{i}_best_model.fits'))
-                    data = Table(datafile[1].data)                                  
-                except:
-                    valid_spec='no'
-                    
-                if valid_spec=='yes' :                                      
-                    lbda_full = np.array(data['wavelength']) * 10 #nm  ->  AA
-                    lbda = lbda_full[(lbda_full<lbda_sample[-1]+2000) & (lbda_full>lbda_sample[0]-2000)]
-                    spec_data_cg[i] = flux_hz_to_aa(np.array(data['Fnu'])[(lbda_full<lbda_sample[-1]+2000) & (lbda_full>lbda_sample[0]-2000)] * 10**(-26), lbda) #mJy ->  erg.s^-1.cm^-2.Hz^-1  ->  erg.s^-1.cm^-2.AA^-1                     
-                    f=interp1d(lbda, spec_data_cg[i], kind = interp_kind)
-                    spec_data_interp[i] = convolve( f (np.linspace(lbda_sample[0],lbda_sample[-1],len(lbda_sample)*box_ker_size) ),kerbox,boundary='extend',normalize_kernel=True)[::10]
-                                      
-                else:                   
-                    spec_data_interp[i] = np.array([np.nan] * len(lbda_sample))                   
-                    spec_data_cg[i] = np.nan
-                    
-                fitind+=1
-                
-            else:
-                spec_data_interp[i] = np.array([0] * len(lbda_sample))                
-                spec_data_cg[i] = 0        
-        self.spec_sample = spec_data_interp
-        self.spec_lbda_sample = lbda_sample
-        self.spec_cg = spec_data_cg
+        if lbda_sample is None:
+            from pysedm.sedm import SEDM_LBDA 
+            lbda_sample = SEDM_LBDA
 
-        if save_file is not None:
-            np.savez(save_file, spec=spec_data_interp, lbda=lbda_sample)
-        if as_cube:
+        # find files
+        outloc =  os.path.join(self._path_result, self._out_dir)
+        cigale_output = np.sort(glob( os.path.join(outloc,"/*_best_model.fits") ))
+        
+        # Build the datafile
+        datafile = pandas.DataFrame(cigale_output, columns=["outputfile"])
+        datafile["id"] = datafile["outputfile"].str.split("/", expand=True
+                                                              )[1].str.split("_", expand=True)[0].rename({"0":"id"}, axis=1)
+        datafile["id"] = datafile["id"].astype("int")
+        datafile = datafile.set_index("id").sort_index()
 
-            return
-                    
-        return(spec_data_interp,lbda_sample)
+        #
+        # Build the Output DataFrame and convolve at the requested lbda_sample
+        dictout = {k: self.cigale_as_lbda( self.read_cigale_specout(k, columns=["wavelength", "flux"]),
+                                          lbda_sample, interp_kind=interp_kind, res=res)
+                       for k in datafile.index}
+        dflux = pandas.concat(dictout)["flux"]
+        
+        #
+        # get the data
+        data = [np.zeros( len(lbda_sample) ) if id_ not in datafile.index else dflux.xs(id_).values
+                for id_ in sfitter.input_df.index]
+            
+        return np.asarray(data.values()).T, lbda
+        
+
 
 
         ####### Miss Plots ######
@@ -449,7 +490,9 @@ class Cigale(SEDFitter):
         then clean the directory where cigale has been run.
         """
         if self.currentpwd == self.working_dir:
+            warnings.warn("currentpwd is the same as working dir. Cannot remove it. Nothing done")
             return
+            
         os.chdir( self._currentpwd)
         shutil.rmtree( self._working_dir)
         self._working_dir = None
@@ -508,6 +551,3 @@ class Cigale(SEDFitter):
         return self._currentpwd
 
    
-    
-    
-# End of sedfitting.py ========================================================

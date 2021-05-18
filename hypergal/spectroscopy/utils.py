@@ -1,29 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-################################################################################
-# Filename:          utils.py
-# Description:       script description
-# Author:            Jeremy Lezmy <lezmy@ipnl.in2p3.fr>
-# Author:            $Author: jlezmy $
-# Created on:        $Date: 2021/05/11 15:38:49 $
-# Modified on:       2021/05/17 20:11:36
-# Copyright:         2019, Jeremy Lezmy
-# $Id: utils.py, 2021/05/11 15:38:49  JG $
-################################################################################
-
-"""
-.. _utils.py:
-
-utils.py
-==============
 
 
-"""
-__license__ = "2019, Jeremy Lezmy"
-__docformat__ = 'reStructuredText'
-__author__ = 'Jeremy Lezmy <jeremy@ipnl.in2p3.fr>'
-__date__ = '2021/05/11 15:38:49'
-__adv__ = 'utils.py'
+
 
 import os
 import sys
@@ -143,7 +122,7 @@ def move_files(old_path, new_path, files, verbose=False):
 
 
 
-def update(d, u):
+def update_config(d, u):
     """
     Tools to update dict of dict without losing not changed values
 
@@ -161,11 +140,14 @@ def update(d, u):
     """
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
-            d[k] = update(d.get(k, {}), v)
+            d[k] = update_config(d.get(k, {}), v)
         else:
             d[k] = v
     return d
 
+# ============== #
+#  Convertsion   #
+# ============== #
 def flux_aa_to_hz(flux, wavelength):
     """
     Convert flux in __/Angstrom to __/Hertz
@@ -184,11 +166,8 @@ def flux_aa_to_hz(flux, wavelength):
     """
     return flux * (wavelength**2 / constants.c.to("AA/s").value)
 
-
-
 def flux_hz_to_aa(flux, wavelength):
-    """
-    Convert flux in __/Hertz to __/Angstrom
+    """ Convert flux in __/Hertz to __/Angstrom
 
     Parameters
     ----------
@@ -205,6 +184,39 @@ def flux_hz_to_aa(flux, wavelength):
    
     return flux / (wavelength**2 / constants.c.to("AA/s").value)
 
+def flux_aa_to_mjy(flux, wavelength):
+    """ Convert flux in __/Angstrom to mJy
+
+    Parameters
+    ----------
+    flux : float, array
+        Flux to convert
+    
+    wavelength : float
+        (effective) wavelength at which the flux correspond to.
+    
+    Returns
+    -------
+    Float, Array
+    """
+    return flux_hz_to_mjy( flux_aa_to_hz(flux, wavelength) )
+
+def flux_mjy_to_aa(flux, wavelength):
+     """ Convert flux in  mJy to __/Angstrom
+
+     Parameters
+     ----------
+     flux : float, array
+         Flux to convert
+    
+     wavelength : float
+     (effective) wavelength at which the flux correspond to.
+    
+     Returns
+     -------
+     Float, Array
+     """
+     return flux_mjy_to_hz( flux_hz_to_aa(flux, wavelength) )
 
 def flux_hz_to_mjy(flux):
     """
@@ -238,10 +250,8 @@ def flux_mjy_to_hz(flux):
    
     return flux*10**-26
 
-
-def spec_to_3dcube( spec=None, lbda=None, spx_map=None, spx_vert=None):
-    """ 
-    Build 3d cube with pyifu method.
+def spectra_to_3dcube( spectra, lbda, spx_map, spx_vert=None, **kwargs):
+    """ Build 3d cube with pyifu method.
 
     Parameters
     ----------
@@ -263,12 +273,8 @@ def spec_to_3dcube( spec=None, lbda=None, spx_map=None, spx_vert=None):
     """
     
     if len(spec)!=len(spx_map):
-        raise ValueError("Shape of spec doesn't match shape of spaxel mapping")
+        raise ValueError("Shapes of spec and spaxel_mapping do not match.")
           
-    cube=pyifu.spectroscopy.get_cube(data=spec.T,lbda=lbda,spaxel_mapping=pixMap)
-    cube.set_spaxel_vertices( spx_vert )
-        
-    return(cube)
-
-
-# End of utils.py ========================================================
+    return pyifu.spectroscopy.get_cube(data=spectra.T, lbda=lbda,
+                                        spaxel_mapping=spx_map,
+                                        spaxel_vertices=spx_vert, **kwargs)
