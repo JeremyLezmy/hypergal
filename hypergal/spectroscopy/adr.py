@@ -87,7 +87,7 @@ class ADRFitter(ADR):
         """
         
         for k in ad.PROPERTIES:
-            if ad.data[k] is None:
+            if self.data[k] is None:
                 raise ValueError(f'{k} must be set with self.set() method')
 
         from scipy import optimize
