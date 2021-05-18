@@ -86,7 +86,7 @@ class ADRFitter(ADR):
         
         """
         
-        for k in ad.PROPERTIES:
+        for k in self.PROPERTIES:
             if self.data[k] is None:
                 raise ValueError(f'{k} must be set with self.set() method')
 
@@ -110,7 +110,7 @@ class ADRFitter(ADR):
                
             return (np.sum((datas-model)**2 / err**2))
 
-        adrfit=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]) )
+        adrfit=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]), bounds=[ (None,None), (1,None), (None,None), (None,None)] )
 
         if adrfit.success:
             self._set_state("Success Fit")
@@ -143,6 +143,7 @@ class ADRFitter(ADR):
         -------
         Axes
         """
+        import matplotlib.pyplot as plt
         
         if ax==None:
             fig,ax=plt.subplots( figsize=(8,8))
@@ -155,7 +156,7 @@ class ADRFitter(ADR):
         colormap = cm.jet
         normalize = mcolors.Normalize(vmin=np.min(self.lbda), vmax=np.max(self.lbda))
         s_map = cm.ScalarMappable(norm=normalize, cmap=colormap)
-        colors = plt.cm.jet((lbda-np.min(self.lbda))/(np.max(self.lbda)-np.min(self.lbda)))
+        colors = plt.cm.jet((self.lbda-np.min(self.lbda))/(np.max(self.lbda)-np.min(self.lbda)))
         
         ax.scatter( self.xpos, self.ypos, cmap=colormap, c=self.lbda, label='Input position')
         ax.errorbar(self.xpos, self.ypos, self.xpos_err, self.ypos_err, fmt='none', color=colors)
