@@ -228,12 +228,20 @@ class Cigale( SEDFitter ):
 
     FITTER_NAME = "cigale"
 
+    def __init__(self, dataframe, redshift, snr=None, setup=True, tmp_inputpath=None,
+                     initiate=True, ncores="auto", working_dir=None):
+        """ """
+        _ = super().__init__(dataframe, redshift, snr=snr, setup=setup, tmp_inputpath=tmp_inputpath)
+        if initiate:
+            self.initiate_cigale(working_dir=working_dir, cores=ncores)
+            
     # ============= #
     #  Methods      #
     # ============= #
     @classmethod
     def from_cube_cutouts(cls, cubeouts, redshift, snr=3, in_unit="aa",
-                              tmp_inputpath=None, **kwargs):
+                              tmp_inputpath=None,
+                              initiate=True, ncores="auto", working_dir=None, **kwargs):
         """ 
         **kwargs goes to __init__
            -> setup
@@ -268,7 +276,8 @@ class Cigale( SEDFitter ):
         df = df.merge(df_err, right_index=True, left_index=True) # combined them
         
         return cls(dataframe=df, redshift=redshift, snr=snr,
-                       tmp_inputpath=tmp_inputpath, **kwargs)
+                       tmp_inputpath=tmp_inputpath,
+                       initiate=initiate, ncores=ncores, working_dir=working_dir,**kwargs)
         
         
     def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None ):
