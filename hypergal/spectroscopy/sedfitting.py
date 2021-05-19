@@ -280,7 +280,7 @@ class Cigale( SEDFitter ):
                        initiate=initiate, ncores=ncores, working_dir=working_dir,**kwargs)
         
         
-    def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None ):
+    def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None, testmode=False ):
         """  Initiate Cigale (not launch yet)
 
         Parameters
@@ -341,8 +341,10 @@ class Cigale( SEDFitter ):
         if sed_modules=='default':
             with open( CIGALE_CONFIG_PATH ) as data_file:
                 params = json.load(data_file)
-                
-            config = utils.update_config(config, params)
+            if testmode:
+                config['analysis_params']['save_best_sed']='True'
+            else:    
+                config = utils.update_config(config, params)
             
         config['sed_modules_params'][[k for k in config['sed_modules_params'].keys() if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
         
@@ -472,7 +474,7 @@ class Cigale( SEDFitter ):
         # Build the datafile
         datafile = pandas.DataFrame(cigale_output, columns=["outputfile"])
         datafile["id"] = datafile["outputfile"].astype("str").str.split("/", expand=True
-                                                              ).iloc[:,-1].astype("str").str.split("_", expand=True).iloc[:,0].rename({"0":"id"}, axis=1)
+                                                              ).iloc[:,-1].astype("str").str.split("_", expand=True).iloc[:,0].rename({"0":"id"}).values
         datafile["id"] = datafile["id"].astype("int")
         datafile = datafile.set_index("id").sort_index()
 

@@ -287,5 +287,5 @@ class PSF3D( PSF2D ):
         """ 
         Reference wavelength
         """
-        self._lbdaref
+        return self._lbdaref
     
