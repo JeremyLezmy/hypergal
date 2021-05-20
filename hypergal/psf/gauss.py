@@ -95,19 +95,19 @@ class Gauss3D( PSF3D, Gauss2D ):
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
         #   - fit the instance profile if it is.
-        for param in cls.PARAMETER_NAMES:
+        for param in this.PARAMETER_NAMES:
             
             # Non chromatic parameters | for instance a and b
-            if param not in cls.CHROMATIC_PARAMETERS and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
+            if param not in this.CHROMATIC_PARAMETERS and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
                 value = np.asarray(values[param])
                 if errors is not None:
                     variance = np.asarray(errors[param])**2
                     param3d[param] = np.average(value, weights=1/variance)
                 else:
-                    param3d[param] = np.mean(value, weights=1/variance)
+                    param3d[param] = np.mean(value)
                 
             # Non chromatic parameters
-            elif param in cls.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
+            elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Sigma
                 value = np.asarray(values[param])
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
