@@ -662,4 +662,81 @@ class Overlay( object ):
         if not hasattr(self,"_overlaydf") or self._overlaydf is None:
             self.load_overlaydf()
         return self._overlaydf
+
+
+class Overlay3D( Overlay):
+    """ """    
+    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True):
+        """ Changes the _comp geometry using transform_geometry
         
+        Parameters
+        ----------
+        rotation: float, None -optional-
+            Rotation angle (in deg)\n
+            - None means ignored
+
+        scale: float, None -optional-
+            Scale the geometry (ref = centroid) \n
+            - None means ignored
+
+        xoff,yoff: float, None -optional-
+            Shifts the centroid by -xoff and -yoff \n
+            - None means ignored        
+            
+        reset_overlay: bool -optional-
+            Shall this reset the overlay (you should)
+
+        Returns
+        -------
+        None
+        """
+        mpoly = []
+        
+        if xoff is not None and yoff is not None:
+            xoff = np.atleast_1d(xoff)
+            yoff = np.atleast_1d(yoff)
+            if len(xoff)!=len(yoff):
+                raise ValueError(" xoff and yoff must have the same size")
+                
+            self._nslices = len( xoff )
+            
+        for sli in range(self.nslices):
+            
+            new_param = {k:v[sli] for k,v in locals().items()
+                         if k in self.PARAMETER_NAMES and\
+                         v is not None and \
+                         v[sli] != self.geoparam_comp[k]}
+            
+            transfor_param = {k:(v-self.geoparam_comp[k]) if self.geoparam_comp[k] is not None else v
+                              for k,v in new_param.items()}
+            
+            new_mpoly = transform_geometry(self.mpoly_comp, **transfor_param)
+            
+            mpoly += list(new_mpoly)
+            self._geoparam_comp = {**self._geoparam_comp, **new_param}
+            if reset_overlay:
+                self.reset_overlaydf()
+        stacked_mpoly = MultiPolygon(mpoly)
+        
+        return stacked_mpoly
+    
+    
+    def get_overlaydf3D(self, mpoly_in, mpoly_comp, use_overlapping=True, area_ok=0.001, warn_ifok=False):
+        """ """
+        dfstack = self.get_overlaydf( mpoly_in = mpoly_in, mpoly_comp=mpoly_comp, use_overlapping=use_overlapping, area_ok=area_ok, warn_ifok=warn_ifok)
+        
+        if len(np.unique(dfstack['id_comp'])) % self._nslices != 0:
+            raise ValueError(" Some spaxels of your slices are outside self.mpoly_in.\n Maybe enlarge your cutouts, and check if mpoly_in and mpoly_comp are well overlapped.  ")
+        
+        overlaydf = [dfstack.loc[ (dfstack['id_comp']>sli*self.nspx_comp) & (dfstack['id_comp']<sli*self.nspx_comp + self.nspx_comp)] for sli in range(self.nslices)]
+        return overlaydf
+        
+    @property
+    def nslices(self):
+        """ """ 
+        return self._nslices
+    
+    @property
+    def nspx_comp(self):
+        """ """
+        return len( self.mpoly_comp)
