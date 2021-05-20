@@ -782,6 +782,7 @@ class Overlay3D( Overlay ):
         -------
         None
         """
+        raise NotImplementedError("NO UPDATED TO NEW _ORIG FORMAT")
         mpoly = []
         
         if xoff is not None and yoff is not None:

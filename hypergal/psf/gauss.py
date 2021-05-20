@@ -78,53 +78,54 @@ class Gauss2D( PSF2D ):
     
 
 class Gauss3D( PSF3D, Gauss2D ):
-
-    PROFILE_PARAMETERS = ["sigma"] 
+    
+    CHROMATIC_PARAMETERS = ['sigma']
+    PROFILE_PARAMETERS = ['sigma', 'rho']
+    
     # ============= #
     #  Methods      #
     # ============= #
-    CHROM_PARAM = ['sigma']
-    PROFILE_PARAMETERS = ['sigma', 'rho']
-    
-    
-    def fit_from_values(self, values, errors, lbda):
+    @classmethod
+    def fit_from_values(cls, values, lbda, errors=None, **kwargs):
         """ """
+        from scipy.optimize import minimize
+        this = cls(lbdaref=**kwargs)
         
-        param3d={}
-        
+        param3d = {}
+        # Loop over the PARAMETER_NAMES and given the values, errors and lbda
+        #   - get the mean values if the parameter is not chromatic
+        #   - fit the instance profile if it is.
         for param in self.PARAMETER_NAMES:
             
-            if param not in self.CHROM_PARAM and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
+            # Non chromatic parameters | for instance a and b
+            if param not in self.CHROMATIC_PARAMETERS and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
+                value = np.asarray(values[param])
+                if errors is not None:
+                    variance = np.asarray(errors[param])**2
+                    param3d[param] = np.average(value, weights=1/variance)
+                else:
+                    param3d[param] = np.mean(value, weights=1/variance)
                 
-                val = np.array(values[param ] )   
-                err = np.array( errors[param] ) if errors is not None else np.ones(len(val))
-                
-                param3d[param] = np.sum( np.dot(val, err**-2))/np.sum( err**-2 ) 
-                
-            elif param in self.CHROM_PARAM and param in values.keys():   ###If param is chromatic 
+            # Non chromatic parameters
+            elif param in self.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
+                # Sigma
+                value = np.asarray(values[param])
+                variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
+                       
+                def get_chromparam(arr_):
+                    """ function to be minimizing """
+                    sigma_, rho_ = arr_
+                    self.update_parameters(**{"sigma":sigma_, "rho":rho_})
+                    model = self.get_sigma(lbda) # rho has been updated already
+                    chi2 = np.sum( (value-model)**2/variance )
+                    return chi2
 
-                    val = np.array(values[param ] )   
-                    err = np.array( errors[param ] ) if errors is not None else np.ones(len(val))
-                   
-                    if self.lbdaref is None:
-                        param3d[param] = np.sum( np.dot(val, err**-2))/np.sum( err**-2 )
-                        continue
-                        
-                    def get_chromparam(X):    ####function which goes in minimize (general if power law)
-                        paramref=X[0]      
-                        power=X[1]
-                        locals()[param] = paramref
-                        self.update_parameters(**{param :paramref})
-                        return( np.sum( (getattr(self, 'get_'+param)(lbda, power) - val)**2/ err**2))
-
-                    import scipy
-                    sci=scipy.optimize.minimize(get_chromparam, np.array([1,1]) )
-                    param_chrom = sci.x[0]
-                    power_chrom = sci.x[1]
-                    param3d[param] = param_chrom
-                    param3d["rho"] = power_chrom
+                fit_output= minimize( get_chromparam, np.array([1,1]) )
+                
+                param3d["sigma"] = fit_output.x[0]
+                param3d["rho"]   = fit_output.x[1]
         
-        self.update_parameters(**{k:param3d[k] for k in self.PARAMETER_NAMES})
+        self.update_parameters(**param3d)
       
         
     def get_radial_profile(self, r, lbda):
@@ -171,5 +172,6 @@ class Gauss3D( PSF3D, Gauss2D ):
         sigmaref = super().get_sigma()
         if rho is None:
             rho = self._profile_params['rho']
+            
         return sigmaref * (lbda/self.lbdaref)**rho
     
