@@ -818,14 +818,14 @@ class Overlay3D( Overlay ) :
         new_param = {k:v for k,v in locals().items()
                          if k in self.PARAMETER_NAMES and\
                          v is not None and \
-                         not not np.allclose(v, self.geoparam_comp[k], atol=atol)}
+                         not np.allclose(v, self.geoparam_comp[k], atol=atol)}
         
         if len(new_param) == 0:
             if not reload:
                 return None
             else:
                 new_param = {}
-
+                
         new_geoparam = {**self._geoparam_comp, **new_param}
         new_mpoly = transform3d_geometry(self.mpoly_comp_orig, **new_geoparam)
 
@@ -842,20 +842,22 @@ class Overlay3D( Overlay ) :
         
         overlaydf_flatten = self.overlaydf
         # including boundary issues
-        overlays = [overlaydf_flatten[overlaydf_flatten["id_comp"].between( 
-                        *(np.asarray([0, nspaxels-1]) + i*nspaxels + ((1,1) if i==nslices-1 else (0,0))))
-                             ]
-                     for i in range(nslices)]
+        shaped_idx = np.unique(overlaydf_flatten["id_comp"]).reshape(self.nslices, self.nspaxels_comp)
+        overlays = [overlaydf_flatten[overlaydf_flatten["id_comp"].isin(id_)]
+                             for id_ in shaped_idx]
+
         if correct_id_comp:
-            for i,overlay_ in enumerate(overlays):
-                overlay_["id_comp"] -= i*nspaxels
-                
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                for i,overlay_ in enumerate(overlays):
+                    overlay_["id_comp"] -= i*nspaxels
+                    
         return overlays
     
     def get_projected_flux(self, flux3d, **kwargs):
         """ """
         overlays = self.get_slices_overlaydf(correct_id_comp=True)
-        if len(np.shape(flux3d)) == 2 and shape_flux[0]==1:
+        if len(np.shape(flux3d)) == 2 and np.shape(flux3d)[0]==1:
             flux3d = np.squeeze(flux3d)
     
         if len(np.shape(flux3d)) == 1:
