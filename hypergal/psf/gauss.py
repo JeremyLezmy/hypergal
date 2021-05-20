@@ -95,10 +95,10 @@ class Gauss3D( PSF3D, Gauss2D ):
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
         #   - fit the instance profile if it is.
-        for param in self.PARAMETER_NAMES:
+        for param in cls.PARAMETER_NAMES:
             
             # Non chromatic parameters | for instance a and b
-            if param not in self.CHROMATIC_PARAMETERS and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
+            if param not in cls.CHROMATIC_PARAMETERS and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
                 value = np.asarray(values[param])
                 if errors is not None:
                     variance = np.asarray(errors[param])**2
@@ -107,7 +107,7 @@ class Gauss3D( PSF3D, Gauss2D ):
                     param3d[param] = np.mean(value, weights=1/variance)
                 
             # Non chromatic parameters
-            elif param in self.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
+            elif param in cls.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Sigma
                 value = np.asarray(values[param])
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
@@ -115,8 +115,8 @@ class Gauss3D( PSF3D, Gauss2D ):
                 def get_chromparam(arr_):
                     """ function to be minimizing """
                     sigma_, rho_ = arr_
-                    self.update_parameters(**{"sigma":sigma_, "rho":rho_})
-                    model = self.get_sigma(lbda) # rho has been updated already
+                    this.update_parameters(**{"sigma":sigma_, "rho":rho_})
+                    model = this.get_sigma(lbda) # rho has been updated already
                     chi2 = np.sum( (value-model)**2/variance )
                     return chi2
 
@@ -125,8 +125,8 @@ class Gauss3D( PSF3D, Gauss2D ):
                 param3d["sigma"] = fit_output.x[0]
                 param3d["rho"]   = fit_output.x[1]
         
-        self.update_parameters(**param3d)
-      
+        this.update_parameters(**param3d)
+        return this
         
     def get_radial_profile(self, r, lbda):
         """ 
