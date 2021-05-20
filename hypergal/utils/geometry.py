@@ -728,7 +728,7 @@ class Overlay3D( Overlay):
         if len(np.unique(dfstack['id_comp'])) % self._nslices != 0:
             raise ValueError(" Some spaxels of your slices are outside self.mpoly_in.\n Maybe enlarge your cutouts, and check if mpoly_in and mpoly_comp are well overlapped.  ")
         
-        overlaydf = [dfstack.loc[ (dfstack['id_comp']>sli*self.nspx_comp) & (dfstack['id_comp']<sli*self.nspx_comp + self.nspx_comp)] for sli in range(self.nslices)]
+        overlaydf = [dfstack.loc[ (dfstack['id_comp']>=sli*self.nspx_comp) & (dfstack['id_comp']<sli*self.nspx_comp + self.nspx_comp)] for sli in range(self.nslices)]
         return overlaydf
         
     @property
