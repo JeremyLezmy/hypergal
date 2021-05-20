@@ -724,7 +724,7 @@ class Overlay( object ):
         return self._overlaydf
 
 
-class Overlay3D( geometry.Overlay ) :
+class Overlay3D( Overlay ) :
     
     
     @classmethod
@@ -823,7 +823,7 @@ class Overlay3D( geometry.Overlay ) :
             return None
 
         new_geoparam = {**self._geoparam_comp, **new_param}
-        new_mpoly = geometry.transform3d_geometry(self.mpoly_comp_orig, **new_geoparam)
+        new_mpoly = transform3d_geometry(self.mpoly_comp_orig, **new_geoparam)
 
         self.set_multipolygon(new_mpoly, "comp", is_orig=False)
         self._geoparam_comp = new_geoparam
