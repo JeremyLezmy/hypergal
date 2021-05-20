@@ -783,7 +783,9 @@ class Overlay3D( geometry.Overlay ) :
             
         return this
             
-    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True):
+        
+    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True, 
+                   atol=1e-4):
         """ Changes the _comp geometry using transform_geometry
         
         Parameters
@@ -803,18 +805,23 @@ class Overlay3D( geometry.Overlay ) :
         reset_overlay: bool -optional-
             Shall this reset the overlay (you should)
 
+        atol: [float] -optional-
+            if a new value is given, how far from the former one 
+            this is supposed to be to be considered as changed.
+            (using np.allclose(new,former, atol=atol))
+
         Returns
         -------
         None
         """
-        print('Calling champ_comp')
         new_param = {k:v for k,v in locals().items()
                          if k in self.PARAMETER_NAMES and\
                          v is not None and \
-                         not np.all(v == self.geoparam_comp[k])}
+                         not not np.allclose(v, self.geoparam_comp[k], atol=atol)}
+        
         if len(new_param) == 0:
             return None
-        
+
         new_geoparam = {**self._geoparam_comp, **new_param}
         new_mpoly = geometry.transform3d_geometry(self.mpoly_comp_orig, **new_geoparam)
 
@@ -824,23 +831,8 @@ class Overlay3D( geometry.Overlay ) :
         if reset_overlay:
             self.reset_overlaydf()
         
-
-    def set_nslices(self, nslices):
-        """ Set the number of slices ('comp')
-        
-        Parameters
-        ----------
-        nslice: int
-            Number of slice.
-
-        Returns
-        -------
-        None
-        """
-        self._nslices = nslices
-        
     def get_slices_overlaydf(self, correct_id_comp=True):
-        """ """
+        """ get the list of individual slice overlaydf """
         nspaxels = self.nspaxels_comp
         nslices  = self.nslices
         
@@ -856,15 +848,34 @@ class Overlay3D( geometry.Overlay ) :
                 
         return overlays
     
-    def get_projected_flux3d(self, flux3d, **kwargs):
+    def get_projected_flux(self, flux3d, **kwargs):
         """ """
         overlays = self.get_slices_overlaydf(correct_id_comp=True)
+        if len(np.shape(flux3d)) == 2 and shape_flux[0]==1:
+            flux3d = np.squeeze(flux3d)
+    
+        if len(np.shape(flux3d)) == 1:
+            return [self.project_flux(flux3d, overlaydf_,  **kwargs)
+                                       for overlaydf_ in overlays]
         if len(overlays) != len(flux3d):
             raise ValueError(f"flux3d must have the same size as overlays : {len(flux3d)} vs. {len(overlays)}")
             
         return [self.project_flux(flux, overlaydf_,  **kwargs)
                for flux, overlaydf_ in zip(flux3d, overlays)]
-    
+        
+    def set_nslices(self, nslices):
+        """ Set the number of slices ('comp')
+        
+        Parameters
+        ----------
+        nslice: int
+            Number of slice.
+
+        Returns
+        -------
+        None
+        """
+        self._nslices = nslices
         
     # ============= #
     #  Properties   #
