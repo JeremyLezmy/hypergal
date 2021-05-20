@@ -89,7 +89,7 @@ class Gauss3D( PSF3D, Gauss2D ):
     def fit_from_values(cls, values, lbda, errors=None, **kwargs):
         """ """
         from scipy.optimize import minimize
-        this = cls(lbdaref=**kwargs)
+        this = cls(**kwargs)
         
         param3d = {}
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
