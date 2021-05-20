@@ -262,7 +262,7 @@ class Overlay( object ):
         """ Measures the overlay df and set it. \n
         Uses self.get_overlaydf()
         """
-        self.set_overlaydf(self.get_overlaydf(self.mpoly_in, self.mpoly_comp, **kwargs))
+        self.set_overlaydf( self.get_overlaydf(self.mpoly_in, self.mpoly_comp, **kwargs))
         
     # -------- #
     #  CHANGE  #
@@ -724,15 +724,17 @@ class Overlay( object ):
         return self._overlaydf
 
 
-class Overlay3D( Overlay ):
-
-
+class Overlay3D( geometry.Overlay ) :
+    
+    
     @classmethod
     def from_cubes(cls, cube_in, cube_comp, 
                        xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
                        scale_in=None, scale_comp=None):
         """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
+        
+        = Only _comp is treated as a cube = 
         
         Parameters
         ----------
@@ -753,11 +755,34 @@ class Overlay3D( Overlay ):
         -------
         cls()
         """
-        return cls.from_slices( cube_in, cube_comp, 
-                                xy_in=xy_in, xy_comp=xy_comp, 
+        nslices = len(cube_comp.lbda)
+            
+        this = cls.from_slices( cube_in, cube_comp, 
+                                xy_in=xy_in, xy_comp=xy_comp,
                                 rotation_in=rotation_in, rotation_comp=rotation_comp,
                                 scale_in=scale_in, scale_comp=scale_comp)
     
+        this.set_nslices( len(cube_comp.lbda) )
+        if this.geoparam_comp["xoff"] is not None:
+            xoff = np.atleast_1d(this.geoparam_comp["xoff"]) 
+            if len(xoff)==1:
+                this.geoparam_comp["xoff"] = np.ones(this.nslices)*xoff[0]
+            elif len(xoff) == this.nslices:
+                this.geoparam_comp["xoff"] = np.asarray(xoff)
+            else:
+                raise ValueError("input xoff size don't match the number of slices cube_comp")
+                
+        if this.geoparam_comp["yoff"] is not None:
+            yoff = np.atleast_1d(this.geoparam_comp["yoff"]) 
+            if len(xoff)==1:
+                this.geoparam_comp["yoff"] = np.ones(this.nslices)*yoff[0]
+            elif len(xoff) == this.nslices:
+                this.geoparam_comp["yoff"] = np.asarray(yoff)
+            else:
+                raise ValueError("input yoff size don't match the number of slices cube_comp")
+            
+        return this
+            
     def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True):
         """ Changes the _comp geometry using transform_geometry
         
@@ -782,55 +807,74 @@ class Overlay3D( Overlay ):
         -------
         None
         """
-        raise NotImplementedError("NO UPDATED TO NEW _ORIG FORMAT")
-        mpoly = []
-        
-        if xoff is not None and yoff is not None:
-            xoff = np.atleast_1d(xoff)
-            yoff = np.atleast_1d(yoff)
-            if len(xoff)!=len(yoff):
-                raise ValueError(" xoff and yoff must have the same size")
-                
-            self._nslices = len( xoff )
-            
-        for sli in range(self.nslices):
-            
-            new_param = {k:v[sli] for k,v in locals().items()
+        print('Calling champ_comp')
+        new_param = {k:v for k,v in locals().items()
                          if k in self.PARAMETER_NAMES and\
                          v is not None and \
-                         v[sli] != self.geoparam_comp[k]}
-            
-            transfor_param = {k:(v-self.geoparam_comp[k]) if self.geoparam_comp[k] is not None else v
-                              for k,v in new_param.items()}
-            
-            new_mpoly = transform_geometry(self.mpoly_comp, **transfor_param)
-            
-            mpoly += list(new_mpoly)
-            self._geoparam_comp = {**self._geoparam_comp, **new_param}
-            if reset_overlay:
-                self.reset_overlaydf()
-                
-        stacked_mpoly = MultiPolygon(mpoly)
+                         not np.all(v == self.geoparam_comp[k])}
+        if len(new_param) == 0:
+            return None
         
-        return stacked_mpoly
-    
-    
-    def get_overlaydf3D(self, mpoly_in, mpoly_comp, use_overlapping=True, area_ok=0.001, warn_ifok=False):
+        new_geoparam = {**self._geoparam_comp, **new_param}
+        new_mpoly = geometry.transform3d_geometry(self.mpoly_comp_orig, **new_geoparam)
+
+        self.set_multipolygon(new_mpoly, "comp", is_orig=False)
+        self._geoparam_comp = new_geoparam
+        
+        if reset_overlay:
+            self.reset_overlaydf()
+        
+
+    def set_nslices(self, nslices):
+        """ Set the number of slices ('comp')
+        
+        Parameters
+        ----------
+        nslice: int
+            Number of slice.
+
+        Returns
+        -------
+        None
+        """
+        self._nslices = nslices
+        
+    def get_slices_overlaydf(self, correct_id_comp=True):
         """ """
-        dfstack = self.get_overlaydf( mpoly_in = mpoly_in, mpoly_comp=mpoly_comp, use_overlapping=use_overlapping, area_ok=area_ok, warn_ifok=warn_ifok)
+        nspaxels = self.nspaxels_comp
+        nslices  = self.nslices
         
-        if len(np.unique(dfstack['id_comp'])) % self._nslices != 0:
-            raise ValueError(" Some spaxels of your slices are outside self.mpoly_in.\n Maybe enlarge your cutouts, and check if mpoly_in and mpoly_comp are well overlapped.  ")
+        overlaydf_flatten = self.overlaydf
         
-        overlaydf = [dfstack.loc[ (dfstack['id_comp']>=sli*self.nspx_comp) & (dfstack['id_comp']<sli*self.nspx_comp + self.nspx_comp)] for sli in range(self.nslices)]
-        return overlaydf
+        overlays = [overlaydf_flatten[overlaydf_flatten["id_comp"].between( 
+                                *(np.asarray([0, nspaxels]) + i*nspaxels))] 
+                     for i in range(nslices)]
         
+        if correct_id_comp:
+            for i,overlay_ in enumerate(overlays):
+                overlay_["id_comp"] -= i*nspaxels
+                
+        return overlays
+    
+    def get_projected_flux3d(self, flux3d, **kwargs):
+        """ """
+        overlays = self.get_slices_overlaydf(correct_id_comp=True)
+        if len(overlays) != len(flux3d):
+            raise ValueError(f"flux3d must have the same size as overlays : {len(flux3d)} vs. {len(overlays)}")
+            
+        return [self.project_flux(flux, overlaydf_,  **kwargs)
+               for flux, overlaydf_ in zip(flux3d, overlays)]
+    
+        
+    # ============= #
+    #  Properties   #
+    # ============= #
     @property
     def nslices(self):
         """ """ 
         return self._nslices
-    
+
     @property
-    def nspx_comp(self):
+    def nspaxels_comp(self):
         """ """
-        return len( self.mpoly_comp)
+        return len( self.mpoly_comp_orig )
