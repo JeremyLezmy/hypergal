@@ -79,6 +79,7 @@ class Gauss2D( PSF2D ):
 
 class Gauss3D( PSF3D, Gauss2D ):
 
+    PROFILE_PARAMETERS = ["sigma"] 
     # ============= #
     #  Methods      #
     # ============= #        

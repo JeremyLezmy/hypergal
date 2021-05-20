@@ -482,11 +482,12 @@ class SceneFitter( object ):
         -------
         Dictionary
         """
-        all_params = {**self._base_parameters,
-                    **self._psf_parameters,
-                    **self._geometry_parameters}
+        all_params = { **self._base_parameters,
+                       **self._psf_parameters,
+                       **self._geometry_parameters}
         if free_only:
             return {k:all_params[k] for k in self.free_parameters}
+        
         return all_params
     
     def get_model(self, parameters=None):
@@ -532,7 +533,7 @@ class SceneFitter( object ):
         
         if as_dataframe:
             df =  pandas.DataFrame({"values":self._bestfit_values,
-                                     "errors":{k.replace("_err",""):v for k,v in self._bestfit_errors.items()}
+                                    "errors":{k.replace("_err",""):v for k,v in self._bestfit_errors.items()}
                                      })
             return df if incl_err else df["values"]
         

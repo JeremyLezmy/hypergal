@@ -29,8 +29,8 @@ def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, or
     Geometry
     """
     if (xoff is not None and xoff !=0) or (yoff is not None and yoff !=0):
-        if xoff is None: xoff = 0
-        if yoff is None: yoff = 0
+        if xoff is None: xoff=0
+        if yoff is None: yoff=0
         geom = affinity.translate(geom, -xoff, -yoff)
         
     if rotation is not None:
@@ -40,6 +40,45 @@ def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, or
         geom = affinity.scale(geom, xfact=scale, yfact=scale, origin=origin)
 
     return geom
+
+def transform3d_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, origin=(0,0)):
+    """ Use shapely.affinity to translate, rotate or scale the input geometry.
+
+    = Only xoff and yoff as list have been implemented 
+    Parameters
+    ----------
+    rotation: float, None -optional-
+        Rotation angle (in deg) \n
+        - None means ignored
+
+    scale: float, None -optional-
+        Scale the geometry (ref = centroid) \n
+        - None means ignored
+
+    xoff, yoff: list of float, None -optional-
+        Shifts the centroid by -xoff and -yoff \n
+        - None means ignored        
+
+    Returns
+    -------
+    Geometry
+    """
+    if xoff is not None or yoff is not None:
+        if xoff is None: xoff = np.zeros( len(xoff) )
+        if yoff is None: yoff = np.zeros( len(yoff) )
+
+        geom_ = [list(affinity.translate(geom, -xoff_, -yoff_).geoms) for xoff_,yoff_ in zip(xoff,yoff)]    
+        geom = geometry.MultiPolygon( list(np.concatenate(geom_)))
+        
+        
+    if rotation is not None:
+        geom = affinity.rotate(geom, rotation, origin=origin)
+
+    if scale is not None:
+        geom = affinity.scale(geom, xfact=scale, yfact=scale, origin=origin)
+
+    return geom
+        
 
 
 def get_mpoly(spaxelhandler, rotation=None, scale=None, xoff=None, yoff=None):
@@ -169,7 +208,7 @@ class Overlay( object ):
     # -------- #
     #  SETTER  #
     # -------- #
-    def set_multipolygon(self, multipoly, which):
+    def set_multipolygon(self, multipoly, which, is_orig=True):
         """ Set the 'in' or 'comp' geometry
         
         Parameters
@@ -180,6 +219,9 @@ class Overlay( object ):
         which: string
             Which geometry are you providing (in or comp)? \n
             A ValueError is raise if which is not 'in' or 'comp'
+            
+        is_orig: [bool] -optional-
+            Should this multipolygon be considered as the origin one.
 
         Returns
         -------
@@ -187,8 +229,12 @@ class Overlay( object ):
         """
         if which == "in":
             self._mpoly_in = multipoly
+            if is_orig:
+                self._mpoly_in_orig = multipoly
         elif which == "comp":
             self._mpoly_comp = multipoly
+            if is_orig:
+                self._mpoly_comp_orig = multipoly
         else:
             raise ValueError(f"which can be 'in' or 'comp', {which} given")
         
@@ -251,13 +297,12 @@ class Overlay( object ):
                          v != self.geoparam_in[k]}
         if len(new_param) ==0:
             return None
+
+        new_geoparam = {**self._geoparam_in, **new_param}
+        new_mpoly = transform_geometry(self.mpoly_in_orig, **new_geoparam)
         
-        transfor_param = {k:(v-self.geoparam_in[k]) if self.geoparam_in[k] is not None else v
-                              for k,v in new_param.items()}
-        new_mpoly = transform_geometry(self.mpoly_in, **transfor_param)
-        
-        self.set_multipolygon(new_mpoly, "in")
-        self._geoparam_in = {**self._geoparam_in, **new_param}
+        self.set_multipolygon(new_mpoly, "in", is_orig=False)
+        self._geoparam_in = new_geoparam
         
         if reset_overlay:
             self.reset_overlaydf()
@@ -292,13 +337,13 @@ class Overlay( object ):
                          v != self.geoparam_comp[k]}
         if len(new_param) == 0:
             return None
-
-        transfor_param = {k:(v-self.geoparam_comp[k]) if self.geoparam_comp[k] is not None else v
-                              for k,v in new_param.items()}
-        new_mpoly = transform_geometry(self.mpoly_comp, **transfor_param)
         
-        self.set_multipolygon(new_mpoly, "comp")
-        self._geoparam_comp = {**self._geoparam_comp, **new_param}
+        new_geoparam = {**self._geoparam_comp, **new_param}
+        new_mpoly = transform_geometry(self.mpoly_comp_orig, **new_geoparam)
+
+        self.set_multipolygon(new_mpoly, "comp", is_orig=False)
+        self._geoparam_comp = new_geoparam
+        
         if reset_overlay:
             self.reset_overlaydf()
     
@@ -645,6 +690,21 @@ class Overlay( object ):
         return self._mpoly_comp
 
     @property
+    def mpoly_in_orig(self):
+        """ 
+        Original definition of the Multipolygon to project.
+        """
+        return self._mpoly_in_orig
+    
+    @property    
+    def mpoly_comp_orig(self):
+        """ 
+        Original definition of the Multipolygon where we want to project mpoly_comp
+        """
+        return self._mpoly_comp_orig
+
+    
+    @property
     def geoparam_in(self):
         """ Dictionary containing the geometric parameters for the _in slice"""
         return self._geoparam_in
@@ -664,8 +724,40 @@ class Overlay( object ):
         return self._overlaydf
 
 
-class Overlay3D( Overlay):
-    """ """    
+class Overlay3D( Overlay ):
+
+
+    @classmethod
+    def from_cubes(cls, cube_in, cube_comp, 
+                       xy_in=None, xy_comp=None, 
+                       rotation_in=None, rotation_comp=None,
+                       scale_in=None, scale_comp=None):
+        """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
+        
+        Parameters
+        ----------
+        slice_in,slice_comp: SpaxelHandlers
+            slice (or cube) _in to be projected into _comp's geometry
+            
+         xy_in,xy_comp: 2d-array (float) or None
+             Reference coordinates (target position) for the _in and _comp geometries
+             e.g. xy_comp = [3.1,-1.3]
+
+         rotation_in,rotation_comp: float or None
+             Rotation (in degree) or the _in and _comp geomtries
+
+         scale_in,scale_comp:  float or None
+             Scale of the _in and _comp geometries
+        
+        Returns
+        -------
+        cls()
+        """
+        return cls.from_slices( cube_in, cube_comp, 
+                                xy_in=xy_in, xy_comp=xy_comp, 
+                                rotation_in=rotation_in, rotation_comp=rotation_comp,
+                                scale_in=scale_in, scale_comp=scale_comp)
+    
     def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True):
         """ Changes the _comp geometry using transform_geometry
         
@@ -716,6 +808,7 @@ class Overlay3D( Overlay):
             self._geoparam_comp = {**self._geoparam_comp, **new_param}
             if reset_overlay:
                 self.reset_overlaydf()
+                
         stacked_mpoly = MultiPolygon(mpoly)
         
         return stacked_mpoly
