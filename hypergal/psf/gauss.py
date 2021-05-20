@@ -81,7 +81,51 @@ class Gauss3D( PSF3D, Gauss2D ):
 
     # ============= #
     #  Methods      #
-    # ============= #        
+    # ============= #
+    CHROM_PARAM = ['sigma']
+    PROFILE_PARAMETERS = ['sigma', 'power']
+    
+    
+    def fit_from_values(self, values, errors, lbda):
+        """ """
+        
+        param3d={}
+        
+        for param in self.PARAMETER_NAMES:
+            
+            if param not in self.CHROM_PARAM and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
+                
+                val = np.array(values[param ] )   
+                err = np.array( errors[param] ) if errors is not None else np.ones(len(val))
+                
+                param3d[param] = np.sum( np.dot(val, err**-2))/np.sum( err**-2 ) 
+                
+            elif param in self.CHROM_PARAM and param in values.keys():   ###If param is chromatic 
+
+                    val = np.array(values[param ] )   
+                    err = np.array( errors[param ] ) if errors is not None else np.ones(len(val))
+                   
+                    if self.lbdaref is None:
+                        param3d[param] = np.sum( np.dot(val, err**-2))/np.sum( err**-2 )
+                        continue
+                        
+                    def get_chromparam(X):    ####function which goes in minimize (general if power law)
+                        paramref=X[0]      
+                        power=X[1]
+                        locals()[param] = paramref
+                        self.update_parameters(**{param :paramref})
+                        return( np.sum( (getattr(self, 'get_'+param)(lbda, power) - val)**2/ err**2))
+
+                    import scipy
+                    sci=scipy.optimize.minimize(get_chromparam, np.array([1,1]) )
+                    param_chrom = sci.x[0]
+                    power_chrom = sci.x[1]
+                    param3d[param] = param_chrom
+                    param3d["power"] = power_chrom
+        
+        self.update_parameters(**{k:param3d[k] for k in self.PARAMETER_NAMES})
+      
+        
     def get_radial_profile(self, r, lbda):
         """ 
         Get gaussian radial profile according to its elliptical radius and the wavelength (3rd dimension).
