@@ -83,7 +83,7 @@ class Gauss3D( PSF3D, Gauss2D ):
     #  Methods      #
     # ============= #
     CHROM_PARAM = ['sigma']
-    PROFILE_PARAMETERS = ['sigma', 'power']
+    PROFILE_PARAMETERS = ['sigma', 'rho']
     
     
     def fit_from_values(self, values, errors, lbda):
@@ -121,7 +121,7 @@ class Gauss3D( PSF3D, Gauss2D ):
                     param_chrom = sci.x[0]
                     power_chrom = sci.x[1]
                     param3d[param] = param_chrom
-                    param3d["power"] = power_chrom
+                    param3d["rho"] = power_chrom
         
         self.update_parameters(**{k:param3d[k] for k in self.PARAMETER_NAMES})
       
@@ -149,7 +149,7 @@ class Gauss3D( PSF3D, Gauss2D ):
     # ---------- #
     # Chromatic  #
     # ---------- #
-    def get_sigma(self, lbda, rho=-1.5):
+    def get_sigma(self, lbda, rho=None):
         """ 
         Chromatic shape parameter for the gaussian profile.\n
         Power law such as sigma = sigmaref * (lbda/lbdaref)^rho
@@ -168,5 +168,7 @@ class Gauss3D( PSF3D, Gauss2D ):
         Float
         """
         sigmaref = super().get_sigma()
+        if rho is None:
+            rho = self._profile_params['rho']
         return sigmaref * (lbda/self.lbdaref)**rho
     
