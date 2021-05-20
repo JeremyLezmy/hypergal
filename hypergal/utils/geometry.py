@@ -654,15 +654,15 @@ class Overlay( object ):
         else:
             fig = ax.figure
 
-
+        mpoly = getattr(self, f"mpoly_{which}")
         if flux is not None:
             cmap = mpl.cm.get_cmap(cmap)
             vmin, vmax = parse_vmin_vmax(flux, vmin, vmax)
             colors = cmap( (flux-vmin)/(vmax-vmin) )
         else:
-            colors = [facecolor]*len(self.mpoly_in)
+            colors = [facecolor]*len(mpoly)
 
-        mpoly = getattr(self, f"mpoly_{which}")
+        
         for i,poly in enumerate(mpoly):
             _ = show_polygon(poly, facecolor=colors[i], edgecolor=edgecolor, ax=ax, **kwargs)
 
@@ -781,11 +781,12 @@ class Overlay3D( Overlay ) :
             else:
                 raise ValueError("input yoff size don't match the number of slices cube_comp")
             
+        this.change_comp(reload=True)
         return this
             
         
     def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True, 
-                   atol=1e-4):
+                   atol=1e-4, reload=False):
         """ Changes the _comp geometry using transform_geometry
         
         Parameters
@@ -820,7 +821,10 @@ class Overlay3D( Overlay ) :
                          not not np.allclose(v, self.geoparam_comp[k], atol=atol)}
         
         if len(new_param) == 0:
-            return None
+            if not reload:
+                return None
+            else:
+                new_param = {}
 
         new_geoparam = {**self._geoparam_comp, **new_param}
         new_mpoly = transform3d_geometry(self.mpoly_comp_orig, **new_geoparam)
@@ -837,11 +841,11 @@ class Overlay3D( Overlay ) :
         nslices  = self.nslices
         
         overlaydf_flatten = self.overlaydf
-        
+        # including boundary issues
         overlays = [overlaydf_flatten[overlaydf_flatten["id_comp"].between( 
-                                *(np.asarray([0, nspaxels]) + i*nspaxels))] 
+                        *(np.asarray([0, nspaxels-1]) + i*nspaxels + ((1,1) if i==nslices-1 else (0,0))))
+                             ]
                      for i in range(nslices)]
-        
         if correct_id_comp:
             for i,overlay_ in enumerate(overlays):
                 overlay_["id_comp"] -= i*nspaxels
