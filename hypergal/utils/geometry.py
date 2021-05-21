@@ -966,7 +966,7 @@ class OverlayADR(Overlay3D):
         return this
     
     
-    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, adrparam=None, reset_overlay=True, 
+    def change_comp(self, rotation=None, scale=None, xref=None, yref=None, adrparam=None, reset_overlay=True, 
                    atol=1e-4, reload=False):
         """ Changes the _comp geometry using transform_geometry
         
@@ -980,8 +980,8 @@ class OverlayADR(Overlay3D):
             Scale the geometry (ref = centroid) \n
             - None means ignored
 
-        xoff,yoff: float, None -optional-
-            Reference position (xref/yref) for the refraction computation with ADR() object \n
+        xref,yref: float, None -optional-
+            Reference position for the refraction computation with ADR() object \n
             - None means not refraction
             
         adrparam: dict
@@ -1002,8 +1002,8 @@ class OverlayADR(Overlay3D):
         
         if adrparam is not None:
             self.adr.set(**adrparam)
-        if xoff is not None and yoff is not None:
-            xoff, yoff =  self.adr.refract(xoff, yoff, self.lbda)
+        if xref is not None and yref is not None:
+            xoff, yoff =  self.adr.refract(xref, yref, self.lbda)
         
         super().change_comp(rotation=rotation, scale=scale, xoff=xoff, yoff=yoff, reset_overlay=reset_overlay, atol=atol, reload=reload)       
     
