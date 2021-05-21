@@ -546,11 +546,212 @@ class SliceScene( _BaseScene_ ):
 #                   #
 # ================= #
 
-class CubeScene( SliceScene ):
-
-    BASE_PARAMETERS_1D = ["ampl", "background"]
+class CubeScene( basics.SliceScene ):
     
+    BASE_SLICE_PARAMETERS = ["ampl", "background"]
+    
+    def __init__(self, cube_in, cube_comp, 
+                 xy_in=None, xy_comp=None, 
+                 load_overlay=True,
+                 psf=None, **kwargs):
+        """ 
+        Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
+        Many transformations might be done to simulate the output scene, such as psf convolution, 
+        geometrical projection, background addition and amplitude factor application.
+        
+        Parameters
+        ---------
+        slice_in: pyifu.Slice
+            Slice that you want to project in the out geometry.
+
+        slice_comp: pyifu.Slice
+            Slice on which you want your new scene.
+
+        xy_in,xy_comp: 2d-array (float) or None
+            Reference coordinates (target position) for the _in and _comp geometries\n
+            e.g. xy_comp = [3.1,-1.3]
+        
+        load_overlay: bool
+            Set overlay information for an exact projection between the pixels of each slice (purely geometric)\n
+            Default is True.
+
+        psf: hypergal.psf
+            Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.\n
+
+        kwargs:
+            Go to self.load_overlay
+        
+        """
+        self.set_cube(cube_in, "in")
+        self.set_cube(cube_comp, "comp")
+        
+        if load_overlay:
+            self.load_overlay(xy_in=xy_in, xy_comp=xy_comp, **kwargs)
+            
+        if psf is not None:
+            self.set_psf(psf)
+            
+    @classmethod
+    def from_cubes(cls, cube_in, cube_comp, xy_in=None, xy_comp=None, psf=None, **kwargs):
+        """ 
+        Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
+        Many transformations might be done to simulate the output scene, such as psf convolution, 
+        geometrical projection, background addition and amplitude factor application.
+        
+        Parameters
+        ---------
+        slice_in: pyifu.Slice
+            Slice that you want to project in the out geometry.
+
+        slice_comp: pyifu.Slice
+            Slice on which you want your new scene.
+        
+        xy_in,xy_comp: 2d-array (float) or None
+            Reference coordinates (target position) for the _in and _comp geometries\n
+            e.g. xy_comp = [3.1,-1.3]
+       
+        load_overlay: bool
+            Set overlay information for an exact projection between the pixels of each slice (purely geometric) \n
+            Default is True.
+
+        psf: hypergal.psf
+            Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.
+
+        kwargs 
+            Go to self.load_overlay
+        
+        """
+        return cls(cube_in, cube_comp,
+                    xy_in=xy_in, xy_comp=xy_comp, psf=psf,
+                    **kwargs)
+
+    # ============= #
+    #  Methods      #
+    # ============= #
+    def load_overlay(self,  xy_in=None, xy_comp=None, 
+                       rotation_in=None, rotation_comp=None,
+                       scale_in=1/basics.DEFAULT_SCALE_RATIO, scale_comp=1):
+        """ 
+        Load and set the overlay object from slice_in and slice_out (see hypergal/utils/geometry.Overlay() ).
+
+        Parameters
+        ----------
+        xy_in,xy_comp: 2d-array (float) or None
+            Reference coordinates (target position) for the _in and _comp geometries\n
+            e.g. xy_comp = [3.1,-1.3]
+
+        rotation_in,rotation_comp: float or None
+            Rotation (in degree) or the _in and _comp geomtries
+        
+        scale_in,scale_comp:  float or None
+            Scale of the _in and _comp geometries\n
+            The scale at 1 defines the units for the offset.\n
+            Since we are moving _comp, it makes sense to have this one at 1.
+
+        Returns
+        -------
+        
+        """
+        # get all the inputs and drop the self.
+        klocal = locals()
+        _ = klocal.pop("self")
+        overlay = geometry.OverlayADR.from_cubes(self.cube_in, self.cube_comp,
+                                                  spaxel_comp_unit=basics.SEDM_SCALE,
+                                                    **klocal)
+        self.set_overlay(overlay)
+        
+    # --------- #
+    #  SETTER   #
+    # --------- #
+    def set_cube(self, cube_, which, norm="99", bkgd="50"):
+        """ Set the 'in' or 'comp' geometry
+        
+        Parameters
+        ----------
+        slice: pyifu.Slice
+            Spaxelhandler object (Slice)
+
+        which: string
+            Which geometry are you providing (in or comp)?\n
+            A ValueError is raise if which is not 'in' or 'comp'
+
+        Returns
+        -------
+        None
+        """
+        data = cube_.data.copy()
+        if type(bkgd) is str:
+            bkgd  = np.percentile(data, float(bkgd))
+            
+        data -= bkgd
+        if type(norm) is str:
+            norm = np.percentile(data, float(norm))
+            
+        data /= norm
+        if cube_.has_variance():
+            variance = cube_.variance/norm**2
+        else:
+            variance = None
+
+        if which == "in":
+            self._cube_in = cube_                
+        elif which == "comp":
+            self._cube_comp = cube_
+        else:
+            raise ValueError(f"which can be 'in' or 'comp', {which} given")
+
+        self.set_fitted_data(which=which, flux=data, variance=variance, 
+                             norm=norm, background=bkgd)
+        
+    # ============= #
+    #  Internal     #
+    # ============= #
+    def get_convolved_flux_in(self, psfconv=None):
+        """ 
+        Compute and return the slice_in data convolved with the setted psf object.
+
+        Parameters
+        ----------
+        psfconf: dict -optional-
+             Goes to self.psf.update_parameters() to update the psf parameters.\n
+             Default is None.
+        
+        Returns
+        -------
+        Convolved data 2D-array
+        """
+        if psfconv is not None:
+            self.psf.update_parameters(**psfconv)
+            
+        return self.psf.convolve(self._flux_in2d).flatten()
+    
+    # ============= #
+    #  Internal     #
+    # ============= #
+    def _guess_in_shape_(self):
+        """ """
+        slicexy  = self.cube_in.xy
+        [xmin,ymin], [xmax, ymax] = np.percentile(slicexy, [0,100], axis=1)
+
+        steps = np.unique(np.diff(slicexy, axis=1))
+        steps = steps[steps>0]
+        if len(steps)!=1:
+            raise ValueError(f"Cannot guess the binfactor. 1 entry expected, {steps} obtained.")
+        else:
+            binfactor = steps[0]
+
+        shape = int((xmax-xmin)/binfactor)+1, int((ymax-ymin)/binfactor)+1
+        return [len(self.cube_in.data)]+list(shape), binfactor
+    
+    # ============= #
+    #  Properties   #
+    # ============= #
     @property
-    def PARAMETER_NAMES(self):
-        """ All parameters names """
-        return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS
+    def cube_in(self):
+        """  Slice_in object. """
+        return self._cube_in
+    
+    @property    
+    def cube_comp(self):
+        """ Slice_comp object. """
+        return self._cube_comp
