@@ -19,7 +19,7 @@ class PSF2D( object ):
             Key(s) is/are parameter(s), value(s) the value(s).
 
         """
-        self._ellipticity_params = {k:1 for k in self.ELLIPTICITY_PARAMETERS}
+        self._ellipticity_params = {k:1 if k=="a" else 0 for k in self.ELLIPTICITY_PARAMETERS}
         self._profile_params = {}
         self.update_parameters(**kwargs)
         
@@ -258,6 +258,39 @@ class PSF3D( PSF2D ):
         r = np.sqrt( dx**2 + self.a_ell*dy**2 + 2*self.b_ell * (dx*dy) )
         return self.get_radial_profile(r, lbda)
 
+
+    def convolve(self, arr3d, lbda, psfwindow=17, **kwargs):
+        """ 
+        Convolve some 3D-array with the 2D PSF.
+
+        Parameters
+        ----------
+        arr3d: 3d-array
+            Datas on which you want to apply the convolution
+
+        lbda: 1d-array
+            Wavelength [in AA] associated with arr3d
+
+        psfwindow: float -optional-
+            Size on the stamp on which you want to generate the psf (see self.get_stamp() )\n
+            Default is 17 pix.
+
+        kwargs: dict
+            Go to self.update_parameters()
+
+        Returns
+        -------
+        The 2D-array datas convolved.
+        
+        """
+        if len(lbda) != len(arr3d):
+            raise ValueError(f"lbda and arr3d do not have the same size : {len(lbda)} vs. {len(arr3d)}")
+        
+        stamp3d = self.get_stamp(lbda=lbda, psfwindow=psfwindow, **kwargs)
+        # loop as it's esier and not that slow
+        return [convolve(arr2d, stamp2d, normalize_kernel=False)
+                    for arr2d,stamp2d in zip(arr3d, stamp3d)]
+
     def get_radial_profile(self, r, lbda):
         """ 
         Get radial profile according to the choosen psf and its elliptical radius.
@@ -278,7 +311,37 @@ class PSF3D( PSF2D ):
         Set new reference wavelength
         """
         self._lbdaref = float(lbda)
-        
+
+    def show(self, lbda, ax=None, psfwindow=17, **kwargs):
+        """ 
+        Show 2D PSF with current parameters.
+
+        Parameters
+        ----------
+        ax: Matplotlib.Axes -optional-
+            Choice to use an existing Axes (dim=1)
+
+        psfwindow: float
+            Size of the stamp where the PSF will be display\n
+            Default is 17 pix.
+
+        kwargs: dict
+            goes to imshow()
+
+        Returns
+        -------
+        Figure
+        """
+        import matplotlib.pyplot as mpl
+        if ax is None:
+            fig = mpl.figure(figsize=[5,5])
+            ax = fig.add_subplot(111)
+        else:
+            fig = ax.figure
+
+        prop = dict(origin="lower", cmap="cividis")
+        sc = ax.imshow(self.get_stamp(psfwindow, lbda=lbda)[0],  **{**prop,**kwargs} )
+        return fig
     # ============= #
     #  Properties   #
     # ============= #

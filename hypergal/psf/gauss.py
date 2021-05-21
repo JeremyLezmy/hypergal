@@ -4,7 +4,7 @@ from .basics import PSF2D, PSF3D
 
 __all__ = ["Gauss2D", "Gauss3D"]
 
-def get_radial_gauss(r, sigma, a_ell=1, b_ell=1):
+def get_radial_gauss(r, sigma, a_ell=1, b_ell=0):
     """ 
     Get normalized radial profile according for gaussian psf profile.
 
@@ -98,7 +98,8 @@ class Gauss3D( PSF3D, Gauss2D ):
         for param in this.PARAMETER_NAMES:
             
             # Non chromatic parameters | for instance a and b
-            if param not in this.CHROMATIC_PARAMETERS and param in values.keys():  ###Compute weighted mean for non-chromatics parameters
+            #   -> Compute weighted mean for non-chromatics parameters
+            if param not in this.CHROMATIC_PARAMETERS and param in values.keys(): 
                 value = np.asarray(values[param])
                 if errors is not None:
                     variance = np.asarray(errors[param])**2
@@ -146,7 +147,8 @@ class Gauss3D( PSF3D, Gauss2D ):
         """
         # Most likely r -> r[:,None]
         sigma = self.get_sigma(lbda)
-        return get_radial_gauss(r, sigma=sigma,  a_ell=self.a_ell, b_ell=self.b_ell)
+        return get_radial_gauss(r, sigma=sigma[:,None,None],
+                                   a_ell=self.a_ell, b_ell=self.b_ell)
 
     # ---------- #
     # Chromatic  #
@@ -173,5 +175,5 @@ class Gauss3D( PSF3D, Gauss2D ):
         if rho is None:
             rho = self._profile_params['rho']
             
-        return sigmaref * (lbda/self.lbdaref)**rho
+        return sigmaref * (np.atleast_1d(lbda)/self.lbdaref)**rho
     
