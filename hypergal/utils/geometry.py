@@ -144,7 +144,9 @@ class Overlay( object ):
     #
     PARAMETER_NAMES = ["xoff", "yoff", "scale", "rotation"]
         
-    def __init__(self, mpoly_in=None, mpoly_comp=None):
+    def __init__(self, mpoly_in=None, mpoly_comp=None,
+                     geoparam_in={}, geoparam_comp={},
+                     reload_poly=True):
         """ Multipolygon _in to be projected into the multipolygon _comp 
 
         Attributes
@@ -158,14 +160,17 @@ class Overlay( object ):
         """
         self.set_multipolygon(mpoly_in, "in")
         self.set_multipolygon(mpoly_comp, "comp")        
-        self._geoparam_in = {k:None for k in self.PARAMETER_NAMES}
-        self._geoparam_comp = {k:None for k in self.PARAMETER_NAMES}
-        
+        self._geoparam_in   = {**{k:None for k in self.PARAMETER_NAMES},   **geoparam_in}
+        self._geoparam_comp = {**{k:None for k in self.PARAMETER_NAMES}, **geoparam_comp}
+        if reload_poly:
+            self.change_in(reload=True)            
+            self.change_comp(reload=True)
+            
     @classmethod
     def from_slices(cls, slice_in, slice_comp, 
                        xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
-                       scale_in=None, scale_comp=None):
+                       scale_in=None, scale_comp=None, reload_poly=True):
         """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
         
         Parameters
@@ -194,14 +199,12 @@ class Overlay( object ):
         geoparam_in = {"rotation":rotation_in, "scale":scale_in, "xoff":x_in, "yoff":y_in}
         geoparam_comp = {"rotation":rotation_comp, "scale":scale_comp, "xoff":x_comp, "yoff":y_comp}
         
-        mpoly_in = get_mpoly(slice_in, **geoparam_in)
-        mpoly_comp = get_mpoly(slice_comp, **geoparam_comp)
-        this = cls(mpoly_in=mpoly_in, mpoly_comp=mpoly_comp)
+        mpoly_in   = slice_in.get_spaxel_polygon(  remove_nan=True, format="multipolygon")
+        mpoly_comp = slice_comp.get_spaxel_polygon(remove_nan=True, format="multipolygon")
         
-        this._geoparam_in = {**this._geoparam_in, **geoparam_in}
-        this._geoparam_comp = {**this._geoparam_comp, **geoparam_comp}
-        return this
-
+        return cls(mpoly_in=mpoly_in, mpoly_comp=mpoly_comp,
+                    geoparam_in=geoparam_in, geoparam_comp=geoparam_comp,
+                       reload_poly=reload_poly)
 
     # ============= #
     #  Methods      #
@@ -268,7 +271,8 @@ class Overlay( object ):
     # -------- #
     #  CHANGE  #
     # -------- #
-    def change_in(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True):
+    def change_in(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True,
+                        reload=False):
         """ Changes the _in geometry using transform_geometry
         
         Parameters
@@ -296,8 +300,12 @@ class Overlay( object ):
                          if k in self.PARAMETER_NAMES and\
                          v is not None and \
                          v != self.geoparam_in[k]}
-        if len(new_param) ==0:
-            return None
+                         
+        if len(new_param) == 0:
+            if not reload:
+                return None
+            else:
+                new_param = {}
 
         new_geoparam = {**self._geoparam_in, **new_param}
         new_mpoly = transform_geometry(self.mpoly_in_orig, **new_geoparam)
@@ -308,7 +316,8 @@ class Overlay( object ):
         if reset_overlay:
             self.reset_overlaydf()
         
-    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True):
+    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True,
+                          reload=False):
         """ Changes the _comp geometry using transform_geometry
         
         Parameters
@@ -337,7 +346,10 @@ class Overlay( object ):
                          v is not None and \
                          v != self.geoparam_comp[k]}
         if len(new_param) == 0:
-            return None
+            if not reload:
+                return None
+            else:
+                new_param = {}
         
         new_geoparam = {**self._geoparam_comp, **new_param}
         new_mpoly = transform_geometry(self.mpoly_comp_orig, **new_geoparam)
@@ -357,7 +369,8 @@ class Overlay( object ):
                        xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
                        scale_in=None, scale_comp=None, use_overlapping=True):
-        """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler) and directly process to the projection.
+        """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler) 
+        and directly process to the projection.
        
         Parameters
         ----------
@@ -433,7 +446,8 @@ class Overlay( object ):
             If True (Default), pre-process with a selection of polygons which will overlap each others
 
         area_ok: float -optional-
-            Threshold on which we consider that overlapping areas are almost the same. We therefore consider the mean of these areas.\n
+            Threshold on which we consider that overlapping areas are almost the same. 
+            We therefore consider the mean of these areas.\n
             Remind that area = 1 means full overlapping (same polygon).\n
             Default is 1e-3
 
@@ -725,14 +739,14 @@ class Overlay( object ):
         return self._overlaydf
 
 
-class Overlay3D( Overlay ) :
+class Overlay3D( Overlay ):
     
     
     @classmethod
     def from_cubes(cls, cube_in, cube_comp,
                        xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
-                       scale_in=None, scale_comp=None):
+                       scale_in=None, scale_comp=None, reload_poly=True):
         """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
         
         = Only _comp is treated as a cube = 
@@ -761,7 +775,8 @@ class Overlay3D( Overlay ) :
         this = cls.from_slices( cube_in, cube_comp, 
                                 xy_in=xy_in, xy_comp=xy_comp,
                                 rotation_in=rotation_in, rotation_comp=rotation_comp,
-                                scale_in=scale_in, scale_comp=scale_comp)
+                                scale_in=scale_in, scale_comp=scale_comp,
+                                reload_poly=False)
     
         this.set_nslices( len(cube_comp.lbda) )
         
@@ -782,12 +797,11 @@ class Overlay3D( Overlay ) :
                 this.geoparam_comp["yoff"] = np.asarray(yoff)
             else:
                 raise ValueError("input yoff size don't match the number of slices cube_comp")
-
-
-        this.change_comp(reload=True)
+        if reload_poly:
+            this.change_comp(reload=True)
+            this.change_in(reload=True)
             
         return this
-            
         
     def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, reset_overlay=True, 
                    atol=1e-4, reload=False):
@@ -909,7 +923,8 @@ class OverlayADR(Overlay3D):
     def from_cubes(cls, cube_in, cube_comp, spaxel_comp_unit,
                         xy_in=None, xy_comp=None,
                         rotation_in=None, rotation_comp=None,
-                        scale_in=None, scale_comp=None):
+                        scale_in=None, scale_comp=None,
+                       reload_poly=True):
         """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
         
         = Only _comp is treated as a cube = 
@@ -938,14 +953,16 @@ class OverlayADR(Overlay3D):
         this = cls.from_slices( cube_in, cube_comp, 
                                 xy_in=xy_in, xy_comp=xy_comp,
                                 rotation_in=rotation_in, rotation_comp=rotation_comp,
-                                scale_in=scale_in, scale_comp=scale_comp)
+                                scale_in=scale_in, scale_comp=scale_comp,
+                                reload_poly=False)
     
         this.set_nslices( len(cube_comp.lbda) )
         adr = ADR.from_header( cube_comp.header)
         this.set_adr(adr, spaxel_comp_unit)
         this.set_lbda(cube_comp.lbda)
-
-        this.change_comp(reload=True)
+        if reload_poly:            
+            this.change_comp(reload=True)
+            this.change_in(reload=True)            
         return this
     
     def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None,
