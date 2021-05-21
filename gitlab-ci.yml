@@ -35,6 +35,7 @@ pages:
     - cd doc
     - make html
     - cd ../
+    - mv docs/build/html/ public/
   artifacts:
     paths:
       - public
