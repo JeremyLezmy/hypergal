@@ -1,0 +1,13 @@
+numpy
+scipy
+matplotlib
+astropy
+pandas
+geopandas
+shapely
+iminuit>=2
+ztfquery>=1.15
+pyifu>=0.10
+pysedm>=0.27
+ztfimg
+# dask
