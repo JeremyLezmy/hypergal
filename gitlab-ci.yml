@@ -31,7 +31,7 @@ pages:
     - pip install .
     - pip install sphinx-rtd-theme>=0.4.3
     - pip install sphinxcontrib-napoleon>=0.7
-    - sphinx-apidoc -o docs hypergal hypergal/fitter.py hypergal/sed_fitting.py hypergal/intrinsec_cube.py hypergal/geometry_tool.py hypergal/Host_removing.py hypergal/panstarrs_target.py hypergal/sedm_target.py hypergal/PSF_kernel.py hypergal/geometry_tool.py -f
+    #- sphinx-apidoc -o docs hypergal hypergal/fitter.py hypergal/sed_fitting.py hypergal/intrinsec_cube.py hypergal/geometry_tool.py hypergal/Host_removing.py hypergal/panstarrs_target.py hypergal/sedm_target.py hypergal/PSF_kernel.py hypergal/geometry_tool.py -f
     - sphinx-build -b html docs public
   artifacts:
     paths:
