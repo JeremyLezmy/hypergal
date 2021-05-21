@@ -11,7 +11,259 @@ DEFAULT_SCALE_RATIO = 0.55/0.25 #SEDm/PS1
 #   SLICE SCENE     # 
 #                   #
 # ================= #
-class SliceScene( object ):
+class _BaseScene_( object ):
+    BASE_PARAMETERS = ["ampl", "background"]
+
+    # ============= #
+    #  Methods      #
+    # ============= #
+    # -------- #
+    #  SETTER  #
+    # -------- #
+    def set_overlay(self, overlay):
+        """ Provide the hypergal.utils.geometry.Overlay object """
+        self._overlay = overlay
+
+    def set_psf(self, psf):
+        """ Provide the hypergal.psf object. Might be PSF_2D or PSF_3D """
+        self._psf = psf
+
+
+    def set_fitted_data(self, which, flux, variance=None, background=0, norm=1):
+        """ """
+        if which == "in":
+            self._bkgd_in = background
+            self._norm_in = norm
+            self._flux_in = flux
+            self._shape_in, self._binfactor_in = self._guess_in_shape_()
+            self._flux_in2d = self._flux_in.reshape(self._shape_in)
+            self._variance_in = variance
+            
+                
+        elif which == "comp":
+            self._bkgd_comp = background            
+            self._norm_comp = norm
+            self._flux_comp = flux
+            self._variance_comp = variance
+        else:
+            raise ValueError(f"which can only be in or comp, {which} given")
+        
+
+    def update_baseparams(self, **kwargs):
+        """ 
+        Set parameters from self.BASE_PARAMETERS (amplitude and background)
+        """
+        for k,v in kwargs.items():
+            if k in self.BASE_PARAMETERS:
+                self.baseparams[k] = v
+            else:
+                warnings.warn(f"{k} is not a base parameters, ignored")
+                continue
+            
+    def update(self, **kwargs):
+        """ 
+        Can update any parameter through kwarg option.\n
+        Might be self.BASE_PARAMETER, self.PSF_PARAMETERS or self.GEOMETRY_PARAMETERS
+        """
+        baseparams = {}
+        psfparams = {}
+        geometryparams = {}
+        for k,v in kwargs.items():
+            # Change the baseline scene
+            if k in self.BASE_PARAMETERS:
+                baseparams[k] = v
+                
+            # Change the scene PSF
+            elif k in self.PSF_PARAMETERS:
+                psfparams[k] = v
+                
+            # Change the scene geometry                
+            elif k in self.GEOMETRY_PARAMETERS:
+                geometryparams[k] = v
+                
+            # or crash
+            else:
+                raise ValueError(f"Unknow input parameter {k}={v}")
+
+        self.update_baseparams(**baseparams)
+        if len(geometryparams)>0:
+            self.overlay.change_comp(**geometryparams)
+        if len(psfparams)>0:
+            self.psf.update_parameters(**psfparams)
+        
+    # --------- #
+    #  GETTER   #
+    # --------- #
+    def get_model(self, ampl=None, background=None,
+                      overlayparam=None,
+                      psfparam=None):
+        """Convolves and project flux_in into the 
+
+        Parameters
+        ----------
+        overlayparam: dict or None
+            If dict, this is passed as kwargs to overlay
+
+        psfparam: dict or None
+            If dict, this is passed as a kwargs to self.psf.update_parameters(psfparam)
+
+        Returns
+        -------
+        Array
+        """
+        if ampl is None:
+            ampl = self.baseparams["ampl"]
+            
+        if background is None:
+            background = self.baseparams["background"]
+            
+        # 1.
+        # Change position of the comp grid if needed
+        #   - if the overlayparam are the same as already know, no update made.
+        if overlayparam is not None and len(overlayparam)>0:
+            self.overlay.change_comp(**overlayparam)
+
+        # 2.            
+        # Change values of flux and variances of _in by convolving the image
+        flux_in = self.get_convolved_flux_in(psfparam)
+
+        # 3. (overlaydf calculated only if needed)
+        # Get the new projected flux and variance (_in->_comp grid)
+        modelflux = self.overlay.get_projected_flux(flux_in)
+
+        # 4. Out
+        return ampl*modelflux + background
+    
+    def get_convolved_flux_in(self, psfconv=None):
+        """ 
+        Compute and return the slice_in data convolved with the setted psf object.
+
+        Parameters
+        ----------
+        psfconf: dict -optional-
+             Goes to self.psf.update_parameters() to update the psf parameters.\n
+             Default is None.
+        
+        Returns
+        -------
+        Convolved data 2D-array
+        """
+        if psfconv is not None:
+            self.psf.update_parameters(**psfconv)
+            
+        return self.psf.convolve(self._flux_in2d).flatten()
+
+    def guess_parameters(self):
+        """ 
+        Return guessed parameters for all the parameters.\n
+        Include BASE_PARAMETERS (amplitude and background), 
+        geometrical parameters (scale, xy_in etc) 
+        and psf parameters (shape and ellipticity)       
+        """
+        ampl = 1
+        bkgd = 0
+        base_guess = {**{k:None for k in self.BASE_PARAMETERS},
+                      **{"ampl":ampl, "background": bkgd}
+                      }
+        geom_guess = self.overlay.geoparam_comp
+        psf_guess  = self.psf.guess_parameters()
+        guess_step1 =  {**base_guess, **geom_guess, **psf_guess}
+        self.update(**guess_step1)
+        
+        model_comp = self.get_model()
+        bkgd = np.median(self.flux_comp)-np.median(model_comp)
+        ampl = np.sum(self.flux_comp)/np.sum(model_comp)
+        
+        return {**guess_step1, **{"ampl":ampl, "background":bkgd}}
+
+    
+    # ============= #
+    #  Properties   #
+    # ============= #
+    @property
+    def overlay(self):
+        """  Overlay object between slice_in and slice_comp """
+        if not hasattr(self,"_overlay"):
+            raise AttributeError("No Overlay set ; see self.set/load_overlay()")
+        return self._overlay
+
+    @property
+    def psf(self):
+        """  PSF object to convolve on slice_in. """
+        if not hasattr(self, "_psf"):
+            raise AttributeError("No PSF set ; see self.set_psf()")
+        
+        return self._psf
+
+    @property
+    def baseparams(self):
+        """  Base parameters (e.g. amplitude and background) """
+        if not hasattr(self, "_baseparams"):
+            self._baseparams = {k:1 if k in ["ampl"] else 0. for k in self.BASE_PARAMETERS}
+        return self._baseparams
+
+    # // _in prop
+    @property
+    def norm_in(self):
+        """  Norm used to scale _in data """ # No test to gain time
+        return self._norm_in
+    
+    @property
+    def bkgd_in(self):
+        """  Estimated _in background. """ # No test to gain time
+        return self._bkgd_in
+
+    @property
+    def flux_in(self):
+        """  Original _in data minus bkgd_in and divided by norm_in. """ # No test to gain time
+        return self._flux_in
+
+    @property
+    def variance_in(self):
+        """  Variance of _in scaled by norm_in. """ # No test to gain time
+        return self._variance_in
+
+    # // _comp prop
+    @property
+    def norm_comp(self):
+        """  Norm used to scale _comp data. """ # No test to gain time
+        return self._norm_comp
+    
+    @property
+    def bkgd_comp(self):
+        """ Estimated _comp background. """ # No test to gain time
+        return self._bkgd_comp
+
+    @property
+    def flux_comp(self):
+        """ Original _comp data minus bkgd_comp and divided by norm_comp. """ # No test to gain time
+        return self._flux_comp
+
+    @property
+    def variance_comp(self):
+        """  Variance of _comp scaled by norm_comp. """ # No test to gain time
+        return self._variance_comp
+
+    # ----------- #
+    #  Parameters #
+    # ----------- #
+    @property
+    def PSF_PARAMETERS(self):
+        """  PSF parameters (profile + ellipticity). """
+        return self.psf.PARAMETER_NAMES
+    
+    @property
+    def GEOMETRY_PARAMETERS(self):
+        """  Geometry parameters of slices (xy_in/out, scale_in/out, rotation). """
+        return self.overlay.PARAMETER_NAMES
+    
+    @property
+    def PARAMETER_NAMES(self):
+        """ All parameters names """
+        return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS
+
+
+class SliceScene( _BaseScene_ ):
 
     BASE_PARAMETERS = ["ampl", "background"]
     
@@ -150,169 +402,21 @@ class SliceScene( object ):
             norm = np.percentile(data, float(norm))
             
         data /= norm
-        
+        if slice_.has_variance():
+            variance = slice_.variance/norm**2
+        else:
+            variance = None
+
         if which == "in":
-            self._slice_in = slice_
-            self._bkgd_in = bkgd
-            self._norm_in = norm
-            self._flux_in = data
-            self._shape_in, self._binfactor_in = self._guess_slice_in_shape_()
-            self._flux_in2d = self._flux_in.reshape(self._shape_in)
-            if slice_.has_variance():
-                self._variance_in = slice_.variance/norm**2
-            else:
-                self._variance_in = None
-                
+            self._slice_in = slice_                
         elif which == "comp":
             self._slice_comp = slice_
-            self._bkgd_comp = bkgd            
-            self._norm_comp = norm
-            self._flux_comp = data
-            if slice_.has_variance():
-                self._variance_comp = slice_.variance/norm**2
-            else:
-                self._variance_comp = None
-            
         else:
             raise ValueError(f"which can be 'in' or 'comp', {which} given")
+
+        self.set_fitted_data(which=which, flux=data, variance=variance, norm=norm, background=bkgd)
         
-    def update_baseparams(self, **kwargs):
-        """ 
-        Set parameters from self.BASE_PARAMETERS (amplitude and background)
-        """
-        for k,v in kwargs.items():
-            if k in self.BASE_PARAMETERS:
-                self.baseparams[k] = v
-            else:
-                warnings.warn(f"{k} is not a base parameters, ignored")
-                continue
-            
-
-    def set_overlay(self, overlay):
-        """ Provide the hypergal.utils.geometry.Overlay object """
-        self._overlay = overlay
-
-    def set_psf(self, psf):
-        """ Provide the hypergal.psf object. Might be PSF_2D or PSF_3D """
-        self._psf = psf
-
-    def update(self, **kwargs):
-        """ 
-        Can update any parameter through kwarg option.\n
-        Might be self.BASE_PARAMETER, self.PSF_PARAMETERS or self.GEOMETRY_PARAMETERS
-        """
-        baseparams = {}
-        psfparams = {}
-        geometryparams = {}
-        for k,v in kwargs.items():
-            # Change the baseline scene
-            if k in self.BASE_PARAMETERS:
-                baseparams[k] = v
-                
-            # Change the scene PSF
-            elif k in self.PSF_PARAMETERS:
-                psfparams[k] = v
-                
-            # Change the scene geometry                
-            elif k in self.GEOMETRY_PARAMETERS:
-                geometryparams[k] = v
-                
-            # or crash
-            else:
-                raise ValueError(f"Unknow input parameter {k}={v}")
-
-        self.update_baseparams(**baseparams)
-        if len(geometryparams)>0:
-            self.overlay.change_comp(**geometryparams)
-        if len(psfparams)>0:
-            self.psf.update_parameters(**psfparams)
         
-    # --------- #
-    #  GETTER   #
-    # --------- #
-    def get_model(self, ampl=None, background=None,
-                      overlayparam=None,
-                      psfparam=None):
-        """Convolves and project flux_in into the 
-
-        Parameters
-        ----------
-        overlayparam: dict or None
-            If dict, this is passed as kwargs to overlay
-
-        psfparam: dict or None
-            If dict, this is passed as a kwargs to self.psf.update_parameters(psfparam)
-
-        Returns
-        -------
-        Array
-        """
-        if ampl is None:
-            ampl = self.baseparams["ampl"]
-            
-        if background is None:
-            background = self.baseparams["background"]
-            
-        # 1.
-        # Change position of the comp grid if needed
-        #   - if the overlayparam are the same as already know, no update made.
-        if overlayparam is not None and len(overlayparam)>0:
-            self.overlay.change_comp(**overlayparam)
-
-        # 2.            
-        # Change values of flux and variances of _in by convolving the image
-        flux_in = self.get_convolved_flux_in(psfparam)
-
-        # 3. (overlaydf calculated only if needed)
-        # Get the new projected flux and variance (_in->_comp grid)
-        modelflux = self.overlay.get_projected_flux(flux_in)
-
-        # 4. Out
-        return ampl*modelflux + background
-    
-    def get_convolved_flux_in(self, psfconv=None):
-        """ 
-        Compute and return the slice_in data convolved with the setted psf object.
-
-        Parameters
-        ----------
-        psfconf: dict -optional-
-             Goes to self.psf.update_parameters() to update the psf parameters.\n
-             Default is None.
-        
-        Returns
-        -------
-        Convolved data 2D-array
-        """
-        if psfconv is not None:
-            self.psf.update_parameters(**psfconv)
-            
-        return self.psf.convolve(self._flux_in2d).flatten()
-
-    def guess_parameters(self):
-        """ 
-        Return guessed parameters for all the parameters.\n
-        Include BASE_PARAMETERS (amplitude and background), 
-        geometrical parameters (scale, xy_in etc) 
-        and psf parameters (shape and ellipticity)       
-        """
-        ampl = 1
-        bkgd = 0
-        base_guess = {**{k:None for k in self.BASE_PARAMETERS},
-                      **{"ampl":ampl, "background": bkgd}
-                      }
-        geom_guess = self.overlay.geoparam_comp
-        psf_guess  = self.psf.guess_parameters()
-        guess_step1 =  {**base_guess, **geom_guess, **psf_guess}
-        self.update(**guess_step1)
-        
-        model_comp = self.get_model()
-        bkgd = np.median(self.flux_comp)-np.median(model_comp)
-        ampl = np.sum(self.flux_comp)/np.sum(model_comp)
-        
-        return {**guess_step1, **{"ampl":ampl, "background":bkgd}}
-
-
     def show(self, savefile=None, titles=True, res_as_ratio=False, cutout_convolved=True,
                  vmin="1", vmax="99", cmap="cividis", cmapproj=None):
         """
@@ -405,7 +509,7 @@ class SliceScene( object ):
     # ============= #
     #  Internal     #
     # ============= #
-    def _guess_slice_in_shape_(self):
+    def _guess_in_shape_(self):
         """ """
         slicexy  = self.slice_in.xy
         [xmin,ymin], [xmax, ymax] = np.percentile(slicexy, [0,100], axis=1)
@@ -433,87 +537,6 @@ class SliceScene( object ):
         """ Slice_comp object. """
         return self._slice_comp
 
-    @property
-    def overlay(self):
-        """  Overlay object between slice_in and slice_comp """
-        if not hasattr(self,"_overlay"):
-            raise AttributeError("No Overlay set ; see self.set/load_overlay()")
-        return self._overlay
-
-    @property
-    def psf(self):
-        """  PSF object to convolve on slice_in. """
-        if not hasattr(self, "_psf"):
-            raise AttributeError("No PSF set ; see self.set_psf()")
-        
-        return self._psf
-
-    @property
-    def baseparams(self):
-        """  Base parameters (e.g. amplitude and background) """
-        if not hasattr(self, "_baseparams"):
-            self._baseparams = {k:1 if k in ["ampl"] else 0. for k in self.BASE_PARAMETERS}
-        return self._baseparams
-
-    # // _in prop
-    @property
-    def norm_in(self):
-        """  Norm used to scale _in data """ # No test to gain time
-        return self._norm_in
-    
-    @property
-    def bkgd_in(self):
-        """  Estimated _in background. """ # No test to gain time
-        return self._bkgd_in
-
-    @property
-    def flux_in(self):
-        """  Original _in data minus bkgd_in and divided by norm_in. """ # No test to gain time
-        return self._flux_in
-
-    @property
-    def variance_in(self):
-        """  Variance of _in scaled by norm_in. """ # No test to gain time
-        return self._variance_in
-
-    # // _comp prop
-    @property
-    def norm_comp(self):
-        """  Norm used to scale _comp data. """ # No test to gain time
-        return self._norm_comp
-    
-    @property
-    def bkgd_comp(self):
-        """ Estimated _comp background. """ # No test to gain time
-        return self._bkgd_comp
-
-    @property
-    def flux_comp(self):
-        """ Original _comp data minus bkgd_comp and divided by norm_comp. """ # No test to gain time
-        return self._flux_comp
-
-    @property
-    def variance_comp(self):
-        """  Variance of _comp scaled by norm_comp. """ # No test to gain time
-        return self._variance_comp
-
-    # ----------- #
-    #  Parameters #
-    # ----------- #
-    @property
-    def PSF_PARAMETERS(self):
-        """  PSF parameters (profile + ellipticity). """
-        return self.psf.PARAMETER_NAMES
-    
-    @property
-    def GEOMETRY_PARAMETERS(self):
-        """  Geometry parameters of slices (xy_in/out, scale_in/out, rotation). """
-        return self.overlay.PARAMETER_NAMES
-    
-    @property
-    def PARAMETER_NAMES(self):
-        """ All parameters names """
-        return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS
     
 # ================= #
 #                   #
@@ -522,8 +545,10 @@ class SliceScene( object ):
 # ================= #
 
 class CubeScene( SliceScene ):
-    def __init__(self, *args, **kwargs):
-        """ """
-        _ = super().__init__(*args, **kwargs)
-        print("CubeScene has not been implemented yet")
-        
+
+    BASE_PARAMETERS_1D = ["ampl", "background"]
+    
+    @property
+    def PARAMETER_NAMES(self):
+        """ All parameters names """
+        return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS

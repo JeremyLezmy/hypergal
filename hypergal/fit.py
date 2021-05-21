@@ -750,3 +750,5 @@ class SceneFitter( object ):
         """ Test if a bestfit values dictionary has been set. """
         return self.bestfit is not None
         
+
+
