@@ -546,7 +546,7 @@ class SliceScene( _BaseScene_ ):
 #                   #
 # ================= #
 
-class CubeScene( basics.SliceScene ):
+class CubeScene( SliceScene ):
     
     BASE_SLICE_PARAMETERS = ["ampl", "background"]
     
@@ -630,7 +630,7 @@ class CubeScene( basics.SliceScene ):
     # ============= #
     def load_overlay(self,  xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
-                       scale_in=1/basics.DEFAULT_SCALE_RATIO, scale_comp=1):
+                       scale_in=1/DEFAULT_SCALE_RATIO, scale_comp=1):
         """ 
         Load and set the overlay object from slice_in and slice_out (see hypergal/utils/geometry.Overlay() ).
 

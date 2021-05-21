@@ -43,9 +43,14 @@ def transform_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, or
     return geom
 
 def transform3d_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, origin=(0,0)):
+    
     """ Use shapely.affinity to translate, rotate or scale the input geometry.
+    
+    Notes
+    -----
 
-    = Only xoff and yoff as list have been implemented 
+    Only xoff and yoff as list have been implemented 
+
     Parameters
     ----------
     rotation: float, None -optional-
@@ -63,6 +68,7 @@ def transform3d_geometry(geom, rotation=None, scale=None, xoff=None, yoff=None, 
     Returns
     -------
     Geometry
+
     """
     if xoff is not None or yoff is not None:
         if xoff is None: xoff = np.zeros( len(xoff) )

@@ -6,7 +6,7 @@
 # Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
 # Author:            $Author: jlezmy $
 # Created on:        $Date: 2021/02/04 14:20:22 $
-# Modified on:       2021/05/20 17:34:53
+# Modified on:       2021/05/21 17:57:54
 # Copyright:         2019, Jeremy Lezmy
 # $Id: setup.py, 2021/02/04 14:20:22  JL $
 ################################################################################
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         print(packages)
     else:
         # This should be updated if new submodules are added
-        packages = ['hypergal', 'hypergal/scripts','hypergal/photometry','hypergal/spectroscopy','hypergal/utils' ]
+        packages = ['hypergal', 'hypergal/scripts','hypergal/photometry','hypergal/spectroscopy','hypergal/utils','hypergal/script' ]
 
     setup(name=DISTNAME,
           author=AUTHOR,
@@ -109,7 +109,7 @@ if __name__ == "__main__":
           download_url=DOWNLOAD_URL,
           install_requires=install_requires,
           packages=packages,
-          scripts=["hypergal/scripts/FullProcess.py"] ,
+          scripts=["hypergal/scripts/FullProcess.py" ] ,
           package_data={'hypergal':['config/cigale.json', 'data/filters/*']},
           include_package_data=True,
           classifiers=[
