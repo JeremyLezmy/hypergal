@@ -895,3 +895,138 @@ class Overlay3D( Overlay ) :
     def nspaxels_comp(self):
         """ """
         return len( self.mpoly_comp_orig )
+
+
+class OverlayADR(Overlay3D):
+    
+    ADR_PARAMETERS = [ "parangle", "airmass"]
+    
+    @classmethod
+    def from_cubes(cls, cube_in, cube_comp, 
+                        xy_in=None, xy_comp=None,
+                        rotation_in=None, rotation_comp=None,
+                        scale_in=None, scale_comp=None):
+        """ Instantiate the object given slices (could also be cubes, should be a pyifu.SpaxelHandler)
+        
+        = Only _comp is treated as a cube = 
+        
+        Parameters
+        ----------
+        slice_in,slice_comp: SpaxelHandlers
+            slice (or cube) _in to be projected into _comp's geometry
+            
+         xy_in,xy_comp: 2d-array (float) or None
+             Reference coordinates (target position) for the _in and _comp geometries
+             e.g. xy_comp = [3.1,-1.3]
+
+         rotation_in,rotation_comp: float or None
+             Rotation (in degree) or the _in and _comp geomtries
+
+         scale_in,scale_comp:  float or None
+             Scale of the _in and _comp geometries
+        
+        Returns
+        -------
+        cls()
+        """
+        
+        from pyifu.adr import ADR
+        
+        nslices = len(cube_comp.lbda)
+            
+        this = cls.from_slices( cube_in, cube_comp, 
+                                xy_in=xy_in, xy_comp=xy_comp,
+                                rotation_in=rotation_in, rotation_comp=rotation_comp,
+                                scale_in=scale_in, scale_comp=scale_comp)
+    
+        this.set_nslices( len(cube_comp.lbda) )
+        if this.geoparam_comp["xoff"] is not None:
+            xoff = np.atleast_1d(this.geoparam_comp["xoff"]) 
+            if len(xoff)==1:
+                this.geoparam_comp["xoff"] = np.ones(this.nslices)*xoff[0]
+            elif len(xoff) == this.nslices:
+                this.geoparam_comp["xoff"] = np.asarray(xoff)
+            else:
+                raise ValueError("input xoff size don't match the number of slices cube_comp")
+                
+        if this.geoparam_comp["yoff"] is not None:
+            yoff = np.atleast_1d(this.geoparam_comp["yoff"]) 
+            if len(xoff)==1:
+                this.geoparam_comp["yoff"] = np.ones(this.nslices)*yoff[0]
+            elif len(xoff) == this.nslices:
+                this.geoparam_comp["yoff"] = np.asarray(yoff)
+            else:
+                raise ValueError("input yoff size don't match the number of slices cube_comp")
+         
+        adr = ADR.from_header( cube_comp.header)
+        this.set_adr(adr)
+        this.set_lbda( cube_comp.lbda)
+        this.change_comp(reload=True)
+        
+        return this
+    
+    
+    def change_comp(self, rotation=None, scale=None, xoff=None, yoff=None, adrparam=None, reset_overlay=True, 
+                   atol=1e-4, reload=False):
+        """ Changes the _comp geometry using transform_geometry
+        
+        Parameters
+        ----------
+        rotation: float, None -optional-
+            Rotation angle (in deg)\n
+            - None means ignored
+
+        scale: float, None -optional-
+            Scale the geometry (ref = centroid) \n
+            - None means ignored
+
+        xoff,yoff: float, None -optional-
+            Reference position (xref/yref) for the refraction computation with ADR() object \n
+            - None means not refraction
+            
+        adrparam: dict
+            adrparameters (e.g. airmass, parangle). Update the loaded adr object (self.adr)
+            
+        reset_overlay: bool -optional-
+            Shall this reset the overlay (you should)
+
+        atol: [float] -optional-
+            if a new value is given, how far from the former one 
+            this is supposed to be to be considered as changed.
+            (using np.allclose(new,former, atol=atol))
+
+        Returns
+        -------
+        None
+        """
+        
+        if adrparam is not None:
+            self.adr.set(**adrparam)
+        if xoff is not None and yoff is not None:
+            xoff, yoff =  self.adr.refract(xoff, yoff, self.lbda)
+        
+        super().change_comp(rotation=rotation, scale=scale, xoff=xoff, yoff=yoff, reset_overlay=reset_overlay, atol=atol, reload=reload)       
+    
+    
+    def set_adr(self, adr):
+        """ Set ADR object (see pyifu.adr.ADR)
+        """
+        self._adr = adr
+        
+    def set_lbda(self, lbda):
+        """ Set wavelength of the availables slices"""
+        self._lbda = lbda
+        
+    @property
+    def adr(self):
+        """ ADR object (see pyifu.adr.ADR"""
+        if not hasattr(self, '_adr'):
+            return None
+        return self._adr
+    
+    @property
+    def lbda(self):
+        """ Wavelength of the availables slices"""
+        if not hasattr(self, '_lbda'):
+            return None
+        return self._lbda
