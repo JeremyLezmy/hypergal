@@ -3,7 +3,9 @@ from ..utils import geometry
 import numpy as np
 #import warnings
 
-DEFAULT_SCALE_RATIO = 0.55/0.25 #SEDm/PS1
+SEDM_SCALE = 0.558
+PS_SCALE = 0.25
+DEFAULT_SCALE_RATIO = SEDM_SCALE/PS_SCALE
 
 
 # ================= #
@@ -345,7 +347,7 @@ class SliceScene( _BaseScene_ ):
     # ============= #
     def load_overlay(self,  xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
-                       scale_in=1/1/DEFAULT_SCALE_RATIO, scale_comp=1):
+                       scale_in=1/DEFAULT_SCALE_RATIO, scale_comp=1):
         """ 
         Load and set the overlay object from slice_in and slice_out (see hypergal/utils/geometry.Overlay() ).
 
