@@ -8,8 +8,14 @@ from astropy import constants
 import numpy as np
 import multiprocessing as mp
 import shutil
-from pcigale import init, genconf, check, run
-from pcigale.session.configuration import Configuration
+import warnings
+
+try:
+    from pcigale import init, genconf, check, run
+    from pcigale.session.configuration import Configuration
+except:
+    warnings.warn("Cigale isn't installed on this machine")
+
 import pyifu
 import collections.abc
 

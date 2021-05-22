@@ -1,0 +1,42 @@
+# https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+image: python:3.8
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+# variables:
+#   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Pip's cache doesn't store the python packages
+# https://pip.pypa.io/en/stable/reference/pip_install/#caching
+#
+# If you want to also cache the installed packages, you have to install
+# them in a virtualenv and cache it as well.
+# cache:
+#   paths:
+#     - .cache/pip
+#     - venv/
+
+# before_script:
+#   - python -V  # Print out python version for debugging
+#   - pip install virtualenv
+#   - virtualenv venv
+#   - source venv/bin/activate
+
+pages:
+  stage: deploy
+  script:
+    - pip install -r requirements.txt
+    - pip install .
+    - pip install sphinx-rtd-theme>=0.4.3
+    - pip install sphinxcontrib-napoleon>=0.7
+    #- sphinx-apidoc -o docs hypergal hypergal/fitter.py hypergal/sed_fitting.py hypergal/intrinsec_cube.py hypergal/geometry_tool.py hypergal/Host_removing.py hypergal/panstarrs_target.py hypergal/sedm_target.py hypergal/PSF_kernel.py hypergal/geometry_tool.py -f
+    - sphinx-build -b html docs public
+  artifacts:
+    paths:
+      - public
+  # only:
+  # - master
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

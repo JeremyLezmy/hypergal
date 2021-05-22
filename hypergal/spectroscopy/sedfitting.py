@@ -242,9 +242,42 @@ class Cigale( SEDFitter ):
     def from_cube_cutouts(cls, cubeouts, redshift, snr=3, in_unit="aa",
                               tmp_inputpath=None,
                               initiate=True, ncores="auto", working_dir=None, **kwargs):
-        """ 
-        **kwargs goes to __init__
-           -> setup
+        
+        """  Initiate Cigale from cube of cutouts.
+
+        Parameters
+        ----------
+        cubeouts: WCSCube
+            Cube of cutouts.
+
+        redshift: float
+            Redshift of the host.
+
+        snr: float -optional-
+            Signal over noise ratio which will be use as threshold in pixel selection.
+
+        in_unit: string -optional-
+            Unit of given flux in cubeouts. Might be 'aa', 'hz' or 'mjy'.
+
+        tmp_inputpath: string -optional-
+            Temporary path where to save dataframe which will go in Cigale process.
+
+        initiate: bool -optional-
+            If True, initiate Cigale (file building) without running it.
+
+        ncore: 'auto' or float -optional-
+            Number of cores to use for the multiprocessing. \n
+            If 'auto', will use number of available core -2 .
+
+        working_dir: string -optional-
+            Temporary path where Cigale will run and generate outputs.
+
+        **kwargs -optional-
+            Goes to __init__
+          
+        Returns
+        -------
+
         """
         import pandas
         try:
