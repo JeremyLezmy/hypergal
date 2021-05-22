@@ -33,5 +33,40 @@ class DaskHost( DaskHyperGal ):
         int_cube = self.run_sedfitter(source_coutcube,
                                           redshift=redshift, working_dir=working_dir,
                                           sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA)
+        #fileout = int_cube.to_hdf(cubefile.replace(".fits",".h5").replace("e3d","intcube"))
         
         return {"params":adrpsf_cout_params, "cubeint":int_cube}
+
+
+    def build_intcube(self, cubefile, radec, redshift,
+                          savefile=None,
+                    binfactor=2,
+                    filters=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
+                    source_filter="ps1.r", source_thres=2,
+                    scale_cout=15, scale_sedm=10, rmtarget=2,
+                    ncores=1, testmode=True):
+        """ This method enables to run only the intrinsic cube generation. """
+        cubeid      = io.parse_filename(cubefile)["sedmid"]
+        working_dir = f"tmp_{cubeid}"
+        if savefile is None:
+            savefile = cubefile.replace(".fits",".h5").replace("e3d","intcube") 
+        
+        prop_sourcecube = dict(binfactor=binfactor,
+                               filters=filters,
+                               source_filter=source_filter,
+                               source_thres=source_thres, scale_cout=scale_cout,
+                               scale_sedm=scale_sedm, rmtarget=rmtarget)
+        
+        source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec,
+                                                                **prop_sourcecube)
+                                                        
+        source_coutcube  = source_coutcube__source_sedmcube[0]
+        
+        int_cube = self.run_sedfitter(source_coutcube,
+                                          redshift=redshift, working_dir=working_dir,
+                                          sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
+                                          testmode=testmode)
+        
+        fileout = int_cube.to_hdf( savefile )
+        
+        return fileout

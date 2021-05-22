@@ -10,7 +10,7 @@ DEFAULT_SCALE_RATIO = SEDM_SCALE/PS_SCALE
 
 # ================= #
 #                   #
-#   SLICE SCENE     # 
+#    BASE SCENE     # 
 #                   #
 # ================= #
 class _BaseScene_( object ):
@@ -29,7 +29,6 @@ class _BaseScene_( object ):
     def set_psf(self, psf):
         """ Provide the hypergal.psf object. Might be PSF_2D or PSF_3D """
         self._psf = psf
-
 
     def set_fitted_data(self, which, flux, variance=None, background=0, norm=1):
         """ """
@@ -201,7 +200,7 @@ class _BaseScene_( object ):
     def baseparams(self):
         """  Base parameters (e.g. amplitude and background) """
         if not hasattr(self, "_baseparams"):
-            self._baseparams = {k:1 if k in ["ampl"] else 0. for k in self.BASE_PARAMETERS}
+            self._baseparams = {k:1. if "ampl" in k else 0. for k in self.BASE_PARAMETERS}
         return self._baseparams
 
     # // _in prop
@@ -257,14 +256,18 @@ class _BaseScene_( object ):
     @property
     def GEOMETRY_PARAMETERS(self):
         """  Geometry parameters of slices (xy_in/out, scale_in/out, rotation). """
-        return self.overlay.PARAMETER_NAMES
+        return self.overlay.GEOMETRY_PARAMETERS
     
     @property
     def PARAMETER_NAMES(self):
         """ All parameters names """
         return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS
 
-
+# ================= #
+#                   #
+#   SLICE SCENE     # 
+#                   #
+# ================= #
 class SliceScene( _BaseScene_ ):
 
     BASE_PARAMETERS = ["ampl", "background"]
@@ -419,7 +422,8 @@ class SliceScene( _BaseScene_ ):
         self.set_fitted_data(which=which, flux=data, variance=variance, norm=norm, background=bkgd)
         
         
-    def show(self, savefile=None, titles=True, res_as_ratio=False, cutout_convolved=True,
+    def show(self, savefile=None, titles=True,
+                 res_as_ratio=False, cutout_convolved=True,
                  vmin="1", vmax="99", cmap="cividis", cmapproj=None):
         """
         General plot of the process. Will show 4 Axes. \n
@@ -441,7 +445,8 @@ class SliceScene( _BaseScene_ ):
             If True, divide the residual by the model values.
 
         cutout_convolved: bool
-            If True, display the convolved slice_in instead of the original slice_in in the first Axes.
+            If True, display the convolved slice_in instead of the original 
+            slice_in in the first Axes.
         
         vmin, vmax: string or float/int
             For the colormap scale.\n
@@ -453,34 +458,57 @@ class SliceScene( _BaseScene_ ):
         Figure
         
         """
-        import matplotlib.pyplot as mpl
-        from ..utils import tools
-        fig = mpl.figure(figsize=[9,2.7])
-        left, witdth = 0.05, 0.21
-        height = 0.8
-        spanx, extraspanx =0.018, 0.03
-        ax = fig.add_axes([left+0*(witdth+spanx)            ,0.12,witdth*1.1, height])
-        axm = fig.add_axes([left+1*(witdth+spanx)+extraspanx,0.12,witdth, height])
-        axd = fig.add_axes([left+2*(witdth+spanx)+extraspanx,0.12,witdth, height])
-        axr = fig.add_axes([left+3*(witdth+spanx)+extraspanx,0.12,witdth, height])
-        axifu = [axm, axd, axr]
+        
+        # Convolved image flux
+        flux_in    = self.get_convolved_flux_in() if cutout_convolved else self.flux_in
+        flux_model = self.get_model()
+        flux_comp  = self.flux_comp
+    
+        return self._show_slice_scene_(self.overlay, flux_in, flux_model, flux_comp,
+                                           axes=None,
+                                           savefile=savefile, vmin=vmin, vmax=vmax,
+                                           cmap=cmap, cmapproj=cmapproj,
+                                           cutout_convolved=cutout_convolved,
+                                           res_as_ratio=res_as_ratio, titles=titles)
 
+    @staticmethod
+    def _show_slice_scene_(overlay,  flux_in, flux_model, flux_comp,
+                               axes=None, savefile=None,
+                               cutout_convolved=True, 
+                               vmin="1", vmax="99", cmap="viridis", cmapproj=None,
+                               res_as_ratio=False, titles=True, index=None):
+        """ """
+        from ..utils import tools
         if cmapproj is None:
             cmapproj = cmap
-            
-        # Convolved image flux
-        flux_in = self.get_convolved_flux_in() if cutout_convolved else self.flux_in
-        self.overlay.show(ax=ax, flux_in = flux_in, lw_in=0, adjust=True, cmap=cmapproj)
 
-        # Model flux (=convolved *ampl + background)
-        flux_model = self.get_model().values
+        if axes is not None:
+            ax, axm, axd, axr = axes
+            fig = ax.figure
+        else:
+            import matplotlib.pyplot as mpl
+            fig = mpl.figure(figsize=[9,2.7])
+            left, witdth = 0.05, 0.21
+            height = 0.8
+            spanx, extraspanx =0.018, 0.03
+            ax = fig.add_axes([left+0*(witdth+spanx)            ,0.12,witdth*1.1, height])
+            axm = fig.add_axes([left+1*(witdth+spanx)+extraspanx,0.12,witdth, height])
+            axd = fig.add_axes([left+2*(witdth+spanx)+extraspanx,0.12,witdth, height])
+            axr = fig.add_axes([left+3*(witdth+spanx)+extraspanx,0.12,witdth, height])
+            
+        axifu = [axm, axd, axr]
+        
+        
+        overlay.show(ax=ax, comp_index=index, flux_in = flux_in, lw_in=0,
+                         adjust=True, cmap=cmapproj)
         vmin, vmax = tools.parse_vmin_vmax(flux_model, vmin, vmax)
         
-        prop = {"cmap":cmap, "vmin":vmin, "vmax":vmax, "lw":0.1, "edgecolor":"0.7","adjust":True}
-        self.overlay.show_mpoly("comp", ax=axm, flux=flux_model, **prop)
-        self.overlay.show_mpoly("comp", ax=axd, flux=self.flux_comp, **prop)
+        prop = {"cmap":cmap, "vmin":vmin, "vmax":vmax, "lw":0.1, "edgecolor":"0.7",
+                    "adjust":True, "index":index}
+        overlay.show_mpoly("comp", ax=axm, flux=flux_model, **prop)
+        overlay.show_mpoly("comp", ax=axd, flux=flux_comp, **prop)
 
-        res = (self.flux_comp-flux_model)
+        res = (flux_comp-flux_model)
         if res_as_ratio:
             res /=  flux_model
             prop = {**prop,**{"vmin":-0.5, "vmax":0.5, "cmap":"coolwarm"}}
@@ -488,7 +516,7 @@ class SliceScene( _BaseScene_ ):
         else:
             title_res = "Residual (data-scene)"
             
-        self.overlay.show_mpoly("comp", ax=axr, flux=res, **prop)
+        overlay.show_mpoly("comp", ax=axr, flux=res, **prop)
         
         clearwhich = ["left","right","top","bottom"]
         for ax_ in axifu:
@@ -545,8 +573,7 @@ class SliceScene( _BaseScene_ ):
 #   CUBE SCENE      # 
 #                   #
 # ================= #
-
-class CubeScene( basics.SliceScene ):
+class CubeScene( SliceScene ):
     
     BASE_SLICE_PARAMETERS = ["ampl", "background"]
     
@@ -582,8 +609,8 @@ class CubeScene( basics.SliceScene ):
             Go to self.load_overlay
         
         """
-        self.set_cube(cube_in, "in")
-        self.set_cube(cube_comp, "comp")
+        self.set_cube(cube_in,  "in")
+        self.set_cube(cube_comp,"comp")
         
         if load_overlay:
             self.load_overlay(xy_in=xy_in, xy_comp=xy_comp, **kwargs)
@@ -630,7 +657,7 @@ class CubeScene( basics.SliceScene ):
     # ============= #
     def load_overlay(self,  xy_in=None, xy_comp=None, 
                        rotation_in=None, rotation_comp=None,
-                       scale_in=1/basics.DEFAULT_SCALE_RATIO, scale_comp=1):
+                       scale_in=1/DEFAULT_SCALE_RATIO, scale_comp=1):
         """ 
         Load and set the overlay object from slice_in and slice_out (see hypergal/utils/geometry.Overlay() ).
 
@@ -656,7 +683,7 @@ class CubeScene( basics.SliceScene ):
         klocal = locals()
         _ = klocal.pop("self")
         overlay = geometry.OverlayADR.from_cubes(self.cube_in, self.cube_comp,
-                                                  spaxel_comp_unit=basics.SEDM_SCALE,
+                                                  spaxel_comp_unit=SEDM_SCALE,
                                                     **klocal)
         self.set_overlay(overlay)
         
@@ -681,11 +708,11 @@ class CubeScene( basics.SliceScene ):
         """
         data = cube_.data.copy()
         if type(bkgd) is str:
-            bkgd  = np.percentile(data, float(bkgd))
+            bkgd  = np.percentile(data, float(bkgd), axis=1)[:,None]
             
         data -= bkgd
         if type(norm) is str:
-            norm = np.percentile(data, float(norm))
+            norm = np.percentile(data, float(norm), axis=1)[:,None]
             
         data /= norm
         if cube_.has_variance():
@@ -706,6 +733,62 @@ class CubeScene( basics.SliceScene ):
     # ============= #
     #  Internal     #
     # ============= #
+    def get_amplitudes(self):
+        """ """
+        return np.asarray([self.baseparams[f"ampl{i}"] for i in range(self.nslices)])
+    
+    def get_backgrounds(self):
+        """ """
+        return np.asarray([self.baseparams[f"background{i}"] for i in range(self.nslices)])
+    
+    def get_model(self, ampl=None, background=None,
+                        overlayparam=None,
+                        psfparam=None, **kwargs):
+        """Convolves and project flux_in into the 
+
+        Parameters
+        ----------
+        overlayparam: dict or None
+            If dict, this is passed as kwargs to overlay
+
+        psfparam: dict or None
+            If dict, this is passed as a kwargs to self.psf.update_parameters(psfparam)
+
+        kwargs enables you to pass ampl and background as k-arguments
+        Returns
+        -------
+        Array
+        """
+        if len(kwargs)>0:
+            try:
+                ampl = np.asarray([kwargs[f"ampl{i}"] for i in range(self.nslices)])
+                background = np.asarray([kwargs[f"background{i}"] for i in range(self.nslices)])
+            except:
+                warnings.warn("Cannot use the kwargs for ampl and background definition")
+                    
+        if ampl is None:
+            ampl = self.get_amplitudes()
+            
+        if background is None:
+            background = self.get_backgrounds()
+            
+        # 1.
+        # Change position of the comp grid if needed
+        #   - if the overlayparam are the same as already know, no update made.
+        if overlayparam is not None and len(overlayparam)>0:
+            self.overlay.change_comp(**overlayparam)
+
+        # 2.            
+        # Change values of flux and variances of _in by convolving the image
+        flux_in = self.get_convolved_flux_in(psfparam)
+
+        # 3. (overlaydf calculated only if needed)
+        # Get the new projected flux and variance (_in->_comp grid)
+        modelflux = self.overlay.get_projected_flux(flux_in)
+
+        # 4. Out
+        return ampl[:,None]*modelflux + background[:,None]
+    
     def get_convolved_flux_in(self, psfconv=None):
         """ 
         Compute and return the slice_in data convolved with the setted psf object.
@@ -722,9 +805,103 @@ class CubeScene( basics.SliceScene ):
         """
         if psfconv is not None:
             self.psf.update_parameters(**psfconv)
+
+        return np.asarray(self.psf.convolve(self._flux_in2d, lbda=self.cube_in.lbda)).reshape(self.flux_in.shape)
+
+    def guess_parameters(self):
+        """ 
+        Return guessed parameters for all the parameters.\n
+        Include BASE_PARAMETERS (amplitude and background), 
+        geometrical parameters (scale, xy_in etc) 
+        and psf parameters (shape and ellipticity)       
+        """
+        base_guess = self.baseparams.copy()
+        geom_guess = self.overlay.geoparam_comp
+        psf_guess  = self.psf.guess_parameters()
+        guess_step1 =  {**base_guess, **geom_guess, **psf_guess}
+        
+        self.update(**guess_step1)
+        
+        model_comp = self.get_model()
+        bkgd = np.median(self.flux_comp, axis=1)-np.median(model_comp, axis=1)
+        ampl = np.sum(self.flux_comp, axis=1) / np.sum(model_comp, axis=1)
+        baseparams = {**{f"ampl{i}":ampl[i]       for i in range(self.nslices)},
+                      **{f"background{i}":bkgd[i] for i in range(self.nslices)} }
+        return {**guess_step1, **baseparams}
+
+
+
+    def show(self, index=None, savefile=None, titles=True, 
+                 res_as_ratio=False, cutout_convolved=True,
+                 vmin="1", vmax="99", cmap="cividis", cmapproj=None):
+        """
+        General plot of the process. Will show 4 Axes. \n
+        First one is slice_in + empty geometry of slice_out.\n
+        Second one is the new scene (after projection + if choosen convolution).\n
+        Third one is the slice_comp.\n
+        Fourth one is residual between new scene and slice_comp.
+        
+        Parameters
+        ----------
+        savefile: string
+            Where to save if not None.\n
+            Default is None.
+        
+        titles: bool
+            Display title for each Axes?
+        
+        res_as_ratio: bool
+            If True, divide the residual by the model values.
+
+        cutout_convolved: bool
+            If True, display the convolved slice_in instead of the original slice_in in the first Axes.
+        
+        vmin, vmax: string or float/int
+            For the colormap scale.\n
+            If string, the corresponding percentile is computed\n
+            Otherwise, directly use the input values.
+       
+        Returns
+        -------
+        Figure
+        
+        """
+        import matplotlib.pyplot as mpl
+        
+        if index is None:
+            index = np.arange(self.nslices)
+        else:
+            index = np.atleas_1d(index)
             
-        return self.psf.convolve(self._flux_in2d).flatten()
+        nindex = len(index)
+        
+        # Figure Definition
+        fig = mpl.figure(figsize=[9,2.7*nindex])
+        left, witdth = 0.05, 0.21
+        height = 0.8/nindex
+        spanx, extraspanx = 0.018, 0.03
+        for i,index_ in enumerate(index):
+            bottom = (0.12 + i)/nindex
+            ax = fig.add_axes([left+0*(witdth+spanx)            , bottom, witdth*1.1, height])
+            axm = fig.add_axes([left+1*(witdth+spanx)+extraspanx, bottom, witdth, height])
+            axd = fig.add_axes([left+2*(witdth+spanx)+extraspanx, bottom, witdth, height])
+            axr = fig.add_axes([left+3*(witdth+spanx)+extraspanx, bottom, witdth, height])
+
+            flux_in = (self.get_convolved_flux_in() if cutout_convolved else self.flux_in)[index_]
+            flux_model = self.get_model()[index_]
+            flux_comp = self.flux_comp[index_]
+            _ = self._show_slice_scene_(self.overlay, flux_in, flux_model, flux_comp,
+                                           axes=[ax, axm,axd,axr], savefile=None,
+                                           cutout_convolved=cutout_convolved, 
+                                           vmin=vmin, vmax=vmax, cmap=cmap, cmapproj=cmapproj,
+                                           res_as_ratio=res_as_ratio, titles=titles, 
+                                           index=index_)
+        if savefile is not None:
+            fig.savefig(savefile)
+            
+        return fig
     
+
     # ============= #
     #  Internal     #
     # ============= #
@@ -755,3 +932,13 @@ class CubeScene( basics.SliceScene ):
     def cube_comp(self):
         """ Slice_comp object. """
         return self._cube_comp
+
+    @property
+    def nslices(self):
+        """ """
+        return self.overlay.nslices
+
+    @property
+    def BASE_PARAMETERS(self):
+        """ """
+        return [f"{k}{i}" for k in self.BASE_SLICE_PARAMETERS for i in range(self.nslices)]

@@ -112,7 +112,7 @@ class DaskHyperGal( base.DaskCube ):
         raise ValueError("cubefile or radec must be given. Both are None")
 
     @staticmethod
-    def run_sedfitter(cube_cutout, redshift, working_dir, sedfitter="cigale", ncores=1, lbda=None):
+    def run_sedfitter(cube_cutout, redshift, working_dir, sedfitter="cigale", ncores=1, lbda=None, **kwargs):
         """ """
         if lbda is None:
             from pysedm.sedm import SEDM_LBDA
@@ -125,7 +125,7 @@ class DaskHyperGal( base.DaskCube ):
                                                                    tmp_inputpath=tmp_inputpath,
                                                                   initiate=True, 
                                                                   working_dir=working_dir,
-                                                                  ncores=ncores)
+                                                                  ncores=ncores, **kwargs)
         else:
             raise NotImplementedError(f"Only the cigale sed fitted has been implemented. {sedfitter} given")
         

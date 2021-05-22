@@ -177,3 +177,11 @@ class Gauss3D( PSF3D, Gauss2D ):
             
         return sigmaref * (np.atleast_1d(lbda)/self.lbdaref)**rho
     
+    def guess_parameters(self):
+        """ 
+        Init parameters (default) for the 2D gaussian profile.
+        Return
+        --------
+        Elliptical parameters ("a" and "b") and the shape parameter (sigma)
+        """
+        return {**super().guess_parameters(), **{"rho":-0.5}}

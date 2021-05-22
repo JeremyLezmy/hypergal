@@ -160,9 +160,10 @@ class Overlay( object ):
         """
         self.set_multipolygon(mpoly_in, "in")
         self.set_multipolygon(mpoly_comp, "comp")        
-        self._geoparam_in   = {**{k:None for k in self.PARAMETER_NAMES},   **geoparam_in}
-        self._geoparam_comp = {**{k:None for k in self.PARAMETER_NAMES}, **geoparam_comp}
+        self._geoparam_in   = {**{k:None for k in self.GEOMETRY_PARAMETERS},   **geoparam_in}
+        self._geoparam_comp = {**{k:None for k in self.GEOMETRY_PARAMETERS}, **geoparam_comp}
         if reload_poly:
+            print("__init__ reloading")
             self.change_in(reload=True)            
             self.change_comp(reload=True)
             
@@ -257,7 +258,29 @@ class Overlay( object ):
         """ Project a flux (from {}_in) into the {}_comp geometry using self.overlaydf \n
         (callling the classmethod self.project_flux() 
         """
-        return self.project_flux(flux, self.overlaydf,  **kwargs)
+        return np.asarray(self.project_flux(flux, self.overlaydf,  **kwargs))
+
+
+    def get_mpoly(self, which, index=None):
+        """ get the multi polygon you want (_in or _comp) 
+
+        Parameters
+        ----------
+        which: [string]
+           in or comp
+
+        index: [int] -optional-
+            if mpoly is a multi slice polygon, provide the slice index.
+            - ignored for single slice class - 
+
+        Returns
+        -------
+        MultiPolygon
+        """
+        if index is not None:
+            warnings.warn(f"index must be None for this class ; ignored")
+            
+        return getattr(self, f"mpoly_{which}")
         
     # -------- #
     #  LOADER  #
@@ -297,7 +320,7 @@ class Overlay( object ):
         None
         """
         new_param = {k:v for k,v in locals().items()
-                         if k in self.PARAMETER_NAMES and\
+                         if k in self.GEOMETRY_PARAMETERS and\
                          v is not None and \
                          v != self.geoparam_in[k]}
                          
@@ -308,7 +331,10 @@ class Overlay( object ):
                 new_param = {}
 
         new_geoparam = {**self._geoparam_in, **new_param}
-        new_mpoly = transform_geometry(self.mpoly_in_orig, **new_geoparam)
+        print(new_geoparam)
+        transform_params = {k:v for k,v in new_geoparam.items() if k in self.PARAMETER_NAMES}
+        print(transform_params)
+        new_mpoly = transform_geometry(self.mpoly_in_orig, **transform_params)
         
         self.set_multipolygon(new_mpoly, "in", is_orig=False)
         self._geoparam_in = new_geoparam
@@ -342,7 +368,7 @@ class Overlay( object ):
         None
         """
         new_param = {k:v for k,v in locals().items()
-                         if k in self.PARAMETER_NAMES and\
+                         if k in self.GEOMETRY_PARAMETERS and\
                          v is not None and \
                          v != self.geoparam_comp[k]}
         if len(new_param) == 0:
@@ -352,7 +378,8 @@ class Overlay( object ):
                 new_param = {}
         
         new_geoparam = {**self._geoparam_comp, **new_param}
-        new_mpoly = transform_geometry(self.mpoly_comp_orig, **new_geoparam)
+        transform_params = {k:v for k,v in new_geoparam.items() if k in self.PARAMETER_NAMES}
+        new_mpoly = transform_geometry(self.mpoly_comp_orig, **transform_params)
 
         self.set_multipolygon(new_mpoly, "comp", is_orig=False)
         self._geoparam_comp = new_geoparam
@@ -523,7 +550,7 @@ class Overlay( object ):
     # -------- #
     #  PLOTTER #
     # -------- #
-    def show(self, ax=None, flux_in=None, lw_in=0.5, lw_comp=0.5, adjust=False, **kwargs):
+    def show(self, ax=None, flux_in=None, lw_in=0.5, lw_comp=0.5, adjust=False, comp_index=None, **kwargs):
         """ 
         Show mpoly_in and mpoly_comp on the same Axe.
 
@@ -561,7 +588,7 @@ class Overlay( object ):
         
         ec_in = "0.5" if flux_in is not None else "k"
         _ = self.show_mpoly("in",   ax=ax, facecolor="C0", edgecolor=ec_in,  flux=flux_in, zorder=3, lw=lw_in, **kwargs)
-        _ = self.show_mpoly("comp", ax=ax, facecolor="None", edgecolor="0.7", lw=lw_comp, zorder=5)
+        _ = self.show_mpoly("comp", index=comp_index, ax=ax, facecolor="None", edgecolor="0.7", lw=lw_comp, zorder=5)
 
         if adjust:
             vert_outin = np.asarray(self.mpoly_in.convex_hull.exterior.xy).T
@@ -623,6 +650,7 @@ class Overlay( object ):
         return fig
     
     def show_mpoly(self, which, ax=None, facecolor=None, edgecolor="k", adjust=False,
+                  index=None, 
                   flux=None, cmap="cividis", vmin=None, vmax=None, **kwargs):
         """ 
         Show multipolygon with its corresponding flux if provided.
@@ -669,7 +697,7 @@ class Overlay( object ):
         else:
             fig = ax.figure
 
-        mpoly = getattr(self, f"mpoly_{which}")
+        mpoly = self.get_mpoly(which, index=index)
         if flux is not None:
             cmap = mpl.cm.get_cmap(cmap)
             vmin, vmax = parse_vmin_vmax(flux, vmin, vmax)
@@ -738,8 +766,12 @@ class Overlay( object ):
             self.load_overlaydf()
         return self._overlaydf
 
+    @property
+    def GEOMETRY_PARAMETERS(self):
+        """ """
+        return self.PARAMETER_NAMES
 
-class Overlay3D( Overlay ):
+class _Overlay3D_( Overlay ):
     
     
     @classmethod
@@ -884,8 +916,8 @@ class Overlay3D( Overlay ):
         if len(overlays) != len(flux3d):
             raise ValueError(f"flux3d must have the same size as overlays : {len(flux3d)} vs. {len(overlays)}")
             
-        return [self.project_flux(flux, overlaydf_,  **kwargs)
-               for flux, overlaydf_ in zip(flux3d, overlays)]
+        return np.asarray([self.project_flux(flux, overlaydf_,  **kwargs)
+                               for flux, overlaydf_ in zip(flux3d, overlays)])
         
     def set_nslices(self, nslices):
         """ Set the number of slices ('comp')
@@ -915,7 +947,7 @@ class Overlay3D( Overlay ):
         return len( self.mpoly_comp_orig )
 
 
-class OverlayADR(Overlay3D):
+class OverlayADR( _Overlay3D_ ):
     
     ADR_PARAMETERS = ["parangle", "airmass"] # unit = scale
     
@@ -1000,9 +1032,11 @@ class OverlayADR(Overlay3D):
         None
         """
         new_param = {k:v for k,v in locals().items()
-                         if (k in self.PARAMETER_NAMES or k in self.ADR_PARAMETERS) and\
-                         v is not None and \
-                         not np.allclose(v, self.geoparam_comp[k], atol=atol)}
+                         if (k in self.GEOMETRY_PARAMETERS) and\
+                         v is not None and 
+                         not (self.geoparam_comp[k] is not None and np.allclose(v, self.geoparam_comp[k], atol=atol))
+                        }
+                         
         if len(new_param) == 0:
             if not reload:
                 return None
@@ -1018,7 +1052,7 @@ class OverlayADR(Overlay3D):
         # This is the new geoparam_comp
         new_geoparam = {**self._geoparam_comp, **new_param}
         # And here are the transformation dict | but with xoff, xoff only been the refence
-        transform_params = {k:v for k in new_param.items() if k not in self.ADR_PARAMETERS}
+        transform_params = {k:v for k,v in new_geoparam.items() if k in self.PARAMETER_NAMES}
         # The 3D xoff are there:
         xoff3d, yoff3d = self.adr.refract(new_geoparam["xoff"], new_geoparam["yoff"],
                                               self.lbda, unit=self._spaxel_unit)
@@ -1038,7 +1072,109 @@ class OverlayADR(Overlay3D):
         if reset_overlay:
             self.reset_overlaydf()
 
+    # --------- #
+    #  GETTER   #
+    # --------- #
+    def get_mpoly(self, which, index=None):
+        """ get the multi polygon you want (_in or _comp) 
+
+        Parameters
+        ----------
+        which: [string]
+           in or comp
+
+        index: [int] -optional-
+            provide the slice index to get only it's associated MultiPolygon
+            - works only for which='comp' -
+
+        Returns
+        -------
+        MultiPolygon
+        """
+        if index is None:
+            return getattr(self, f"mpoly_{which}")
+        if which == "in":
+            warnings.warn(f"No index available for mpoly_{which} ignored")
+            return getattr(self, f"mpoly_{which}")
+        
+        goems = np.asarray(self.mpoly_comp.geoms).reshape(self.nslices, 
+                                                          self.nspaxels_comp)[index]
+        return geometry.MultiPolygon( list(goems) )
+
+    # --------- #
+    #  GETTER   #
+    # --------- #
+    def show_mpoly(self, which, index=None,
+                    ax=None, facecolor=None, edgecolor="k", adjust=False,
+                    flux=None, cmap="cividis", vmin=None, vmax=None, **kwargs):
+        """ 
+        Show multipolygon with its corresponding flux if provided.
+
+        Parameters
+        ----------
+        which: string
+            "in" or "comp" multipolygon
+        
+        ax: Axes -optional-
+            You can provide your own ax (one)
+        
+        facecolor,edgecolor,cmap: string
+            Go to Matplotlib parameters
+
+        flux: array -optional-
+            Flux corresponding to self.mpoly_*which* \n
+            Default is None.
+
+        vmin,vmax: float, None, string -optional-
+            Colorbar limits. 
+            - Ignored if flux is None \n
+            - String: used as flux percentile\n
+            - Float: used value\n
+            - None: converted to '1' and '99'
+        
+        kwargs
+            Goes to geometry.show_polygon()
+
+        Returns
+        -------
+        Matplotlib.Axes    
+
+        """
+        import matplotlib.pyplot as mpl
+        from .tools import parse_vmin_vmax
+        if which not in ["in", "comp"]:
+            raise ValueError("which much be 'in' or 'comp'")
+
+        if ax is None:
+            fig = mpl.figure(figsize=[6,6])
+            ax = fig.add_subplot(111)
+            adjust = True
+        else:
+            fig = ax.figure
+
+        mpoly = self.get_mpoly(which, index=index)
+        if flux is not None:
+            cmap = mpl.cm.get_cmap(cmap)
+            vmin, vmax = parse_vmin_vmax(flux, vmin, vmax)
+            colors = cmap( (flux-vmin)/(vmax-vmin) )
+        else:
+            colors = [facecolor]*len(mpoly)
+
+
+        
+        for i,poly in enumerate(mpoly):
+            _ = show_polygon(poly, facecolor=colors[i], edgecolor=edgecolor, ax=ax, **kwargs)
+
+        if adjust:
+            verts = np.asarray(mpoly.convex_hull.exterior.xy).T
+            ax.set_xlim(*np.percentile(verts[:,0], [0,100]))
+            ax.set_ylim(*np.percentile(verts[:,1], [0,100]))
+
+        return ax
     
+    # --------- #
+    #  SETTER   #
+    # --------- #    
     def set_adr(self, adr, spaxel_unit):
         """ Set ADR object (see pyifu.adr.ADR) """
         self._adr = adr
@@ -1064,3 +1200,8 @@ class OverlayADR(Overlay3D):
         if not hasattr(self, '_lbda'):
             return None
         return self._lbda
+
+    @property
+    def GEOMETRY_PARAMETERS(self):
+        """ """
+        return self.PARAMETER_NAMES + self.ADR_PARAMETERS

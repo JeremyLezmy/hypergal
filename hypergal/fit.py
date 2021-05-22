@@ -344,6 +344,7 @@ class SceneFitter( object ):
         dfreeparam = {k:v for k, v in zip(self.free_parameters, parameters)}
         if self._debug:
             print(f"setting: {dfreeparam}")
+            
         return self.update_parameters(**dfreeparam)
 
     def set_priors(self, priors):
@@ -562,7 +563,7 @@ class SceneFitter( object ):
         Float
 
         """
-        model = self.get_model(parameters).values
+        model = self.get_model(parameters)
         if leastsq:
             return np.nansum( (self.scene.flux_comp - model)**2 )
         
@@ -711,7 +712,7 @@ class SceneFitter( object ):
         """ 
         Degree of Freedom for the fit. (number of spaxel - self.nfree_parameters)
         """
-        return len(self.scene.flux_comp) - self.nfree_parameters
+        return np.prod(np.shape(self.scene.flux_comp)) - self.nfree_parameters
     
     @property
     def fixed_parameters(self):
