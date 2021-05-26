@@ -51,7 +51,7 @@ def command_cigale(command, file_path=None):
     # to start processes much more rapidly.
     
     if sys.platform.startswith('linux'):
-        mp.set_start_method('fork')
+        mp.set_start_method('fork', force=True)
     else:
         mp.set_start_method('spawn', force=True)
 
