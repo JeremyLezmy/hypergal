@@ -69,6 +69,7 @@ class DaskHost( DaskHyperGal ):
         #
         # ---> fit position and PSF parameters from the cutouts
         bestfit_cout =  self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
+                                                saveplot_structure = plotbase+"cout_fit_",
                                                 filterin=filters, filters_to_use=filters_fit,
                                                  psfmodel=psfmodel)
 
@@ -261,6 +262,7 @@ class DaskHost( DaskHyperGal ):
     def fit_cout_slices(source_coutcube, source_sedmcube, radec,
                           filterin=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
                           filters_to_use=["ps1.r", "ps1.i","ps1.z"],
+                          saveplot_structure=None,
                           psfmodel="Gauss2D", guess=None):
         """ """
         #
@@ -277,7 +279,11 @@ class DaskHost( DaskHyperGal ):
         # Get the slices
         best_fits = {}
         for f_ in filters_to_use:
-            savefile=f"/Users/mrigault/Libraries/hypergal/notebooks/data/daskout/fit_cutout_{f_}.pdf"
+            if saveplot_structure is not None:
+                savefile = saveplot_structure+"{f_}.pdf"
+            else:
+                savefile = None
+                
             best_fits[f_] = delayed(SceneFitter.fit_slices_projection)(cout_filter_slices[f_], 
                                                                             sedm_filter_slices[f_], 
                                                                             psf=getattr(psf,psfmodel)(), 
