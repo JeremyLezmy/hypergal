@@ -5,6 +5,8 @@ import numpy as np
 from scipy import stats
 from iminuit import Minuit
 
+from . import psf
+from .spectroscopy import adr as spectroadr
 
 # ===================== #
 #                       #
@@ -44,7 +46,13 @@ class Priors( object ):
             a = self.parameters["a"]
             b = self.parameters["b"]
             priors.append(self.get_ellipticity_prior(a,b))
-        
+
+        if self.has_airmass_param():
+            priors.append( self.get_airmass_prior(self.parameters["airmass"]) )
+            
+        if self.has_rhopsf3d_param():
+            priors.append( self.get_rhopsf3d_prior(self.parameters["rho"]) )
+            
         # np.prod([])-> 1
         return np.prod(priors)
     
@@ -58,13 +66,39 @@ class Priors( object ):
         """
         return "a" in self.parameter_names and \
                "b" in self.parameter_names
+
+    def has_airmass_param(self):
+        """ """
+        return "airmass" in self.parameter_names
+
+    def has_rhopsf3d_param(self):
+        """ """
+        return "rho" in self.parameter_names
     
     # ============== #
     #  Statics       #
     # ============== #
-    
     @staticmethod
-    def get_ellipticity_prior(a, b, max_ratio=0.9, q_troncnorm={"loc":0, "scale":0.15, "a":0, "b":4 }):
+    def get_truncnorm_prior(x, loc=0, scale=1, a=0, b=5):
+        """ truncated normal prior.
+        This truncation parameters (a and b) are in units of scale.
+        such that parameters lower than: loc-a*scale and larger than loc+b*scale are set to 0
+        """
+        return stats.truncnorm.pdf(x, loc=loc, scale=scale, a=a, b=b)
+
+
+    @classmethod
+    def get_rhopsf3d_prior(cls, rho, q_troncnorm={"loc":0, "scale":2, "a":-2, "b":0 }):
+        """ """
+        return cls.get_truncnorm_prior(rho, **q_troncnorm)
+    
+    @classmethod
+    def get_airmass_prior(cls, airmass, q_troncnorm={"loc":1, "scale":0.8, "a":0, "b":4 }):
+        """ """
+        return cls.get_truncnorm_prior(airmass, **q_troncnorm)
+    
+    @classmethod
+    def get_ellipticity_prior(cls, a, b, max_ratio=0.9, q_troncnorm={"loc":0, "scale":0.15, "a":0, "b":4 }):
         """ 
         Get prior on ellipticity parameters
         """
@@ -74,7 +108,8 @@ class Priors( object ):
         numerator = np.sqrt( (1-a)**2 + 4*b**2) - (1+a)
         denominator = -np.sqrt( (1-a)**2 + 4*b**2) - (1+a)
         q = (1-numerator/denominator)
-        return stats.truncnorm.pdf(q, **q_troncnorm)
+        
+        return cls.get_truncnorm_prior(q, **q_troncnorm)
 
     
     # ============== #
@@ -214,7 +249,9 @@ class SceneFitter( object ):
                                   xy_in=None, xy_comp=None, 
                                   fix_params=["scale","rotation"], debug=False,
                                   guess=None, limit=None, error=None, use_priors=True,
-                                  savefile=None, result_as_dataframe=True):
+                                  savefile=None, plotkwargs={},
+                                  result_as_dataframe=True,
+                                  add_lbda=True, add_coefs=True):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
         Directly fit the scene after the instantiation.
@@ -274,12 +311,13 @@ class SceneFitter( object ):
                                    whichscene=whichscene,
                                    xy_in=xy_in, xy_comp=xy_comp, 
                                    fix_params=fix_params, debug=debug)
+        
         migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
                                  runmigrad=True)
         if savefile is not None:
-            this.scene.show(savefile=savefile)
+            this.scene.show( savefile=savefile, **{**{"vmin":"1","vmax":"90"},**plotkwargs} )
             
-        return this.get_bestfit_parameters(as_dataframe=result_as_dataframe)
+        return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
     
         
         
@@ -425,7 +463,8 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=None, pos_limits=4, sigma_limit=[0,5]):
+    def get_limits(self, a_limit=None, pos_limits=4, sigma_limit=[0,5], airmass_limit=[1,4],
+                       parangle_var_limit=10, param_guess=None):
         """ 
         Get limits values (bounds) as list for free parameters.
 
@@ -448,7 +487,8 @@ class SceneFitter( object ):
         List
         """
         param_names = self.free_parameters
-        param_guess = self.get_guesses(free_only=True, as_array=True)
+        if param_guess is None:
+            param_guess = self.get_guesses(free_only=True, as_array=True)
         limits = [None for i in range(self.nfree_parameters)]
         
         if "xoff" in param_names:
@@ -466,6 +506,15 @@ class SceneFitter( object ):
         if "sigma" in param_names:
             id_ = param_names.index("sigma")
             limits[id_] = sigma_limit
+
+        if "airmass" in param_names:
+            id_ = param_names.index("airmass")
+            limits[id_] = airmass_limit
+
+        if "parangle" in param_names:
+            id_ = param_names.index("parangle")
+            limits[id_] = [param_guess[id_]-parangle_var_limit,
+                           param_guess[id_]+parangle_var_limit]
             
         return limits 
         
@@ -513,7 +562,8 @@ class SceneFitter( object ):
                                     overlayparam = self._geometry_parameters, 
                                     psfparam = self._psf_parameters)
 
-    def get_bestfit_parameters(self, incl_err=True, as_dataframe=True):
+    def get_bestfit_parameters(self, incl_err=True, as_dataframe=True,
+                                   add_lbda=False, add_coefs=False):
         """ 
         Get bestfit parameters in self.bestfit.
 
@@ -531,11 +581,29 @@ class SceneFitter( object ):
         """
         if not self.has_bestfit():
             raise AttributeError("No bestfit set. see set_bestfit() or fit()")
+
+
+        values = self._bestfit_values.copy()
+        errors = {k.replace("_err",""):v for k,v in self._bestfit_errors.items()}
+
+        if add_lbda:
+            values["lbda"] = self.scene.slice_in.lbda
+            errors["lbda"] = np.NaN
+
+        if add_coefs:
+            # Norm
+            values["norm_comp"] = self.scene.norm_comp
+            errors["norm_comp"] = np.NaN
+            values["norm_in"]   = self.scene.norm_in
+            errors["norm_in"]   = np.NaN
+            # Background            
+            values["bkgd_comp"] = self.scene.bkgd_comp
+            errors["bkgd_comp"] = np.NaN
+            values["bkgd_in"]   = self.scene.bkgd_in
+            errors["bkgd_in"]   = np.NaN
         
         if as_dataframe:
-            df =  pandas.DataFrame({"values":self._bestfit_values,
-                                    "errors":{k.replace("_err",""):v for k,v in self._bestfit_errors.items()}
-                                     })
+            df =  pandas.DataFrame({"values":values, "errors":errors})
             return df if incl_err else df["values"]
         
         return self._bestfit if incl_err else self._bestfit_values
@@ -617,7 +685,8 @@ class SceneFitter( object ):
 
     # - fitting over logprob or chi2, see use_priors
     def fit(self, guess=None, limit=None, verbose=False, error=None,
-                use_priors=True, runmigrad=True, errordef=0.5, **kwargs):
+                use_priors=True, runmigrad=True, errordef=0.5,
+                update_scene=True, **kwargs):
         """ 
         Fitter.
 
@@ -649,6 +718,9 @@ class SceneFitter( object ):
             errordef=1 for least-squares score function \n
             errordef=0.5 for maximum-likelihood score function (Default)
 
+        update_scene: [bool]
+            Shoudl the guess update the scene even if the given guess parameters are not "free" ?
+
         kwargs:
             Goes to Minuit.from_array_func()
 
@@ -659,15 +731,25 @@ class SceneFitter( object ):
         """
         if guess is None: guess = {}
         if limit is None: limit = {}
-        guess = self.get_guesses(free_only=True, as_array=True, **guess)
-        limit = self.get_limits(**limit)
+        guess_free = self.get_guesses(free_only=True, as_array=True, **guess)
+        if update_scene:
+            update_param = self.get_guesses(free_only=False, as_array=False, **guess)
+            if verbose or self._debug:            
+                print("running scene.update with", update_param)
+                
+            self.scene.update(**update_param)
+            self.update_parameters(**update_param)
+            
+        limit = self.get_limits(param_guess=guess_free, **limit)
         if verbose or self._debug:
             print(f"param names {self.free_parameters}")
-            print(f"guess {guess}")
+            print(f"guess {guess_free}")
             print(f"limits {limit}")
+            print(f"starting point scene parameters: {self.scene.get_parameters()}")
 
-            
-        m = Minuit.from_array_func(self.get_logprob if use_priors else self.get_chi2, guess, limit=limit,
+        
+        m = Minuit.from_array_func(self.get_logprob if use_priors else self.get_chi2,
+                                    guess_free, limit=limit,
                                     name= self.free_parameters, error=error,errordef=errordef,
                                    **kwargs)
         if not runmigrad:
@@ -753,3 +835,153 @@ class SceneFitter( object ):
         
 
 
+
+# ===================== #
+#                       #
+#      RESULTS          #
+#                       #
+# ===================== #
+class MultiSliceParameters():
+    """ """
+    def __init__(self, dataframe, cubefile=None, 
+                 psfmodel="Gauss3D", 
+                 load_adr=False, load_psf=False):
+        """ """
+        self.set_data(dataframe)
+        if load_adr:
+            if cubefile is None:
+                raise ValueError("cubefile must be given to load_adr")
+            self.load_adr(cubefile)
+        if load_psf:
+            self.load_psf(psfmodel=psfmodel)
+        
+    @classmethod
+    def read_hdf(cls, filename, key, 
+                 cubefile=None, psfmodel="Gauss3D", load_adr=False, load_psf=False):
+        """ """
+        import pandas
+        dataframe = pandas.read_hdf(filename, key)
+        return cls(dataframe, cubefile=cubefile, psfmodel=psfmodel, 
+                              load_adr=load_adr, load_psf=load_psf)
+    
+    @classmethod
+    def from_dataframe(cls, dataframe, **kwargs):
+        """ """
+        return cls(dataframe,  **kwargs)
+        
+    # ============= #
+    #   Method      #
+    # ============= #
+    # -------- #
+    #  SETTER  #
+    # -------- #
+    def set_data(self, dataframe):
+        """ """
+        values = dataframe.unstack(level=1)["values"]
+        errors = dataframe.unstack(level=1)["errors"]
+        
+        self._data = dataframe
+        self._values = values
+        self._errors = errors
+        
+    # -------- #
+    #  LOADER  #
+    # -------- #        
+    def load_adr(self, cubefile):
+        """ """
+        self._adr, self._adr_ref = spectroadr.ADRFitter.fit_adr_from_values(self.values, self.lbda, cubefile, 
+                                                                            errors=self.errors)
+    def load_psf(self, psfmodel="Gauss3D"):
+        """ """
+        self._psf3d = getattr(psf.gauss,psfmodel).fit_from_values(self.values, self.lbda, errors=self.errors)
+        self._psfmodel = psfmodel
+        
+    # -------- #
+    #  GETTER  #
+    # -------- #
+    def get_guess(self, lbda, psfmodel="Gauss2D", as_dataframe=False, squeeze=True):
+        """ """
+        if psfmodel=="Gauss2D" and self.psfmodel == "Gauss3D":
+            guesses = self.get_gauss_guess(lbda)
+        else:
+            raise NotImplementedError("Only Gauss2D PSF model implemented")
+        
+        if squeeze and len(guesses)==1:
+            return guesses[0]
+        
+        return guesses if not as_dataframe else pandas.DataFrame.from_records(guesses).T
+        
+    def get_gauss_guess(self, lbda):
+        """ """
+        lbda = np.atleast_1d(lbda)
+        guesses= []
+        for i,lbda_ in enumerate(lbda):
+            guess = {}
+            # -- ADR        
+            # Position
+            xoff, yoff = self.adr.refract(self.adr_ref[0], self.adr_ref[1], 
+                                          lbda_, 
+                                         unit=spectroadr.IFU_SCALE)
+            guess["xoff"] = xoff
+            guess["yoff"] = yoff
+            # -- PSF
+            # Ellipse
+            guess["a"] = self.psf3d.a_ell
+            guess["b"] = self.psf3d.b_ell
+            # Profile
+            guess["sigma"] = self.psf3d.get_sigma(lbda_)[0]
+            # -- Base Parameters
+            for k in ["ampl", "background"]:
+                guess[k]  = np.average(self.values[k], weights=1/self.errors[k]**2)
+                
+            guesses.append(guess)
+            
+        return guesses
+        
+    # ============= #
+    #  Properties   #
+    # ============= #
+    #
+    # - Input
+    @property
+    def data(self):
+        """ """
+        return self._data
+        
+    @property
+    def values(self):
+        """ """
+        return self._values
+    
+    @property
+    def errors(self):
+        """ """
+        return self._errors
+    
+    @property
+    def lbda(self):
+        """ """
+        return self.values["lbda"]
+    
+    #
+    # - Derived
+    @property
+    def adr(self):
+        """ """
+        return self._adr
+    
+    @property
+    def adr_ref(self):
+        """ """
+        return self._adr_ref
+    
+    @property
+    def psf3d(self):
+        """ """
+        return self._psf3d
+    
+    @property
+    def psfmodel(self):
+        """ """
+        return self._psfmodel
+                

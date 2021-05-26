@@ -87,7 +87,24 @@ class Gauss3D( PSF3D, Gauss2D ):
     # ============= #
     @classmethod
     def fit_from_values(cls, values, lbda, errors=None, **kwargs):
-        """ """
+        """ 
+
+        Parameters
+        ----------
+        values: [dict/serie]
+            dictionary or pandas.Series containing the freerameters 
+            (a, b | sigma)
+
+        lbda: [array]
+            wavelength assiated to the input values
+
+        errors: [dict/serie or None] -optional-
+            errors associated to the inpout values, same format.
+
+        Returns
+        -------
+        Gauss3D
+        """
         from scipy.optimize import minimize
         this = cls(**kwargs)
         

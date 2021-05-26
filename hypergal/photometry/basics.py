@@ -21,6 +21,19 @@ def get_filter(name, as_dataframe=True, sep=" ", **kwargs):
     
     return np.asarray([l.split(sep) for l in open(file_).read().splitlines()], dtype="float").T
 
+def get_filter_efflbda(name):
+    """ """
+    name = np.atleast_1d(name)
+    efflbda = []
+    for name_ in name:
+        l, f = get_filter(name_, as_dataframe=False)
+        efflbda.append(np.average(l, weights=f))
+        
+    if len(efflbda)==1:
+        return efflbda[0]
+    
+    return np.asarray(efflbda)
+
 
 class CutOut( WCSHolder ):
 

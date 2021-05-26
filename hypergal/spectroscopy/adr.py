@@ -4,6 +4,46 @@ import numpy as np
 from pyifu.adr import ADR
 
 IFU_SCALE = 0.558
+        
+def get_adr(header_or_filename, values, lbda, errors=None):
+    """ The function loads and ADR from the input header and fine tune 
+    it's parameters given the centroid information
+    """
+    if type(header_or_filename) == str:
+        adr = ADR.from_filename(header_or_filename)
+    else:
+        adr = ADR.from_header(header_or_filename)
+
+    if xpos is None or ypos is None or lbda is None:
+        return adr
+
+    af = ADRFitter.from_centroids( np.asarray(xpos),  np.asarray(ypos), np.asarray(lbda), 
+                                           xpos_err=np.asarray(xpos_err) if xpos_err is not None else None,
+                                           ypos_err=np.asarray(ypos_err) if ypos_err is not None else None,
+                                           init_adr=adr.copy()
+                                    )
+    adr.set(**af.data)
+    return adr
+
+
+def slicefitparam_to_adr(header_of_filename, dataframe, is_cutout=True):
+    """ """
+    xoff = dataframe.xs("xoff", level=1)
+    yoff = dataframe.xs("yoff", level=1)
+    if is_cutout:
+        from ..photometry.basics import get_filter_efflbda
+        lbda = get_filter_efflbda(xoff.index)
+    else:
+        lbda = dataframe.xs("lbda", level=1)
+                
+    return spectroadr.get_adr(header_of_filename,
+                             xoff=xoff["values"].values, 
+                             yoff=yoff["values"].values, 
+                             lbda=np.asarray(lbda), 
+                             xpos_err=xoff["errors"].values,
+                             ypos_err=yoff["errors"].values)
+
+
 
 class ADRFitter(ADR):
 
@@ -44,7 +84,45 @@ class ADRFitter(ADR):
         self._set_state("Initial")
             
         _ = super().__init__(**kwargs)
+
+    @classmethod
+    def fit_adr_from_values(cls, values, lbda, filename_or_header, errors=None, show=False, **kwargs):
+        """
+
+        Parameters
+        ----------
+        values: [dict / DataFrame] 
+            dict of DataFrame containing the parameters values
         
+        lbda: [array]
+            list of wavelength associated to the data
+
+        filename_or_header: [filepath or header]
+            filename or header | any could be used to load a adr object
+
+        errors: [dict / DataFrame]
+            errors associated to the values, same format at values
+
+        Returns
+        -------
+        ADR, (xref, yref)
+            
+        // where xref, yref are the position of the input source at the reference wavelength 
+        """
+        if type(filename_or_header) == str:
+            adr = ADR.from_filename(filename_or_header)
+        else:
+            adr = ADR.from_header(filename_or_header)
+
+        this = cls.from_centroids(values["xoff"], values["yoff"], lbda=lbda,
+                                      xpos_err=errors["xoff"] if errors is not None else None,
+                                      ypos_err=errors["yoff"] if errors is not None else None,
+                                      init_adr=adr, **kwargs)
+        this.fit_adr(show=show)
+        adr.set(**this.data)
+        return adr, (this.fitted_xref,this.fitted_yref)
+
+
     @classmethod
     def from_centroids(cls, xpos, ypos, lbda, xpos_err=None, ypos_err=None, init_adr=None, **kwargs):
         """
@@ -70,7 +148,8 @@ class ADRFitter(ADR):
        
         """
 
-        return cls(xpos, ypos, lbda, xpos_err=xpos_err, ypos_err=xpos_err, init_adr=init_adr, **kwargs)
+        return cls(xpos, ypos, lbda, xpos_err=xpos_err, ypos_err=xpos_err,
+                       init_adr=init_adr, **kwargs)
 
     def fit_adr(self, show=False, **kwargs):
         """
@@ -85,7 +164,6 @@ class ADRFitter(ADR):
             Go to ADR.set()
         
         """
-        
         for k in self.PROPERTIES:
             if self.data[k] is None:
                 raise ValueError(f'{k} must be set with self.set() method')
@@ -110,7 +188,8 @@ class ADRFitter(ADR):
                
             return (np.sum((datas-model)**2 / err**2))
 
-        adrfit=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]), bounds=[ (None,None), (1,None), (None,None), (None,None)] )
+        adrfit=optimize.minimize(minifit, np.array([self.parangle, self.airmass, xref_init, yref_init]),
+                                     bounds=[ (None,None), (1,None), (None,None), (None,None)] )
 
         if adrfit.success:
             self._set_state("Success Fit")
@@ -146,7 +225,7 @@ class ADRFitter(ADR):
         import matplotlib.pyplot as plt
         
         if ax==None:
-            fig,ax=plt.subplots( figsize=(8,8))
+            fig,ax=plt.subplots( figsize=(6,5))
         else:
             fig = ax.figure
         
@@ -160,12 +239,15 @@ class ADRFitter(ADR):
         
         ax.scatter( self.xpos, self.ypos, cmap=colormap, c=self.lbda, label='Input position')
         ax.errorbar(self.xpos, self.ypos, self.xpos_err, self.ypos_err, fmt='none', color=colors)
-          
-        adrfit=ax.scatter(self.refract(self._fit_xref, self._fit_yref, self.lbda , unit = IFU_SCALE)[0], self.refract(self._fit_xref, self._fit_yref, self.lbda , unit = IFU_SCALE)[1], marker='o',cmap=colormap, c=self.lbda, fc='none',edgecolors='k', label='Fitted ADR')
+
+        refracted = self.refract(self._fit_xref, self._fit_yref, self.lbda , unit = IFU_SCALE)
+        adrfit=ax.scatter(refracted[0], refracted[1],
+                          marker='o',cmap=colormap, c=self.lbda, fc='none',edgecolors='k', label='Fitted ADR')
    
         from matplotlib.lines import Line2D
-        Line2D([0], [0], marker='o',linestyle='',  markersize=8, fillstyle=Line2D.fillStyles[-1],label=r'Theoretical ADR ')
-        Line2D([0], [0],marker='o',linestyle='',markeredgecolor='k', markerfacecolor='k',  markersize=8, fillstyle=Line2D.fillStyles[-1],label=r'Fitted position ')
+        Line2D([0], [0], marker='o',linestyle='', markersize=8, fillstyle=Line2D.fillStyles[-1],label=r'Theoretical ADR ')
+        Line2D([0], [0],marker='o',linestyle='',markeredgecolor='k', markerfacecolor='k',  markersize=8,
+                   fillstyle=Line2D.fillStyles[-1],label=r'Fitted position ')
    
         ax.legend()        
         ax.set_aspect('equal', adjustable='datalim')

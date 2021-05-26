@@ -49,7 +49,6 @@ class _BaseScene_( object ):
         else:
             raise ValueError(f"which can only be in or comp, {which} given")
         
-
     def update_baseparams(self, **kwargs):
         """ 
         Set parameters from self.BASE_PARAMETERS (amplitude and background)
@@ -122,10 +121,12 @@ class _BaseScene_( object ):
         # Change position of the comp grid if needed
         #   - if the overlayparam are the same as already know, no update made.
         if overlayparam is not None and len(overlayparam)>0:
-            self.overlay.change_comp(**overlayparam)
+            self.overlay.change_comp(**{k:v for k,v in overlayparam.items() if v is not None})
 
         # 2.            
         # Change values of flux and variances of _in by convolving the image
+        if psfparam is not None:
+            psfparam = {k:v for k,v in psfparam.items() if v is not None}
         flux_in = self.get_convolved_flux_in(psfparam)
 
         # 3. (overlaydf calculated only if needed)
@@ -177,7 +178,10 @@ class _BaseScene_( object ):
         
         return {**guess_step1, **{"ampl":ampl, "background":bkgd}}
 
-    
+    def get_parameters(self):
+        """ """
+        return {**self.baseparams,**self.overlay.geoparam_comp,**self.psf.parameters}
+
     # ============= #
     #  Properties   #
     # ============= #
@@ -400,11 +404,11 @@ class SliceScene( _BaseScene_ ):
         """
         data = slice_.data.copy()
         if type(bkgd) is str:
-            bkgd  = np.percentile(data, float(bkgd))
+            bkgd  = np.percentile(data[data==data], float(bkgd))
             
         data -= bkgd
         if type(norm) is str:
-            norm = np.percentile(data, float(norm))
+            norm = np.percentile(data[data==data], float(norm))
             
         data /= norm
         if slice_.has_variance():
@@ -708,11 +712,11 @@ class CubeScene( SliceScene ):
         """
         data = cube_.data.copy()
         if type(bkgd) is str:
-            bkgd  = np.percentile(data, float(bkgd), axis=1)[:,None]
+            bkgd  = np.percentile(data[data==data], float(bkgd), axis=1)[:,None]
             
         data -= bkgd
         if type(norm) is str:
-            norm = np.percentile(data, float(norm), axis=1)[:,None]
+            norm = np.percentile(data[data==data], float(norm), axis=1)[:,None]
             
         data /= norm
         if cube_.has_variance():
@@ -776,12 +780,13 @@ class CubeScene( SliceScene ):
         # Change position of the comp grid if needed
         #   - if the overlayparam are the same as already know, no update made.
         if overlayparam is not None and len(overlayparam)>0:
-            self.overlay.change_comp(**overlayparam)
+            self.overlay.change_comp(**{k:v for k,v in overlayparam.items() if v is not None})
 
         # 2.            
         # Change values of flux and variances of _in by convolving the image
+        if psfparam is not None:
+            psfparam = {k:v for k,v in psfparam.items() if v is not None}
         flux_in = self.get_convolved_flux_in(psfparam)
-
         # 3. (overlaydf calculated only if needed)
         # Get the new projected flux and variance (_in->_comp grid)
         modelflux = self.overlay.get_projected_flux(flux_in)
@@ -824,7 +829,7 @@ class CubeScene( SliceScene ):
         
         model_comp = self.get_model()
         bkgd = np.median(self.flux_comp, axis=1)-np.median(model_comp, axis=1)
-        ampl = np.sum(self.flux_comp, axis=1) / np.sum(model_comp, axis=1)
+        ampl = np.percentile(self.flux_comp, 95, axis=1) / np.percentile(model_comp, 95, axis=1)
         baseparams = {**{f"ampl{i}":ampl[i]       for i in range(self.nslices)},
                       **{f"background{i}":bkgd[i] for i in range(self.nslices)} }
         return {**guess_step1, **baseparams}
@@ -942,3 +947,5 @@ class CubeScene( SliceScene ):
     def BASE_PARAMETERS(self):
         """ """
         return [f"{k}{i}" for k in self.BASE_SLICE_PARAMETERS for i in range(self.nslices)]
+
+    

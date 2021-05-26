@@ -6,12 +6,9 @@ import pandas
 from pysedm.dask import base
 from dask import delayed
 
-from ..photometry import basics as photobasics
 from ..photometry import panstarrs
 from ..spectroscopy import basics as spectrobasics
 from ..spectroscopy import sedfitting
-from ..fit import SceneFitter
-from .. import psf
 
 
 
@@ -52,34 +49,7 @@ class DaskHyperGal( base.DaskCube ):
         
         return source_coutcube,source_sedmcube
 
-    @staticmethod
-    def fit_cout_slices(source_coutcube, source_sedmcube, radec,
-                          filterin=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
-                          filters_to_use=["ps1.r", "ps1.i","ps1.z"],
-                          psfmodel="Gauss2D"):
-        """ """
-        #
-        # Get the slices
-        cout_filter_slices = {f_: source_coutcube.get_slice(index=filterin.index(f_), slice_object=True) 
-                                  for f_ in filters_to_use}
 
-        sedm_filter_slices = {f_: source_sedmcube.get_slice(lbda_trans=photobasics.get_filter(f_, as_dataframe=False), 
-                                                            slice_object=True)
-                                  for f_ in filters_to_use}
-        xy_in   = source_coutcube.radec_to_xy(*radec).flatten()
-        xy_comp = source_sedmcube.radec_to_xy(*radec).flatten()
-        #
-        # Get the slices
-        best_fits = {}
-        for f_ in filters_to_use:
-            savefile = None
-            best_fits[f_] = delayed(SceneFitter.fit_slices_projection)(cout_filter_slices[f_], 
-                                                                            sedm_filter_slices[f_], 
-                                                                            psf=getattr(psf,psfmodel)(), 
-                                                                            savefile=savefile, 
-                                                                            xy_in=xy_in, 
-                                                                            xy_comp=xy_comp)
-        return delayed(pandas.concat)(best_fits)
 
     # =============== #
     #   INTERNAL      #

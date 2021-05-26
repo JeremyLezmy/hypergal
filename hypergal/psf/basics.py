@@ -200,7 +200,14 @@ class PSF2D( object ):
         Name of the PSF parameters: Ellipticity + Shape
         """
         return self.ELLIPTICITY_PARAMETERS + self.PROFILE_PARAMETERS
-    
+
+    @property
+    def parameters(self):
+        """ """
+        return {**{k:self._ellipticity_params.get(k,None) for k in self.ELLIPTICITY_PARAMETERS},
+                **{k:self._profile_params.get(k,None) for k in self.PROFILE_PARAMETERS}
+                }
+                    
     
 class PSF3D( PSF2D ):
 

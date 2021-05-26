@@ -1,29 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-################################################################################
-# Filename:          setup.py
-# Description:       script description
-# Author:            Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>
-# Author:            $Author: jlezmy $
-# Created on:        $Date: 2021/02/04 14:20:22 $
-# Modified on:       2021/05/21 17:57:54
-# Copyright:         2019, Jeremy Lezmy
-# $Id: setup.py, 2021/02/04 14:20:22  JL $
-################################################################################
 
-"""
-.. _setup.py:
-
-setup.py
-==============
-
-
-"""
-__license__ = "2019, Jeremy Lezmy"
-__docformat__ = 'reStructuredText'
-__author__ = 'Jeremy Lezmy <jeremy.lezmy@ipnl.in2p3.fr>'
-__date__ = '2021/02/04 14:20:22'
-__adv__ = 'setup.py'
 
 import os
 import sys
@@ -35,13 +12,13 @@ DESCRIPTION = "hypergal: Python module for Host modeling"
 LONG_DESCRIPTION = """ hypergal: Python module for Hyperspectral Galaxy Modeling through SEDfitting and photometric source """
 
 DISTNAME = 'hypergal'
-AUTHOR = 'Jeremy Lezmy'
+AUTHOR = 'Jeremy Lezmy, Mickael Rigault'
 MAINTAINER = 'Jeremy Lezmy' 
 MAINTAINER_EMAIL = 'lezmy@ipnl.in2p3.fr'
 URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
 LICENSE = ''
 DOWNLOAD_URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
-VERSION = '1.0.2'
+VERSION = '1.1.0'
 
 try:
     from setuptools import setup, find_packages
