@@ -33,7 +33,7 @@ class DaskHost( DaskHyperGal ):
         working_dir = f"tmp_{cubeid}"
         
         # PLOTS
-        plotbase    = os.path.join(dirout, "hypergal", info["name"], info["sedmid"])
+        plotbase    = os.path.join(filedir, "hypergal", info["name"], info["sedmid"])
         dirplotbase = os.path.dirname(plotbase)
         if not os.path.isdir(dirplotbase):
             os.makedirs(dirplotbase, exist_ok=True)
