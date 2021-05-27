@@ -146,11 +146,11 @@ class DaskHost( DaskHyperGal ):
     #
     #
     #    
-    @classmethod
+    @staticmethod
     def build_cubes(cube_int, cube_sedm, radec, mslice_meta, mslice_final,
                     psfmodel='Gauss2D', scenemodel="HostSlice", nslices=len(SEDM_LBDA)):
         """ """
-        xy_in   = cube_intr.radec_to_xy(*radec).flatten()
+        xy_in   = cube_int.radec_to_xy(*radec).flatten()
         cubebuilder = delayed(CubeModelBuilder)(cube_in=cube_int, cube_comp=cube_sedm,
                                                 mslice_meta=mslice_meta, mslice_final=mslice_final, 
                                                 xy_in=xy_in)
