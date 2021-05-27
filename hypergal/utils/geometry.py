@@ -260,11 +260,18 @@ class Overlay( object ):
     # -------- #
     #  GETTER  #
     # -------- #
-    def get_projected_flux(self, flux, **kwargs):
+    def get_projected_flux(self, flux, fill_comp=False, **kwargs):
         """ Project a flux (from {}_in) into the {}_comp geometry using self.overlaydf \n
         (callling the classmethod self.project_flux() 
         """
-        return np.asarray(self.project_flux(flux, self.overlaydf,  **kwargs))
+        project_serie = self.project_flux(flux, self.overlaydf,  **kwargs)
+        
+        if fill_comp:
+            flux_out = np.zeros( len(self.mpoly_comp) )
+            flux_out[project_serie.index] = project_serie.values
+            return flux_out
+            
+        return np.asarray(project_serie)
 
 
     def get_mpoly(self, which, index=None):
@@ -603,7 +610,7 @@ class Overlay( object ):
         
         return ax
 
-    def show_projection(self, flux_in, savefile=None, axes=None, vmin=None, vmax=None):
+    def show_projection(self, flux_in, savefile=None, axes=None, vmin=None, vmax=None, fill_comp=True):
         """ 
         Show the projected flux in the mpoly_comp geometry.
 
@@ -643,7 +650,7 @@ class Overlay( object ):
 
         prop = dict(vmin=vmin, vmax=vmax)
         _ = self.show(flux_in=flux_in, ax=axl, lw_in=0, adjust=True, **prop)
-        flux_proj = self.get_projected_flux(flux_in)
+        flux_proj = self.get_projected_flux(flux_in, fill_comp=fill_comp)
         _ = self.show_mpoly("comp", ax=axr, flux=flux_proj, edgecolor="0.7",lw=0.5, zorder=5, adjust=True,
                            **prop)
 

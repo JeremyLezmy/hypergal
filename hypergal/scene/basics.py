@@ -60,7 +60,7 @@ class _BaseScene_( object ):
                 warnings.warn(f"{k} is not a base parameters, ignored")
                 continue
             
-    def update(self, **kwargs):
+    def update(self, ignore_extra=False, **kwargs):
         """ 
         Can update any parameter through kwarg option.\n
         Might be self.BASE_PARAMETER, self.PSF_PARAMETERS or self.GEOMETRY_PARAMETERS
@@ -82,9 +82,9 @@ class _BaseScene_( object ):
                 geometryparams[k] = v
                 
             # or crash
-            else:
+            elif not ignore_extra:
                 raise ValueError(f"Unknow input parameter {k}={v}")
-
+            
         self.update_baseparams(**baseparams)
         if len(geometryparams)>0:
             self.overlay.change_comp(**geometryparams)
@@ -96,7 +96,7 @@ class _BaseScene_( object ):
     # --------- #
     def get_model(self, ampl=None, background=None,
                       overlayparam=None,
-                      psfparam=None):
+                      psfparam=None, fill_comp=False):
         """Convolves and project flux_in into the 
 
         Parameters
@@ -131,7 +131,7 @@ class _BaseScene_( object ):
 
         # 3. (overlaydf calculated only if needed)
         # Get the new projected flux and variance (_in->_comp grid)
-        modelflux = self.overlay.get_projected_flux(flux_in)
+        modelflux = self.overlay.get_projected_flux(flux_in, fill_comp=fill_comp)
 
         # 4. Out
         return ampl*modelflux + background
@@ -277,7 +277,7 @@ class SliceScene( _BaseScene_ ):
     BASE_PARAMETERS = ["ampl", "background"]
     
     def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
-                     psf=None, **kwargs):
+                     psf=None, adapt_flux=True, **kwargs):
         """ 
         Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
         Many transformations might be done to simulate the output scene, such as psf convolution, 
@@ -306,8 +306,8 @@ class SliceScene( _BaseScene_ ):
             Go to self.load_overlay
         
         """
-        self.set_slice(slice_in, "in")
-        self.set_slice(slice_comp, "comp")
+        self.set_slice(slice_in, "in", adapt_flux=adapt_flux)
+        self.set_slice(slice_comp, "comp", adapt_flux=adapt_flux)
         
         if load_overlay:
             self.load_overlay(xy_in=xy_in, xy_comp=xy_comp, **kwargs)
@@ -386,7 +386,7 @@ class SliceScene( _BaseScene_ ):
     # --------- #
     #  SETTER   #
     # --------- #
-    def set_slice(self, slice_, which, norm="99", bkgd="50"):
+    def set_slice(self, slice_, which, adapt_flux=True, norm="99", bkgd="50"):
         """ Set the 'in' or 'comp' geometry
         
         Parameters
@@ -403,6 +403,10 @@ class SliceScene( _BaseScene_ ):
         None
         """
         data = slice_.data.copy()
+        if not adapt_flux:
+            norm = 1
+            bkgd = 0
+            
         if type(bkgd) is str:
             bkgd  = np.percentile(data[data==data], float(bkgd))
             
@@ -428,7 +432,8 @@ class SliceScene( _BaseScene_ ):
         
     def show(self, savefile=None, titles=True,
                  res_as_ratio=False, cutout_convolved=True,
-                 vmin="1", vmax="99", cmap="cividis", cmapproj=None):
+                 vmin="1", vmax="99", cmap="cividis", cmapproj=None,
+                 fill_comp=True):
         """
         General plot of the process. Will show 4 Axes. \n
         First one is slice_in + empty geometry of slice_out.\n
@@ -465,7 +470,7 @@ class SliceScene( _BaseScene_ ):
         
         # Convolved image flux
         flux_in    = self.get_convolved_flux_in() if cutout_convolved else self.flux_in
-        flux_model = self.get_model()
+        flux_model = self.get_model(fill_comp=fill_comp)
         flux_comp  = self.flux_comp
     
         return self._show_slice_scene_(self.overlay, flux_in, flux_model, flux_comp,
