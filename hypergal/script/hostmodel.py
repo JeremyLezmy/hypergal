@@ -137,7 +137,7 @@ class DaskHost( DaskHyperGal ):
         # Cube Building
 
         cubemodel_cuberes = self.build_cubes(int_cube, calcube, radec,
-                                                 meta_ms_param, bestfit_completfit,
+                                                 meta_ms_param, full_ms_param,
                                                 psfmodel=psfmodel)
         cubemodel = cubemodel_cuberes[0]
         cuberes   = cubemodel_cuberes[1]
