@@ -128,12 +128,16 @@ class DaskHost( DaskHyperGal ):
         # ---> Storing <--- # 4
         stored.append( bestfit_completfit.to_hdf(*io.get_slicefit_datafile(cubefile, "full")) )
 
+        # ---> Get the object for future guesses || Guesser        
+        full_ms_param = delayed(MultiSliceParameters)(bestfit_completfit, psfmodel=psfmodel.replace("2D","3D") )
+
         # ------------ #
         #    STEP 4    #
         # ------------ #
         # Cube Building
 
-        cubemodel_cuberes = self.build_cubes(int_cube, calcube, radec, meta_ms_param, bestfit_completfit,
+        cubemodel_cuberes = self.build_cubes(int_cube, calcube, radec,
+                                                 meta_ms_param, bestfit_completfit,
                                                 psfmodel=psfmodel)
         cubemodel = cubemodel_cuberes[0]
         cuberes   = cubemodel_cuberes[1]

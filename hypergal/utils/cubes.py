@@ -90,7 +90,7 @@ class CubeModelBuilder( object ):
     def get_parameters(self, index):
         """ """
         return {**self.slice_parameters_meta.get_guess( self.get_lbda(index) ), 
-                **dict(self.slice_parameters_full.loc[index])}
+                **dict(self.slice_parameters_full.values.loc[index])}
     
     def get_scene(self, index, adapt_flux=False, **kwargs):
         """ """
