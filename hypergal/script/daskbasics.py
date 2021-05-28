@@ -14,6 +14,8 @@ from ..spectroscopy import sedfitting
 
 class DaskHyperGal( base.DaskCube ):
 
+
+    
     
     @classmethod
     def get_sourcecubes(cls, cubefile, radec, binfactor=2,

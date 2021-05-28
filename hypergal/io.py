@@ -1,9 +1,14 @@
 """ io tools """
 
+import numpy as np
+import warnings
 from pysedm.io import parse_filename
 
+# ============ #
+#  FILE I/O    #
+# ============ #
 
-def e3dfilename_to_wcube(filename):
+def e3dfilename_to_wcscalcube(filename):
     """ """
     return filename.replace(".fits",".h5").replace("e3d","wcube")
 
@@ -34,15 +39,6 @@ def e3dfilename_to_hgcubes(filename, which):
 
     raise ValueError(f"which can be int, fitted, model, residual or host ; {which} given")
     
-# ============ #
-#  GETTER      #
-# ============ #
-def get_calibrated_cube(filename):
-    """ """
-    # tmp
-    from pysedm.dask.base import DaskCube
-    return DaskCube.get_calibrated_cube(filename, as_dask=False)
-
 def get_slicefit_datafile(filename, which=None):
     """ """
     if which is None:
@@ -59,3 +55,37 @@ def get_slicefit_datafile(filename, which=None):
     
     raise ValueError(f"which can be cutout, meta or full, {which} given")
 
+# ============ #
+# Data Access  #
+# ============ #
+def get_target_info(name, verbose=False, client=None):
+    """ """
+    from ztfquery import sedm, fritz
+
+    fsource  = fritz.FritzSource.from_name(name)
+    radec    = fsource.get_coordinates()            
+    redshift = fsource.get_redshift(False)
+                
+    if verbose:
+        print(f"Target {name} located at {radec} and redshift {redshift}")
+
+    squery = sedm.SEDMQuery()
+    cubefiles  = squery.get_target_cubes(name, client=client)
+    astrmfiles = squery.get_target_astrom(name, client=client)
+    # Check if all cubes have an astrom
+    cubeid = [parse_filename(cube_)["sedmid"] for cube_ in cubefiles]
+    astrid = [parse_filename(astr_)["sedmid"] for astr_ in astrmfiles]
+    flagok = np.in1d(cubeid, astrid)
+    if not np.all(flagok):
+        cubefiles = list(np.asarray(cubes)[flagok])
+        discarded_cubefiles = np.asarray(cubes)[~flagok]
+        warnings.warn(f"the following file(s) are discarded for this were not able to find corresponding astrometry {discarded_cubefiles}")
+
+    return cubefiles, radec, redshift
+
+
+def get_calibrated_cube(filename):
+    """ """
+    # tmp
+    from pysedm.dask.base import DaskCube
+    return DaskCube.get_calibrated_cube(filename, as_dask=False)

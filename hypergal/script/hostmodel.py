@@ -17,14 +17,25 @@ from dask import delayed
 
 class DaskHost( DaskHyperGal ):
 
-    def compute(self, cubefile, radec, redshift,
-                    binfactor=2,
-                    filters=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
-                    source_filter="ps1.r", source_thres=2,
-                    scale_cout=15, scale_sedm=10, rmtarget=2,
-                    lbda_range=[5000, 9000], nslices=6,
-                    filters_fit=["ps1.r", "ps1.i","ps1.z"],
-                    psfmodel="Gauss2D", ncores=1, testmode=True):
+
+
+    @classmethod
+    def compute_targetcubes(cls, name, client, verbose=False, **kwargs):
+        """ """
+        cubefiles, radec, redshift = io.get_target_info(name, verbose=True)
+        this  = cls(client=client)
+        storings = [cls.compute_single(cubefile_, radec, redshift)
+                        for cubefile_ in cubefiles]
+        return storings
+    
+    def compute_single(self, cubefile, radec, redshift,
+                           binfactor=2,
+                           filters=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
+                           source_filter="ps1.r", source_thres=2,
+                           scale_cout=15, scale_sedm=10, rmtarget=2,
+                           lbda_range=[5000, 9000], nslices=6,
+                           filters_fit=["ps1.r", "ps1.i","ps1.z"],
+                           psfmodel="Gauss2D", ncores=1, testmode=True):
         """ """
         info        = io.parse_filename(cubefile)
         cubeid      = info["sedmid"]
@@ -47,6 +58,7 @@ class DaskHost( DaskHyperGal ):
         # ------------ #
         # ---> Build the cutouts, and the calibrated data cube
         calcube = self.get_calibrated_cube(cubefile, apply_byecr=True)
+        
         source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec,
                                                                 binfactor=binfactor,
                                                                 filters=filters,
@@ -60,6 +72,8 @@ class DaskHost( DaskHyperGal ):
         
         # ---> Storing <--- # 0
         stored.append( source_sedmcube.to_hdf( io.e3dfilename_to_hgcubes(cubefile,"fitted") ))
+        # ---> Storing <--- # 1        
+        stored.append( calcube.to_hdf( io.e3dfilename_to_wcscalcube(cubefile) ))
         
         #
         #   Step 1.1 Cutouts
@@ -70,7 +84,7 @@ class DaskHost( DaskHyperGal ):
                                                 filterin=filters, filters_to_use=filters_fit,
                                                  psfmodel=psfmodel)
 
-        # ---> Storing <--- # 1
+        # ---> Storing <--- # 2
         stored.append( bestfit_cout.to_hdf(*io.get_slicefit_datafile(cubefile, "cutout")) )
         
         # ---> Get the object for future guesses || Guesser
@@ -87,7 +101,7 @@ class DaskHost( DaskHyperGal ):
                                           sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
                                           testmode=testmode)
 
-        # ---> Storing <--- # 2
+        # ---> Storing <--- # 3
         stored.append( int_cube.to_hdf( io.e3dfilename_to_hgcubes(cubefile,"intcube") ) )
 
         # ------------ #
@@ -106,7 +120,7 @@ class DaskHost( DaskHyperGal ):
                                         mslice_param=cout_ms_param, psfmodel=psfmodel, jointfit=False,
                                         fix_params=['scale', 'rotation'])
         
-        # ---> Storing <--- # 3
+        # ---> Storing <--- # 4
         stored.append( bestfit_mfit.to_hdf(*io.get_slicefit_datafile(cubefile, "meta")) )
 
         # ---> Get the object for future guesses || Guesser        
@@ -125,7 +139,7 @@ class DaskHost( DaskHyperGal ):
                                         fix_params=['scale', 'rotation',
                                                         "xoff", "yoff",
                                                         "a","b","sigma"])
-        # ---> Storing <--- # 4
+        # ---> Storing <--- # 5
         stored.append( bestfit_completfit.to_hdf(*io.get_slicefit_datafile(cubefile, "full")) )
 
         # ---> Get the object for future guesses || Guesser        
@@ -141,9 +155,9 @@ class DaskHost( DaskHyperGal ):
                                                 psfmodel=psfmodel)
         cubemodel = cubemodel_cuberes[0]
         cuberes   = cubemodel_cuberes[1]
-        # ---> Storing <--- # 4
+        # ---> Storing <--- # 6
         stored.append(cubemodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"model") ))
-        # ---> Storing <--- # 5
+        # ---> Storing <--- # 7
         stored.append(cuberes.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"res") ))
 
         return stored
