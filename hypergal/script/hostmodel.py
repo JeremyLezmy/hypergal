@@ -24,9 +24,10 @@ class DaskHost( DaskHyperGal ):
         """ """
         cubefiles, radec, redshift = io.get_target_info(name, verbose=True)
         this  = cls(client=client)
-        storings = [cls.compute_single(cubefile_, radec, redshift)
+        storings = [this.compute_single(cubefile_, radec, redshift)
                         for cubefile_ in cubefiles]
         return storings
+
     
     def compute_single(self, cubefile, radec, redshift,
                            binfactor=2,
