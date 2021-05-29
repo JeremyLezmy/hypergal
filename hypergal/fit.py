@@ -463,7 +463,7 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=None, pos_limits=4, sigma_limit=[0,5], airmass_limit=[1,4],
+    def get_limits(self, a_limit=None, pos_limits=3, sigma_limit=[0,5], airmass_limit=[1,4],
                        parangle_var_limit=10, param_guess=None):
         """ 
         Get limits values (bounds) as list for free parameters.
@@ -540,7 +540,7 @@ class SceneFitter( object ):
         
         return all_params
     
-    def get_model(self, parameters=None):
+    def get_model(self, parameters=None, fill_comp=True):
         """ 
         Get scene model according to the setted parameters.
 
@@ -560,7 +560,8 @@ class SceneFitter( object ):
     
         return self.scene.get_model(**self._base_parameters,
                                     overlayparam = self._geometry_parameters, 
-                                    psfparam = self._psf_parameters)
+                                    psfparam = self._psf_parameters,
+                                    fill_comp=fill_comp)
 
     def get_bestfit_parameters(self, incl_err=True, as_dataframe=True,
                                    add_lbda=False, add_coefs=False):
