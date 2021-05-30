@@ -9,7 +9,7 @@ def get_adr(header_or_filename, values, lbda, errors=None):
     """ The function loads and ADR from the input header and fine tune 
     it's parameters given the centroid information
     """
-    if type(header_or_filename) == str:
+    if type(header_or_filename) in [str, np.str_]:
         adr = ADR.from_filename(header_or_filename)
     else:
         adr = ADR.from_header(header_or_filename)
@@ -109,7 +109,7 @@ class ADRFitter(ADR):
             
         // where xref, yref are the position of the input source at the reference wavelength 
         """
-        if type(filename_or_header) == str:
+        if type(filename_or_header) in [str, np.str_]:
             adr = ADR.from_filename(filename_or_header)
         else:
             adr = ADR.from_header(filename_or_header)
