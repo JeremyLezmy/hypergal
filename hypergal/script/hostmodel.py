@@ -73,6 +73,7 @@ class DaskHost( DaskHyperGal ):
         
         # ---> Storing <--- # 0
         stored.append( source_sedmcube.to_hdf( io.e3dfilename_to_hgcubes(cubefile,"fitted") ))
+        stored.append( source_coutcube.to_hdf( io.e3dfilename_to_hgcubes(cubefile,"cutout") ))        
         # ---> Storing <--- # 1        
         stored.append( calcube.to_hdf( io.e3dfilename_to_wcscalcube(cubefile) ))
         
@@ -144,7 +145,8 @@ class DaskHost( DaskHyperGal ):
         stored.append( bestfit_completfit.to_hdf(*io.get_slicefit_datafile(cubefile, "full")) )
 
         # ---> Get the object for future guesses || Guesser        
-        full_ms_param = delayed(MultiSliceParameters)(bestfit_completfit, psfmodel=psfmodel.replace("2D","3D") )
+        full_ms_param = delayed(MultiSliceParameters)(bestfit_completfit, psfmodel=psfmodel.replace("2D","3D"),
+                                                           load_adr=False, load_psf=False)
 
         # ------------ #
         #    STEP 4    #

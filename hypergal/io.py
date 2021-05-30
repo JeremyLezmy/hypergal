@@ -28,6 +28,9 @@ def e3dfilename_to_hgcubes(filename, which):
     if which == "fitted":
         return filename.replace(".fits",".h5").replace("e3d","hgfitted")
     
+    if which == "cutout":
+        return filename.replace(".fits",".h5").replace("e3d","hgcutout")
+    
     if which == "model":
         return filename.replace(".fits",".h5").replace("e3d","hgmodel")
     
