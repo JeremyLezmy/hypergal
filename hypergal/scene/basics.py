@@ -952,5 +952,565 @@ class CubeScene( SliceScene ):
     def BASE_PARAMETERS(self):
         """ """
         return [f"{k}{i}" for k in self.BASE_SLICE_PARAMETERS for i in range(self.nslices)]
+    
+
+
+class FullSliceScene( SliceScene ):
+    
+    def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
+                     psfgal=None, adapt_flux=True, pointsource=None, **kwargs):
+        
+        
+        _ = super().__init__(slice_in=slice_in, slice_comp=slice_comp, xy_in=xy_in, xy_comp=xy_comp, load_overlay=load_overlay,
+                     psf=psfgal, adapt_flux=adapt_flux, **kwargs)
+        
+        self.set_pointsource(pointsource)
+        
+        if load_overlay:
+            mpoly = self.overlay.mpoly_comp
+        else:
+            mpoly = slice_comp.get_spaxel_polygon( format='multipolygon')
+
+
+    @classmethod
+    def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psfgal=None, pointsource=None, **kwargs):
+        """ 
+        Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
+        Many transformations might be done to simulate the output scene, such as psf convolution, 
+        geometrical projection, background addition and amplitude factor application.
+        
+        Parameters
+        ---------
+        slice_in: pyifu.Slice
+            Slice that you want to project in the out geometry.
+
+        slice_comp: pyifu.Slice
+            Slice on which you want your new scene.
+        
+        xy_in,xy_comp: 2d-array (float) or None
+            Reference coordinates (target position) for the _in and _comp geometries\n
+            e.g. xy_comp = [3.1,-1.3]
+       
+        load_overlay: bool
+            Set overlay information for an exact projection between the pixels of each slice (purely geometric) \n
+            Default is True.
+
+        psf: hypergal.psf
+            Set a psf object, with which slice_in will be convolve before the projection in slice_comp geometry.
+
+        kwargs 
+            Go to self.load_overlay
+        
+        """
+        return cls(slice_in, slice_comp,
+                       xy_in=xy_in, xy_comp=xy_comp, psfgal=psfgal, pointsource=pointsource,
+                       **kwargs)
+            
+            
+    def get_model(self, ampl=None, background=None,
+                      overlayparam=None,
+                      psfparam=None, ampl_ps=None, fill_comp=False):
+        """Convolves and project flux_in into the 
+
+        Parameters
+        ----------
+        overlayparam: dict or None
+            If dict, this is passed as kwargs to overlay
+
+        psfparam: dict or None
+            If dict, this is passed as a kwargs to self.psf.update_parameters(psfparam)
+
+        Returns
+        -------
+        Array
+        """
+        if ampl is None:
+            ampl = self.baseparams["ampl"]
+            
+        if ampl_ps is None:
+            ampl_ps = self.baseparams["ampl_ps"]
+            
+        if background is None:
+            background = self.baseparams["background"]
+            
+        if psfparam is not None:
+            psf_hostparam = {k:v for k,v in psfparam.items() if k in super(FullSliceScene, self).PSF_PARAMETERS }
+            psf_psparam =  {k.replace('_ps',''):v for k,v in psfparam.items() if k in self.pointsource.PSF_PARAMETERS}
+        
+        else:
+            psf_hostparam = None
+            psf_psparam = None
+        # 1.
+        # Change position of the comp grid if needed
+        #   - if the overlayparam are the same as already know, no update made.
+        if overlayparam is not None and len(overlayparam)>0:
+            self.overlay.change_comp(**{k:v for k,v in overlayparam.items() if v is not None})
+
+        # 2.            
+        # Change values of flux and variances of _in by convolving the image
+        if psf_hostparam is not None:
+            psf_hostparam = {k:v for k,v in psf_hostparam.items() if v is not None}
+        flux_in = self.get_convolved_flux_in(psf_hostparam)
+
+        # 3. (overlaydf calculated only if needed)
+        # Get the new projected flux and variance (_in->_comp grid)
+        modelflux = self.overlay.get_projected_flux(flux_in, fill_comp=fill_comp)
+
+        # 4. Out
+        galmodel =  ampl*modelflux + background
+        
+        if psf_psparam is not None:
+            psf_psparam = {k:v for k,v in psf_psparam.items() if v is not None}
+        
+            ps_profile = self.pointsource.get_model( xoff=self.overlay.geoparam_comp['xoff'], yoff=self.overlay.geoparam_comp['yoff'], ampl=ampl_ps, bkg=None, **psf_psparam)
+        
+        else:
+            ps_profile = self.pointsource.get_model( xoff=self.overlay.geoparam_comp['xoff'], yoff=self.overlay.geoparam_comp['yoff'], ampl=ampl_ps, bkg=None)
+            
+        return galmodel+ps_profile
+    
+    
+    def guess_parameters(self):
+        """ 
+        Return guessed parameters for all the parameters.\n
+        Include BASE_PARAMETERS (amplitude and background), 
+        geometrical parameters (scale, xy_in etc) 
+        and psf parameters (shape and ellipticity)       
+        """
+        ampl = 1
+        bkgd = 0
+        ampl_ps = 1
+        base_guess = {**{k:None for k in self.BASE_PARAMETERS},
+                      **{"ampl":ampl, "background": bkgd, "ampl_ps":ampl_ps}
+                      }
+        geom_guess = self.overlay.geoparam_comp
+        psf_guess  = self.host_psf.guess_parameters()
+        psf_guess.update( {k+'_ps':v for k,v in self.pointsource_psf.guess_parameters().items()})
+        guess_step1 =  {**base_guess, **geom_guess, **psf_guess}
+        self.update(**guess_step1)
+        
+        model_comp = self.get_model()
+        bkgd = np.median(self.flux_comp)-np.median(model_comp)
+        ampl = np.sum(self.flux_comp)/np.sum(model_comp)
+        
+        from shapely.geometry import Point
+        x, y = geom_guess['xoff'], geom_guess['yoff']
+        p = Point(x, y)
+        circle = p.buffer(3)
+        idx = self.slice_comp.get_spaxels_within_polygon( circle )
+        ampl_ps = np.sum(self.flux_comp[[self.slice_comp.indexes[i] in np.array(idx) for i in range(len(self.slice_comp.indexes) )]]) 
+        #ampl_ps = np.nanmax(self.slice_comp.get_subslice([i for i in self.slice_comp.indexes if i in idx]).data)*10
+        
+        
+        return {**guess_step1, **{"ampl":ampl, "background":bkgd, "ampl_ps":ampl_ps}}
+    
+    
+    def update(self, ignore_extra=False, **kwargs):
+        """ 
+        Can update any parameter through kwarg option.\n
+        Might be self.BASE_PARAMETER, self.PSF_PARAMETERS or self.GEOMETRY_PARAMETERS
+        """
+        baseparams = {}
+        psfparams = {}
+        geometryparams = {}
+        for k,v in kwargs.items():
+            # Change the baseline scene
+            if k in self.BASE_PARAMETERS:
+                baseparams[k] = v
+                
+            # Change the scene PSF
+            elif k in self.PSF_PARAMETERS:
+                psfparams[k] = v
+                
+            # Change the scene geometry                
+            elif k in self.GEOMETRY_PARAMETERS:
+                geometryparams[k] = v
+                
+            # or crash
+            elif not ignore_extra:
+                raise ValueError(f"Unknow input parameter {k}={v}")
+            
+        self.update_baseparams(**baseparams)
+        
+        if len(geometryparams)>0:
+            self.overlay.change_comp(**geometryparams)
+            
+        for k in psfparams.keys():
+            if k in super(FullSliceScene, self).PSF_PARAMETERS:
+                self.host_psf.update_parameters(**{k:psfparams[k]})
+            if k in self.pointsource.PSF_PARAMETERS:
+                self.pointsource_psf.update_parameters(**{k.replace('_ps',''):psfparams[k]})
+                
+
+    def set_host_psf(self, psf):
+        """ """
+        self.set_psf(psf)
+        
+    def set_pointsource_psf(self, psf):
+        """ """
+        self.pointsource.set_psf(psf)
+            
+    def set_pointsource(self, pointsource):
+        """ """
+        self._pointsource = pointsource
+        
+        
+    @property
+    def PARAMETER_NAMES(self):
+        """ All parameters names """
+        return self.BASE_PARAMETERS + self.GEOMETRY_PARAMETERS + self.PSF_PARAMETERS 
+    
+    @property
+    def pointsource(self):
+        """ All parameters names """
+        return self._pointsource
+    
+    @property
+    def host_psf(self):
+        """ All parameters names """
+        return self.psf
+    
+    @property
+    def pointsource_psf(self):
+        """ All parameters names """
+        return self.pointsource.psf
+    
+    @property
+    def PSF_PARAMETERS(self):
+        """ All parameters names """
+        return super().PSF_PARAMETERS + self.pointsource.PSF_PARAMETERS
+    
+    
+    @property
+    def BASE_PARAMETERS(self):
+        """ All parameters names """
+        basepar =  super().BASE_PARAMETERS + self.pointsource.BASE_PS_PARAMETERS
+        basepar.remove('background_ps')
+        return basepar
+    
+
+class PointSource(object):
+    
+    
+    BASE_PS_PARAMETERS = ["ampl_ps", "background_ps"]
+    
+    def __init__(self, psf, mpoly, **kwargs):
+        """ """
+        self.set_psf(psf)
+        self.update_psfparams(**kwargs)
+        self.set_mpoly(mpoly)
+        self._centroids = self.get_centroids(mpoly)
+    
+    @staticmethod
+    def get_centroids(mpoly):
+        """ """
+        listpoly = list(mpoly)
+        cent = [np.array([listpoly[i].centroid.x, listpoly[i].centroid.y]) for i in range(len(listpoly))]
+        cent = np.asarray(cent).squeeze()
+        
+        return cent
+    
+    def get_model(self, xoff=0, yoff=0, ampl=None, bkg=None, **kwargs):
+        """ """
+        x,y = self.centroids.T
+        
+        if ampl is None:
+            ampl = self.baseparams['ampl_ps']
+            
+        if bkg is None:
+            bkg = self.baseparams['background_ps']
+            
+        psfval = ampl * self.psf.evaluate(x=x, y=y, x0=xoff, y0=yoff, **kwargs ) + bkg
+        self.set_psfflux(psfval)
+        
+        return psfval
+        
+    
+    def update_psfparams(self, **kwargs):
+        """ """
+        
+        for k,v in kwargs.items():
+            if '_ps' in k:
+                kwargs[k.replace('_ps','')] = kwargs.pop(k)
+            
+        self.psf.update_parameters( **kwargs)
+        
+        
+    def update_baseparams(self, **kwargs):
+        import warnings
+        """ 
+        Set parameters from self.BASE_PS_PARAMETERS (amplitude and background)
+        """
+        for k,v in kwargs.items():
+            if k in self.BASE_PS_PARAMETERS:
+                self.baseparams[k] = v
+            else:
+                warnings.warn(f"{k} is not a base parameters, ignored")
+                continue
+     
+    
+    def update(self, ignore_extra=False, **kwargs):
+        """ 
+        Can update any parameter through kwarg option.\n
+        Might be self.BASE_PS_PARAMETER, self.PSF_PARAMETERS 
+        """
+        baseparams = {}
+        psfparams = {}
+        
+        for k,v in kwargs.items():
+            # Change the baseline scene
+            if k in self.BASE_PS_PARAMETERS:
+                baseparams[k] = v
+                
+            # Change the scene PSF
+            elif k in self.PSF_PARAMETERS:
+                psfparams[k] = v
+                
+            # or crash
+            elif not ignore_extra:
+                raise ValueError(f"Unknow input parameter {k}={v}")
+            
+        self.update_baseparams(**baseparams)
+        if len(psfparams)>0:
+            self.update_psfparams(**psfparams)
+    
+    def guess_ps_parameters(self):
+        """ 
+        Return guessed parameters for all the parameters.\n
+        Include BASE_PARAMETERS (amplitude and background), 
+        and psf parameters (shape and ellipticity)       
+        """
+        base_guess = self.baseparams.copy()
+        psf_guess  = self.psf.guess_parameters()
+        guess_step1 =  {**base_guess,  **psf_guess}
+        
+        self.update(**guess_step1)
+        
+        model_comp = self.get_model()
+        bkgd = np.median(self.flux_comp, axis=1)-np.median(model_comp, axis=1)
+        ampl = np.percentile(self.flux_comp, 95, axis=1) / np.percentile(model_comp, 95, axis=1)
+        baseparams = {**{f"ampl{i}":ampl[i]       for i in range(self.nslices)},
+                      **{f"background{i}":bkgd[i] for i in range(self.nslices)} }
+        return {**guess_step1, **baseparams}
+    
+    
+    
+    def show_psf(self, ax=None, facecolor=None, edgecolor="k", adjust=False,
+                  index=None, 
+                  flux=None, cmap="cividis", vmin=None, vmax=None, **kwargs):
+        """ 
+        Show multipolygon with its corresponding flux if provided.
+
+        Parameters
+        ----------
+      
+        ax: Axes -optional-
+            You can provide your own ax (one)
+        
+        facecolor,edgecolor,cmap: string
+            Go to Matplotlib parameters
+
+        flux: array -optional-
+            Flux corresponding to self.mpoly_*which* \n
+            Default is None.
+
+        vmin,vmax: float, None, string -optional-
+            Colorbar limits. 
+            - Ignored if flux is None \n
+            - String: used as flux percentile\n
+            - Float: used value\n
+            - None: converted to '1' and '99'
+        
+        kwargs
+            Goes to geometry.show_polygon()
+
+        Returns
+        -------
+        Matplotlib.Axes    
+
+        """
+        import matplotlib.pyplot as mpl
+        from hypergal.utils import tools
+        if ax is None:
+            fig = mpl.figure(figsize=[6,6])
+            ax = fig.add_subplot(111)
+            adjust = True
+        else:
+            fig = ax.figure
+
+        if flux is not None:
+            cmap = mpl.cm.get_cmap(cmap)
+            vmin, vmax = tools.parse_vmin_vmax(flux, vmin, vmax)
+            colors = cmap( (flux-vmin)/(vmax-vmin) )
+        else:
+            colors = [facecolor]*len(self.mpoly)
+        
+        for i,poly in enumerate(self.mpoly):
+            _ = utils.geometry.show_polygon(poly, facecolor=colors[i], edgecolor=edgecolor, ax=ax, **kwargs)
+
+        if adjust:
+            verts = np.asarray(self.mpoly.convex_hull.exterior.xy).T
+            ax.set_xlim(*np.percentile(verts[:,0], [0,100]))
+            ax.set_ylim(*np.percentile(verts[:,1], [0,100]))
+
+        return ax
+    
+        
+    def set_psf(self, psf):
+        """ Provide the hypergal.psf object. """
+        self._psf = psf
+        
+    def set_mpoly(self, mpoly):
+        """ """
+        self._mpoly = mpoly
+        
+    def set_psfflux(self, psfflux):
+        """ """
+        self._psfflux = psfflux
+        
+    @property
+    def psf(self):
+        """  PSF object to convolve on slice_in. """
+        if not hasattr(self, "_psf"):
+            raise AttributeError("No PSF set ; see self.set_psf()")
+        
+        return self._psf
+    
+    @property
+    def psfflux(self):
+        """  Evaluated PSF flux  """
+        if not hasattr(self, "_psfflux"):
+            raise AttributeError("No PSF computed ; see self.build_point_source()")
+        
+        return self._psfflux
+    
+    @property
+    def mpoly(self):
+        """  """
+        if not hasattr(self, "_mpoly"):
+            raise AttributeError("No geometry set ")
+        
+        return self._mpoly
+    
+    @property
+    def centroids(self):
+        """  """
+        if not hasattr(self, "_centroids"):
+            raise AttributeError("No centroids computed. See self.get_centroid() ")
+        
+        return self._centroids
+        
+    @property
+    def PSF_PARAMETERS(self):
+        """  PSF parameters (profile + ellipticity). """
+        return [k + '_ps' for k in self.psf.PARAMETER_NAMES]
+    
+    @property
+    def baseparams(self):
+        """  Base parameters (e.g. amplitude and background) """
+        if not hasattr(self, "_baseparams"):
+            self._baseparams = {k:1. if "ampl_ps" in k else 0. for k in self.BASE_PS_PARAMETERS}
+        return self._baseparams
+
 
     
+class PointSource3D(PointSource):
+    
+    BASE_PS_SLICE_PARAMETERS = ["ampl_ps", "background_ps"]
+    
+    def __init__(self, psf, mpoly, lbdaref, lbda):
+        """ """
+        _ = super().__init__(psf = psf, mpoly = mpoly)
+        
+        self.psf.set_lbdaref(lbdaref)                       
+        self._centroids = self.get_centroids(mpoly)
+        self.set_lbda(lbda)
+        
+    @classmethod
+    def from_adr(cls, psf, mpoly, lbda, adr, xref, yref, spaxel_comp_unit, **kwargs ):
+        """ """
+        
+        this = cls(psf=psf, mpoly=mpoly, lbdaref=adr.lbdaref, lbda=lbda)
+        this.set_adr(adr)
+        
+        xoff, yoff = adr.refract(xref, yref, lbda, unit=spaxel_comp_unit)
+        
+        this.get_model(xoff, yoff, **kwargs)
+        
+        return this
+    
+    @classmethod
+    def from_header(cls, psf, mpoly, lbda, header, xref, yref, spaxel_comp_unit, **kwargs ):
+        """ """
+        from pyifu.adr import ADR
+        
+        adr = ADR.from_header( header)
+        
+        this = cls(psf=psf, mpoly=mpoly, lbdaref=adr.lbdaref, lbda=lbda)
+        
+        this.set_adr(adr)
+        
+        xoff, yoff = adr.refract(xref, yref, lbda, unit=spaxel_comp_unit)
+        
+        this.get_model(xoff, yoff, **kwargs)
+        
+        return this
+        
+        
+    def get_model(self, xoff, yoff, ampl=None, bkg=None, **kwargs):
+        """ """
+        x,y = self.centroids.T
+        
+        if ampl is None:
+            ampl = self.get_ps_amplitudes()
+            
+        if bkg is None:
+            bkg = self.get_ps_backgrounds()
+            
+        self.psf.update_parameters(**kwargs)
+        psfval =  ampl * np.asarray([self.psf.evaluate(x=x, y=y, lbda=l, x0=xo, y0=yo ) for l,xo,yo in zip(self.lbda,xoff,yoff)]).T + bkg
+        
+        self.set_psfflux(psfval.T)
+        
+        return psfval.T
+    
+    
+    def get_ps_amplitudes(self):
+        """ """
+        return np.asarray([self.baseparams[f"ampl_ps{i}"] for i in range(self.nslices)])
+    
+    def get_ps_backgrounds(self):
+        """ """
+        return np.asarray([self.baseparams[f"background_ps{i}"] for i in range(self.nslices)])
+    
+    
+    def set_lbda(self, lbda):
+        """ """
+        self._lbda = lbda
+        
+    def set_adr(self, adr):
+        """ """
+        self._adr = adr
+        
+        
+    @property
+    def lbda(self):
+        return self._lbda
+    
+    @property
+    def adr(self):
+        """  """
+        if not hasattr(self, "_adr"):
+            raise AttributeError("No adr set ")
+        
+        return self._adr
+    
+    @property
+    def nslices(self):
+        """ """
+        return len(self.lbda)
+    
+    @property
+    def BASE_PS_PARAMETERS(self):
+        """ """
+        return [f"{k}{i}" for k in self.BASE_PS_SLICE_PARAMETERS for i in range(self.nslices)]

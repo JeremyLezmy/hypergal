@@ -18,7 +18,7 @@ MAINTAINER_EMAIL = 'lezmy@ipnl.in2p3.fr'
 URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
 LICENSE = ''
 DOWNLOAD_URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 
 try:
     from setuptools import setup, find_packages

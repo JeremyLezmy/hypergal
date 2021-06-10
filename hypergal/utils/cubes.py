@@ -3,7 +3,7 @@ import os
 import numpy as np
 from .. import spectroscopy, fit, psf, io
 from ..scene import basics
-
+from ..scene.basics import PointSource
 from pysedm.dask.base import DaskCube
 
 class CubeModelBuilder( object ):
@@ -11,7 +11,7 @@ class CubeModelBuilder( object ):
     def __init__(self, cube_in, cube_comp,
                      mslice_meta, mslice_final, 
                      xy_in=None, 
-                     psfmodel='Gauss2D',
+                     psfmodel='Gauss2D', pointsourcemodel='GaussMoffat2D',
                      scenemodel="HostSlice"):
         """ """
         # - Cubes        
@@ -26,9 +26,11 @@ class CubeModelBuilder( object ):
         
         self._psfmodel = psfmodel
         self._scenemodel = scenemodel
+        self._pointsourcemodel = pointsourcemodel if scenemodel in ['SceneSlice', 'SceneCube'] else None
+        
         
     @classmethod
-    def from_filename(cls, filename, radec):
+    def from_filename(cls, filename, radec, scenemodel='HostSlice'):
         """ """
         dirout = os.path.dirname(filename)
         intcube = io.e3dfilename_to_hgcubes(cubefile,"intcube")
@@ -41,16 +43,17 @@ class CubeModelBuilder( object ):
         
         xy_in = cube_intr.radec_to_xy(*radec).flatten()
         
+        load_pointsource = True if scenemodel in ['SceneSlice', 'SceneCube'] else False
         
         mslice_meta = fit.MultiSliceParameters.read_hdf(*io.get_slicefit_datafile(filename, "meta"), 
                                                         cubefile=filename, 
-                                                        load_adr=True, load_psf=True)
+                                                        load_adr=True, load_psf=True, load_pointsource = load_pointsource)
 
         mslice_final = fit.MultiSliceParameters.read_hdf(*io.get_slicefit_datafile(filename, "full"))
         
         return cls(cube_in=cube_intr, cube_comp=cube_sedm, 
                    mslice_meta=mslice_meta, mslice_final=mslice_final,
-                  xy_in=xy_in)
+                  xy_in=xy_in, scenemodel=scenemodel)
 
     # ================ #
     #   Methods        #
@@ -107,6 +110,16 @@ class CubeModelBuilder( object ):
                                                xy_in=self.xy_in, xy_comp=xy_comp, 
                                                psf=psfmodel, adapt_flux=adapt_flux, 
                                                **kwargs)
+            
+        elif self._scenemodel == "SceneSlice":
+            
+            from hypergal.scene import host
+            pointsourcemodel = getattr(psf, self._pointsourcemodel)()
+            pointsource = PointSource( pointsourcemodel, self.mpoly_comp )
+            scene = host.SceneSlice.from_slices(slice_in, slice_comp, 
+                                               xy_in=self.xy_in, xy_comp=xy_comp, 
+                                               psfgal=psfmodel, pointsource=pointsource, adapt_flux=adapt_flux, 
+                                               **kwargs)
         else:
             raise NotImplementedError("Only HostSlice scene has been implemented.")
         
@@ -121,8 +134,14 @@ class CubeModelBuilder( object ):
         
         flux_conv      = scene.get_convolved_flux_in()
         modelflux_base = scene.overlay.get_projected_flux(flux_conv, fill_comp=True)
+        
+        if hasattr(scene, 'pointsource'):
+            psmod=scene.pointsource.get_model(**{k.replace('_ps',''):v for k,v in slice_param.items() if k in scene.pointsource.BASE_PS_PARAMETERS + scene.pointsource.PSF_PARAMETERS + scene.GEOMETRY_PARAMETERS and '_err' not in k})
+        else:
+            psmod=0                                                      
+                                                                                                                
         modelflux_in = (modelflux_base - slice_param["bkgd_in"])/slice_param["norm_in"]
-        model = (slice_param["ampl"] * modelflux_in + slice_param["background"]) * slice_param["norm_comp"] + slice_param["bkgd_comp"]
+        model = (slice_param["ampl"] * modelflux_in + slice_param["background"] + psmod) * slice_param["norm_comp"] + slice_param["bkgd_comp"]
         if as_slice:
             return scene.slice_comp.get_new(newdata=model, newvariance="None")
         
@@ -169,6 +188,10 @@ class CubeModelBuilder( object ):
     # --------- #
     #  PLOTTER  #
     # --------- #
+    
+    def has_pointsource(self):
+        """ """
+        return True if self._scenemodel in ['SceneSlice', 'SceneCube'] else False
         
     # ================ #
     #   Properties     #
@@ -183,6 +206,11 @@ class CubeModelBuilder( object ):
     def cube_comp(self):
         """ """
         return self._cube_comp
+    
+    @property
+    def mpoly_comp(self):
+        """ """
+        return self.cube_comp.get_spaxel_polygon( format='multipolygon')
     
     @property
     def lbda(self):
@@ -204,3 +232,5 @@ class CubeModelBuilder( object ):
     def xy_in(self):
         """ """
         return self._xyin
+
+

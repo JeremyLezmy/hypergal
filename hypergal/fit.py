@@ -14,6 +14,7 @@ from .spectroscopy import adr as spectroadr
 #                       #
 # ===================== #
 class Priors( object ):
+    
     """ 
     Priors object which can be used for the hypergal fit process.
     """
@@ -42,10 +43,15 @@ class Priors( object ):
         Return product of priors distribution on the setted parameters in self.parameters.
         """
         priors = []
-        if self.has_ellipticity_param():
+        if self.has_ellipticity_param_host():
             a = self.parameters["a"]
-            b = self.parameters["b"]
+            b = self.parameters["b"]            
             priors.append(self.get_ellipticity_prior(a,b))
+            
+        if self.has_ellipticity_param_pointsource():    
+            a_ps = self.parameters["a_ps"]
+            b_ps = self.parameters["b_ps"]
+            priors.append(self.get_ellipticity_prior(a_ps,b_ps))
 
         if self.has_airmass_param():
             priors.append( self.get_airmass_prior(self.parameters["airmass"]) )
@@ -60,12 +66,19 @@ class Priors( object ):
     # -------- #
     #  HAS     #
     # -------- #
-    def has_ellipticity_param(self):
+    def has_ellipticity_param_host(self):
         """ 
         Check if ellipticity parameters ('a' and 'b') are in self.parameter_name.
         """
         return "a" in self.parameter_names and \
-               "b" in self.parameter_names
+               "b" in self.parameter_names 
+    
+    def has_ellipticity_param_pointsource(self):
+        """ 
+        Check if ellipticity parameters ('a' and 'b') are in self.parameter_name.
+        """
+        return "a_ps" in self.parameter_names and \
+               "b_ps" in self.parameter_names
 
     def has_airmass_param(self):
         """ """
@@ -80,6 +93,7 @@ class Priors( object ):
     # ============== #
     @staticmethod
     def get_truncnorm_prior(x, loc=0, scale=1, a=0, b=5):
+        from scipy import stats
         """ truncated normal prior.
         This truncation parameters (a and b) are in units of scale.
         such that parameters lower than: loc-a*scale and larger than loc+b*scale are set to 0
@@ -110,7 +124,7 @@ class Priors( object ):
         q = (1-numerator/denominator)
         
         return cls.get_truncnorm_prior(q, **q_troncnorm)
-
+    
     
     # ============== #
     #  Properties    #
@@ -128,7 +142,6 @@ class Priors( object ):
         Parameters name loaded in self.
         """
         return self._parameter_names 
-    
                     
 
 # ===================== #
@@ -174,9 +187,9 @@ class SceneFitter( object ):
     # Initialisation #
     # ============== #
     @classmethod
-    def from_slices(cls, slice_in, slice_comp, psf, whichscene="HostSlice",
+    def from_slices(cls, slice_in, slice_comp, psf, whichscene="HostSlice", pointsource=None,
                         xy_in=None, xy_comp=None, 
-                    fix_params=["scale","rotation"], debug=False, **kwargs):
+                    fix_params=["scale","rotation"], debug=False, priors=None,**kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
 
@@ -210,14 +223,19 @@ class SceneFitter( object ):
             from .scene import host
             scene = host.HostSlice.from_slices(slice_in, slice_comp, 
                                                xy_in=xy_in, xy_comp=xy_comp, 
-                                               psf=psf, **kwargs)
+                                               psf=psf,**kwargs)
+        elif whichscene == "SceneSlice":
+            from .scene import host
+            scene = host.SceneSlice.from_slices(slice_in, slice_comp, 
+                                               xy_in=xy_in, xy_comp=xy_comp, 
+                                                psfgal=psf, pointsource=pointsource, **kwargs)
         else:
-            raise NotImplementedError("Only HostSlice scene has been implemented.")
+            raise NotImplementedError("Only HostSlice and SceneSlice scene have been implemented.")
         
-        return cls.from_scene(scene, fix_params=fix_params, debug=debug)
+        return cls.from_scene(scene, fix_params=fix_params, debug=debug, priors=priors)
     
     @classmethod
-    def from_scene(cls, scene, fix_params=["scale","rotation"], debug=False, **kwargs):
+    def from_scene(cls, scene, fix_params=["scale","rotation"], debug=False, priors=None, **kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. 
 
@@ -239,19 +257,19 @@ class SceneFitter( object ):
             If True, will print steps informations  during the fit.\n
             Default is None.
         """
-        return cls(scene, fix_params=fix_params, debug=debug, **kwargs)
+        return cls(scene, fix_params=fix_params, debug=debug, priors=priors, **kwargs)
 
     # ============== #
     # Class Method   #
     # ============== #
     @classmethod
-    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice",
+    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice", pointsource=None,
                                   xy_in=None, xy_comp=None, 
                                   fix_params=["scale","rotation"], debug=False,
                                   guess=None, limit=None, error=None, use_priors=True,
                                   savefile=None, plotkwargs={},
                                   result_as_dataframe=True,
-                                  add_lbda=True, add_coefs=True):
+                                  add_lbda=True, add_coefs=True, priors=None):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
         Directly fit the scene after the instantiation.
@@ -308,9 +326,9 @@ class SceneFitter( object ):
         Dict or DataFrame            
         """
         this = cls.from_slices(slice_in, slice_comp,  psf=psf,
-                                   whichscene=whichscene,
+                                   whichscene=whichscene, pointsource=pointsource,
                                    xy_in=xy_in, xy_comp=xy_comp, 
-                                   fix_params=fix_params, debug=debug)
+                                   fix_params=fix_params, debug=debug, priors=priors)
         
         migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
                                  runmigrad=True)
@@ -463,8 +481,9 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=None, pos_limits=3, sigma_limit=[0,5], airmass_limit=[1,4],
-                       parangle_var_limit=10, param_guess=None):
+    def get_limits(self, a_limit=[0.01,None], pos_limits=3, sigma_limit=[0,5], airmass_limit=[1,4],
+                       parangle_var_limit=10, ampl_limit=[0,None], ampl_ps_limit=[0,None], a_ps_limit=[0.01,None],
+                       eta_ps_limit=[0,None], sigma_ps_limit=[0.001,10], alpha_ps_limit=[0.001,10], param_guess=None, **kwargs):
         """ 
         Get limits values (bounds) as list for free parameters.
 
@@ -498,14 +517,38 @@ class SceneFitter( object ):
         if "yoff" in param_names:
             id_ = param_names.index("yoff")
             limits[id_] = [param_guess[id_]-pos_limits, param_guess[id_]+pos_limits]
+
+        if "ampl" in param_names:
+            id_ = param_names.index("ampl")
+            limits[id_] = ampl_limit
+
+        if "ampl_ps" in param_names:
+            id_ = param_names.index("ampl_ps")
+            limits[id_] = ampl_ps_limit
             
         if "a" in param_names:
             id_ = param_names.index("a")
             limits[id_] = a_limit
 
+        if "a_ps" in param_names:
+            id_ = param_names.index("a_ps")
+            limits[id_] = a_ps_limit
+
         if "sigma" in param_names:
             id_ = param_names.index("sigma")
             limits[id_] = sigma_limit
+
+        if "sigma_ps" in param_names:
+            id_ = param_names.index("sigma_ps")
+            limits[id_] = sigma_ps_limit
+
+        if "alpha_ps" in param_names:
+            id_ = param_names.index("alpha_ps")
+            limits[id_] = alpha_ps_limit
+            
+        if "eta_ps" in param_names:
+            id_ = param_names.index("eta_ps")
+            limits[id_] = eta_ps_limit
 
         if "airmass" in param_names:
             id_ = param_names.index("airmass")
@@ -515,6 +558,13 @@ class SceneFitter( object ):
             id_ = param_names.index("parangle")
             limits[id_] = [param_guess[id_]-parangle_var_limit,
                            param_guess[id_]+parangle_var_limit]
+
+        for k,v in kwargs.items():
+            if k in param_names:
+                id_ = param_names.index(k)
+                limits[id_] = v
+            else:
+                warnings.warn(f"{k} isn't a free parameters")
             
         return limits 
         
@@ -842,11 +892,12 @@ class SceneFitter( object ):
 #      RESULTS          #
 #                       #
 # ===================== #
+
 class MultiSliceParameters():
     """ """
     def __init__(self, dataframe, cubefile=None, 
-                 psfmodel="Gauss3D", 
-                 load_adr=False, load_psf=False):
+                 psfmodel="Gauss3D", pointsourcemodel='GaussMoffat3D',
+                 load_adr=False, load_psf=False, load_pointsource=False):
         """ """
         self.set_data(dataframe)
         if load_adr:
@@ -855,14 +906,18 @@ class MultiSliceParameters():
             self.load_adr(cubefile)
         if load_psf:
             self.load_psf(psfmodel=psfmodel)
+            
+        if load_pointsource:
+            self.load_pointsource(pointsourcemodel=pointsourcemodel)
         
     @classmethod
     def read_hdf(cls, filename, key, 
-                 cubefile=None, psfmodel="Gauss3D", load_adr=False, load_psf=False):
+                 cubefile=None, psfmodel="Gauss3D" ,pointsourcemodel='GaussMoffat3D', 
+                 load_adr=False, load_psf=False):
         """ """
         import pandas
         dataframe = pandas.read_hdf(filename, key)
-        return cls(dataframe, cubefile=cubefile, psfmodel=psfmodel, 
+        return cls(dataframe, cubefile=cubefile, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel,
                               load_adr=load_adr, load_psf=load_psf)
     
     @classmethod
@@ -897,18 +952,43 @@ class MultiSliceParameters():
         self._psf3d = getattr(psf.gauss,psfmodel).fit_from_values(self.values, self.lbda, errors=self.errors)
         self._psfmodel = psfmodel
         
+    def load_pointsource(self, pointsourcemodel="GaussMoffat3D"):
+        """ """
+        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values, self.lbda, errors=self.errors)
+        self._pointsourcemodel = pointsourcemodel
+        
     # -------- #
     #  GETTER  #
     # -------- #
-    def get_guess(self, lbda, psfmodel="Gauss2D", as_dataframe=False, squeeze=True):
+    def get_guess(self, lbda, psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", as_dataframe=False, squeeze=True):
         """ """
         if psfmodel=="Gauss2D" and self.psfmodel == "Gauss3D":
             guesses = self.get_gauss_guess(lbda)
         else:
             raise NotImplementedError("Only Gauss2D PSF model implemented")
-        
+            
+        if pointsourcemodel=="GaussMoffat2D" and self.pointsourcemodel == "GaussMoffat3D":
+            guesses.append(self.get_gaussmoffat_guess(lbda)[0])
+            
+        elif pointsourcemodel==None or self.pointsourcemodel==None:
+            pass            
+        else:
+            raise NotImplementedError("Only GaussMoffat2D Pointsource model implemented")
+                    
         if squeeze and len(guesses)==1:
             return guesses[0]
+        
+        if squeeze and len(guesses)>1:
+            allguess = {}
+            for d in guesses:
+                allguess.update(d)
+            return allguess
+        
+        if not squeeze and len(guesses)>1:
+            allguess = {}
+            for d in guesses:
+                allguess.update(d)
+            return allguess if not as_dataframe else pandas.DataFrame.from_records(allguess).T
         
         return guesses if not as_dataframe else pandas.DataFrame.from_records(guesses).T
         
@@ -933,6 +1013,35 @@ class MultiSliceParameters():
             guess["sigma"] = self.psf3d.get_sigma(lbda_)[0]
             # -- Base Parameters
             for k in ["ampl", "background"]:
+                guess[k]  = np.average(self.values[k], weights=1/self.errors[k]**2)
+                
+            guesses.append(guess)
+            
+        return guesses
+    
+    def get_gaussmoffat_guess(self, lbda):
+        """ """
+        lbda = np.atleast_1d(lbda)
+        guesses= []
+        for i,lbda_ in enumerate(lbda):
+            guess = {}
+            # -- ADR        
+            # Position
+            xoff, yoff = self.adr.refract(self.adr_ref[0], self.adr_ref[1], 
+                                          lbda_, 
+                                         unit=spectroadr.IFU_SCALE)
+            guess["xoff"] = xoff
+            guess["yoff"] = yoff
+            # -- PSF
+            # Ellipse
+            guess["a_ps"] = self.pointsource3d.a_ell
+            guess["b_ps"] = self.pointsource3d.b_ell
+            # Profile
+            guess["sigma_ps"] = self.pointsource3d.get_sigma(lbda_)[0]
+            guess["alpha_ps"] = np.average(self.values["alpha_ps"], weights=1/self.errors["alpha_ps"]**2)
+            guess["eta_ps"] = np.average(self.values["eta_ps"], weights=1/self.errors["eta_ps"]**2)
+            # -- Base Parameters
+            for k in ["ampl_ps", "background"]:
                 guess[k]  = np.average(self.values[k], weights=1/self.errors[k]**2)
                 
             guesses.append(guess)
@@ -982,7 +1091,19 @@ class MultiSliceParameters():
         return self._psf3d
     
     @property
+    def pointsource3d(self):
+        """ """
+        return self._pointsource3d
+    
+    @property
     def psfmodel(self):
         """ """
         return self._psfmodel
-                
+    
+    @property
+    def pointsourcemodel(self):
+        """ """
+        if hasattr(self, '_pointsourcemodel'):
+            return self._pointsourcemodel
+        else:
+            return None

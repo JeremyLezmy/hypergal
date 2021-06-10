@@ -126,9 +126,74 @@ class GaussMoffat2D( PSF2D ):
 
 class GaussMoffat3D( PSF3D, GaussMoffat2D ):
 
+    CHROMATIC_PARAMETERS = ['sigma']
+    PROFILE_PARAMETERS = ['alpha', 'eta', 'sigma', 'rho']
+    
     # ============= #
     #  Methods      #
-    # ============= #        
+    # ============= #
+    @classmethod
+    def fit_from_values(cls, values, lbda, errors=None, **kwargs):
+        """ 
+
+        Parameters
+        ----------
+        values: [dict/serie]
+            dictionary or pandas.Series containing the freerameters 
+            (a, b | sigma)
+
+        lbda: [array]
+            wavelength assiated to the input values
+
+        errors: [dict/serie or None] -optional-
+            errors associated to the inpout values, same format.
+
+        Returns
+        -------
+        Gauss3D
+        """
+        from scipy.optimize import minimize
+        this = cls(**kwargs)
+        
+        param3d = {}
+        # Loop over the PARAMETER_NAMES and given the values, errors and lbda
+        #   - get the mean values if the parameter is not chromatic
+        #   - fit the instance profile if it is.
+        for param in this.PARAMETER_NAMES:
+            
+            # Non chromatic parameters | for instance a and b
+            #   -> Compute weighted mean for non-chromatics parameters
+            if param not in this.CHROMATIC_PARAMETERS and param in values.keys(): 
+                value = np.asarray(values[param])
+                if errors is not None:
+                    variance = np.asarray(errors[param])**2
+                    param3d[param] = np.average(value, weights=1/variance)
+                else:
+                    param3d[param] = np.mean(value)
+                
+            # Non chromatic parameters
+            elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
+                # Sigma
+                value = np.asarray(values[param])
+                variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
+                       
+                def get_chromparam(arr_):
+                    """ function to be minimizing """
+                    sigma_, rho_ = arr_
+                    this.update_parameters(**{"sigma":sigma_, "rho":rho_})
+                    model = this.get_sigma(lbda) # rho has been updated already
+                    chi2 = np.sum( (value-model)**2/variance )
+                    return chi2
+
+                fit_output= minimize( get_chromparam, np.array([1,1]) )
+                
+                param3d["sigma"] = fit_output.x[0]
+                param3d["rho"]   = fit_output.x[1]
+        
+        this.update_parameters(**param3d)
+        return this
+
+    
     def get_radial_profile(self, r, lbda):
         """ 
         Get gaussian + Moffat radial profile according to its elliptical radius and the wavelength (3rd dimension).
@@ -176,5 +241,17 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         Float
         """
         sigmaref = super().get_sigma()
-        return sigmaref * (lbda/self.lbdaref)**rho
+        if rho is None:
+            rho = self._profile_params['rho']
+            
+        return sigmaref * (np.atleast_1d(lbda)/self.lbdaref)**rho
+
+    def guess_parameters(self):
+        """ 
+        Init parameters (default) for the 2D gaussianMoffat profile.
+        Return
+        --------
+        Elliptical parameters ("a" and "b") and the shape parameter (sigma)
+        """
+        return {**super().guess_parameters(), **{"rho":-0.5}}
     
