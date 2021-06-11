@@ -177,6 +177,8 @@ class ADRFitter(ADR):
         else:
             err =np.ones((2,len(self.xpos)))
 
+        err[np.where(err==0)]=1 #avoid divided by 0
+        
         def minifit(X):
             """ """
             self.set( parangle=X[0] )

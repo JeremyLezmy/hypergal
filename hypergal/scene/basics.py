@@ -1098,7 +1098,7 @@ class FullSliceScene( SliceScene ):
         p = Point(x, y)
         circle = p.buffer(3)
         idx = self.slice_comp.get_spaxels_within_polygon( circle )
-        ampl_ps = np.sum(self.flux_comp[[self.slice_comp.indexes[i] in np.array(idx) for i in range(len(self.slice_comp.indexes) )]]) 
+        ampl_ps = np.nansum(self.flux_comp[[self.slice_comp.indexes[i] in np.array(idx) for i in range(len(self.slice_comp.indexes) )]]) 
         #ampl_ps = np.nanmax(self.slice_comp.get_subslice([i for i in self.slice_comp.indexes if i in idx]).data)*10
         
         
@@ -1287,8 +1287,8 @@ class PointSource(object):
         self.update(**guess_step1)
         
         model_comp = self.get_model()
-        bkgd = np.median(self.flux_comp, axis=1)-np.median(model_comp, axis=1)
-        ampl = np.percentile(self.flux_comp, 95, axis=1) / np.percentile(model_comp, 95, axis=1)
+        bkgd = np.nanmedian(self.flux_comp, axis=1)-np.nanmedian(model_comp, axis=1)
+        ampl = np.nanpercentile(self.flux_comp, 95, axis=1) / np.nanpercentile(model_comp, 95, axis=1)
         baseparams = {**{f"ampl{i}":ampl[i]       for i in range(self.nslices)},
                       **{f"background{i}":bkgd[i] for i in range(self.nslices)} }
         return {**guess_step1, **baseparams}

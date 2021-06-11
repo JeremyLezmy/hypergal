@@ -269,7 +269,7 @@ class SceneFitter( object ):
                                   guess=None, limit=None, error=None, use_priors=True,
                                   savefile=None, plotkwargs={},
                                   result_as_dataframe=True,
-                                  add_lbda=True, add_coefs=True, priors=None):
+                                  add_lbda=True, add_coefs=True, priors=None, onlyvalid=False):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
         Directly fit the scene after the instantiation.
@@ -334,10 +334,12 @@ class SceneFitter( object ):
                                  runmigrad=True)
         if savefile is not None:
             this.scene.show( savefile=savefile, **{**{"vmin":"1","vmax":"90"},**plotkwargs} )
-            
-        return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
-    
-        
+
+        if onlyvalid and not migradout[0].is_valid:
+            return None
+        else:
+             return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
+
         
     # ============== #
     #   Methods      #
@@ -481,7 +483,7 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=[0.01,None], pos_limits=3, sigma_limit=[0,5], airmass_limit=[1,4],
+    def get_limits(self, a_limit=[0.01,None], pos_limits=5, sigma_limit=[0,5], airmass_limit=[1,4],
                        parangle_var_limit=10, ampl_limit=[0,None], ampl_ps_limit=[0,None], a_ps_limit=[0.01,None],
                        eta_ps_limit=[0,None], sigma_ps_limit=[0.001,10], alpha_ps_limit=[0.001,10], param_guess=None, **kwargs):
         """ 
@@ -899,6 +901,7 @@ class MultiSliceParameters():
                  psfmodel="Gauss3D", pointsourcemodel='GaussMoffat3D',
                  load_adr=False, load_psf=False, load_pointsource=False):
         """ """
+        
         self.set_data(dataframe)
         if load_adr:
             if cubefile is None:
@@ -1013,7 +1016,9 @@ class MultiSliceParameters():
             guess["sigma"] = self.psf3d.get_sigma(lbda_)[0]
             # -- Base Parameters
             for k in ["ampl", "background"]:
-                guess[k]  = np.average(self.values[k], weights=1/self.errors[k]**2)
+                err = self.errors[k][(self.errors[k]!=0) & (self.errors[k]!=np.NaN)]
+                val = self.values[k][(self.errors[k]!=0) & (self.errors[k]!=np.NaN)]
+                guess[k]  = np.average(val, weights=1/err**2)
                 
             guesses.append(guess)
             
@@ -1042,7 +1047,9 @@ class MultiSliceParameters():
             guess["eta_ps"] = np.average(self.values["eta_ps"], weights=1/self.errors["eta_ps"]**2)
             # -- Base Parameters
             for k in ["ampl_ps", "background"]:
-                guess[k]  = np.average(self.values[k], weights=1/self.errors[k]**2)
+                err = self.errors[k][(self.errors[k]!=0) & (self.errors[k]!=np.NaN)]
+                val = self.values[k][(self.errors[k]!=0) & (self.errors[k]!=np.NaN)]
+                guess[k]  = np.average(val, weights=1/err**2)
                 
             guesses.append(guess)
             

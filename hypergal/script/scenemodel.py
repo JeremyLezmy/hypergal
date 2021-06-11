@@ -1,5 +1,5 @@
 import os
-
+import numpy as np
 from .daskbasics import DaskHyperGal
 from pysedm.sedm import SEDM_LBDA
 
@@ -27,6 +27,19 @@ class DaskScene( DaskHyperGal ):
                         for cubefile_ in cubefiles]
         return storings
 
+    @staticmethod
+    def remove_out_spaxels( cube, overwrite = False):
+
+        spx_map = cube.spaxel_mapping
+        ill_spx = np.argwhere(np.isnan(list( spx_map.values() ))).T[0]
+        if len(ill_spx)>0:
+            cube_fix = cube.get_partial_cube([i for i in cube.indexes if i not in cube.indexes[ill_spx]],np.arange(len(cube.lbda)) )
+            if overwrite:        
+                cube_fix.writeto(cube.filename)
+            return cube_fix       
+        else:            
+            return cube
+
     
     def compute_single(self, cubefile, radec, redshift,
                            binfactor=2,
@@ -35,7 +48,7 @@ class DaskScene( DaskHyperGal ):
                            scale_cout=15, scale_sedm=10, rmtarget=2,
                            lbda_range=[5000, 9000], nslices=6,
                            filters_fit=["ps1.r", "ps1.i","ps1.z"],
-                           psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True):
+                           psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None):
         """ """
         info        = io.parse_filename(cubefile)
         cubeid      = info["sedmid"]
@@ -47,6 +60,12 @@ class DaskScene( DaskHyperGal ):
         # PLOTS
         plotbase    = os.path.join(filedir, "hypergal", info["name"], info["sedmid"])
         dirplotbase = os.path.dirname(plotbase)
+
+        if xy_ifu_guess is not None:
+            initguess = dict({k:v for k,v in zip(['xoff','yoff'],xy_ifu_guess)})
+        else:
+            initguess = None
+            
         if not os.path.isdir(dirplotbase):
             os.makedirs(dirplotbase, exist_ok=True)
             
@@ -57,7 +76,8 @@ class DaskScene( DaskHyperGal ):
         #    STEP 1    #
         # ------------ #
         # ---> Build the cutouts, and the calibrated data cube
-        calcube = self.get_calibrated_cube(cubefile, apply_byecr=True)
+        calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(cubefile, apply_byecr=True))
+        
         
         source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec,
                                                                 binfactor=binfactor,
@@ -83,7 +103,7 @@ class DaskScene( DaskHyperGal ):
         bestfit_cout =  self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
                                                 saveplot_structure = plotbase+"cout_fit_",
                                                 filterin=filters, filters_to_use=filters_fit,
-                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel)
+                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess)
 
         # ---> Storing <--- # 2
         stored.append( bestfit_cout.to_hdf(*io.get_slicefit_datafile(cubefile, "cutout")) )
@@ -119,10 +139,14 @@ class DaskScene( DaskHyperGal ):
         bestfit_mfit = self.fit_cube(mcube_sedm, mcube_intr, radec, nslices=nslices,
                                          saveplot_structure = plotbase+"metaslice_fit_",
                                         mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False,
-                                        fix_params=['scale', 'rotation'])
+                                        fix_params=['scale', 'rotation'], onlyvalid=True)
         
         # ---> Storing <--- # 4
         stored.append( bestfit_mfit.to_hdf(*io.get_slicefit_datafile(cubefile, "meta")) )
+
+        #badfit=bestfit_mfit[ np.logical_or(bestfit_mfit.xs('errors', axis=1)==0 , bestfit_mfit.xs('errors', axis=1)<1e-10)]
+        #bestfit_mfit = bestfit_mfit.drop(np.unique(badfit.index.codes[0].values()))
+        
 
         # ---> Get the object for future guesses || Guesser        
         meta_ms_param = delayed(MultiSliceParameters)(bestfit_mfit, cubefile=cubefile, 
@@ -134,6 +158,7 @@ class DaskScene( DaskHyperGal ):
         #    STEP 3    #
         # ------------ #
         #  Ampl Fit
+
         bestfit_completfit = self.fit_cube(source_sedmcube, int_cube, radec, nslices=len(SEDM_LBDA),
                                         mslice_param=meta_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False,
                                         saveplot_structure = None,#plotbase+"full_fit_",
@@ -193,11 +218,11 @@ class DaskScene( DaskHyperGal ):
     @classmethod
     def fit_cube(cls, cube_sedm, cube_intr, radec, nslices,
                      saveplot_structure=None,
-                     mslice_param=None,
-                     psfmodel="Gauss2D", pointsourcemodel="GaussMoffat3D",
+                     mslice_param=None, initguess=None,
+                     psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D",
                      jointfit=False,
                      fix_pos=False, fix_psf=False,
-                     fix_params=['scale', 'rotation']):
+                     fix_params=['scale', 'rotation'], onlyvalid=False):
         """ """
         if jointfit:
             raise NotImplementedError("Joint fit of meta slices has not been implemented.")
@@ -207,18 +232,28 @@ class DaskScene( DaskHyperGal ):
         # And the default positions        
         xy_in   = cube_intr.radec_to_xy(*radec).flatten()
         xy_comp = cube_sedm.radec_to_xy(*radec).flatten()
+
+        mpoly = delayed(cube_sedm.get_spaxel_polygon)( format='multipolygon')
+        gm = psf.gaussmoffat.GaussMoffat2D()
+        ps = delayed(PointSource)(gm, mpoly)
         
         # --------------------- #
         # Loop over the slices  #
         # --------------------- #
         best_fits = {}
+        
         for i_ in range(nslices):
             # the slices
             slice_in   = cube_intr.get_slice(index=i_, slice_object=True)
             slice_comp = cube_sedm.get_slice(index=i_, slice_object=True)
             if mslice_param is not None:
                 guess = mslice_param.get_guess(slice_in.lbda, squeeze=True)
+            else:
+                guess = {}
 
+            if initguess is not None:
+                guess.update(initguess)
+                
             savefile  = None if saveplot_structure is None else (saveplot_structure+ f"{i_}.pdf")
                 
             #
@@ -232,9 +267,9 @@ class DaskScene( DaskHyperGal ):
                 else:
                     raise NotImplementedError("Only Gauss2D psf implemented for fixing parameters")
                     
-            mpoly = delayed(slice_comp.get_spaxel_polygon)( format='multipolygon')
-            gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha':1, 'eta':2, 'sigma':1.5})
-            ps = delayed(PointSource)(gm, mpoly)
+            #mpoly = delayed(slice_comp.get_spaxel_polygon)( format='multipolygon')
+            #gm = psf.gaussmoffat.GaussMoffat2D()
+            #ps = delayed(PointSource)(gm, mpoly)
             #
             # fit the slices
             best_fits[i_] = delayed(SceneFitter.fit_slices_projection)(slice_in, slice_comp, 
@@ -246,7 +281,8 @@ class DaskScene( DaskHyperGal ):
                                                                         xy_comp=xy_comp,
                                                                         guess=guess,
                                                                         fix_params=fix_params,
-                                                                        add_lbda=True, priors=Priors())
+                                                                        add_lbda=True, priors=Priors(), onlyvalid=onlyvalid)
+           
         # ------------------------ #
         # Returns the new bestfit  #
         # ------------------------ #
