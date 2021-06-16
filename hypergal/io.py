@@ -33,6 +33,15 @@ def e3dfilename_to_hgcubes(filename, which):
     
     if which == "model":
         return filename.replace(".fits",".h5").replace("e3d","hgmodel")
+
+    if which == "hostmodel":
+        return filename.replace(".fits",".h5").replace("e3d","hghostmodel")
+
+    if which == "snmodel":
+        return filename.replace(".fits",".h5").replace("e3d","hgsnmodel")
+
+    if which == "bkgdmodel":
+        return filename.replace(".fits",".h5").replace("e3d","hgbkgdmodel")
     
     if which in ["residual", "res"]:
         return filename.replace(".fits",".h5").replace("e3d","hgres")

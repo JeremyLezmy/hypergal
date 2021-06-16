@@ -126,7 +126,7 @@ class CubeModelBuilder( object ):
         scene.update(ignore_extra=True, **slice_param)
         return scene
         
-    def get_modelslice(self, index, as_slice=True, **kwargs):
+    def get_modelslice(self, index, as_slice=True, split=False, **kwargs):
         """ """
         slice_param = self.get_parameters(index)
         scene = self.get_scene(index, **kwargs)
@@ -142,6 +142,15 @@ class CubeModelBuilder( object ):
                                                                                                                 
         modelflux_in = (modelflux_base - slice_param["bkgd_in"])/slice_param["norm_in"]
         model = (slice_param["ampl"] * modelflux_in + slice_param["background"] + psmod) * slice_param["norm_comp"] + slice_param["bkgd_comp"]
+
+        if split and hasattr(scene, 'pointsource'):
+            
+            modelhost = (slice_param["ampl"] * modelflux_in ) * slice_param["norm_comp"] #+ slice_param["bkgd_comp"]
+            modelps = (psmod) * slice_param["norm_comp"] #+ slice_param["bkgd_comp"]
+            modelbkgd = slice_param["background"] * slice_param["norm_comp"] + slice_param["bkgd_comp"]
+            
+            return modelhost, modelps, np.repeat(modelbkgd,len(modelhost))
+        
         if as_slice:
             return scene.slice_comp.get_new(newdata=model, newvariance="None")
         

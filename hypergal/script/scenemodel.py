@@ -48,7 +48,8 @@ class DaskScene( DaskHyperGal ):
                            scale_cout=15, scale_sedm=10, rmtarget=2,
                            lbda_range=[5000, 9000], nslices=6,
                            filters_fit=["ps1.r", "ps1.i","ps1.z"],
-                           psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None):
+                           psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
+                       split=False):
         """ """
         info        = io.parse_filename(cubefile)
         cubeid      = info["sedmid"]
@@ -177,6 +178,24 @@ class DaskScene( DaskHyperGal ):
         # ------------ #
         # Cube Building
 
+        if split:
+            
+            host_sn_bkgd = self.build_cubes(int_cube, calcube, radec,
+                                                 meta_ms_param, full_ms_param,
+                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, split=True)
+            hostmodel = host_sn_bkgd[0]
+            snmodel   = host_sn_bkgd[1]
+            bkgdmodel   = host_sn_bkgd[2]
+                       
+            stored.append(hostmodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"hostmodel") ))
+           
+            stored.append(snmodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"snmodel") ))
+
+            stored.append(bkgdmodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"bkgdmodel") ))
+        
+            return stored
+            
+        
         cubemodel_cuberes = self.build_cubes(int_cube, calcube, radec,
                                                  meta_ms_param, full_ms_param,
                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel)
@@ -193,13 +212,28 @@ class DaskScene( DaskHyperGal ):
     #    
     @staticmethod
     def build_cubes(cube_int, cube_sedm, radec, mslice_meta, mslice_final,
-                    psfmodel='Gauss2D', pointsourcemodel="GaussMoffat2D", scenemodel="SceneSlice", nslices=len(SEDM_LBDA)):
+                    psfmodel='Gauss2D', pointsourcemodel="GaussMoffat2D", scenemodel="SceneSlice", nslices=len(SEDM_LBDA), split=False):
         """ """
         xy_in   = cube_int.radec_to_xy(*radec).flatten()
         cubebuilder = delayed(CubeModelBuilder)(cube_in=cube_int, cube_comp=cube_sedm,
                                                 mslice_meta=mslice_meta, mslice_final=mslice_final, 
                                                 xy_in=xy_in,pointsourcemodel=pointsourcemodel,
                      scenemodel=scenemodel)
+        if split:           
+            hm=[]
+            psm=[]
+            bkgm=[]
+            for index_ in range(nslices):                
+                dat = cubebuilder.get_modelslice(index_, as_slice=False, split=True)
+                hm.append(dat[0])
+                psm.append(dat[1])
+                bkgm.append(dat[2])
+            
+            hostmodel = cube_sedm.get_new(newdata=hm, newvariance="None")
+            psmodel = cube_sedm.get_new(newdata=psm, newvariance="None")
+            bkgdmodel = cube_sedm.get_new(newdata=bkgm, newvariance="None")
+
+            return hostmodel,psmodel,bkgdmodel
         # Getting the data,  slice at the time
         datamodel = [cubebuilder.get_modelslice(index_, as_slice=False)
                          for index_ in range( nslices )]
