@@ -49,7 +49,7 @@ class DaskScene( DaskHyperGal ):
                            lbda_range=[5000, 9000], nslices=6,
                            filters_fit=["ps1.r", "ps1.i","ps1.z"],
                            psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
-                       split=False):
+                       split=False, curved_bkgd=False):
         """ """
         info        = io.parse_filename(cubefile)
         cubeid      = info["sedmid"]
@@ -161,7 +161,7 @@ class DaskScene( DaskHyperGal ):
         #  Ampl Fit
 
         bestfit_completfit = self.fit_cube(source_sedmcube, int_cube, radec, nslices=len(SEDM_LBDA),
-                                        mslice_param=meta_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False,
+                                           mslice_param=meta_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False, curved_bkgd=curved_bkgd,
                                         saveplot_structure = None,#plotbase+"full_fit_",
                                         fix_params=['scale', 'rotation',
                                                         "xoff", "yoff",
@@ -182,7 +182,7 @@ class DaskScene( DaskHyperGal ):
             
             host_sn_bkgd = self.build_cubes(int_cube, calcube, radec,
                                                  meta_ms_param, full_ms_param,
-                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, split=True)
+                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, curved_bkgd=curved_bkgd, split=True)
             hostmodel = host_sn_bkgd[0]
             snmodel   = host_sn_bkgd[1]
             bkgdmodel   = host_sn_bkgd[2]
@@ -212,13 +212,13 @@ class DaskScene( DaskHyperGal ):
     #    
     @staticmethod
     def build_cubes(cube_int, cube_sedm, radec, mslice_meta, mslice_final,
-                    psfmodel='Gauss2D', pointsourcemodel="GaussMoffat2D", scenemodel="SceneSlice", nslices=len(SEDM_LBDA), split=False):
+                    psfmodel='Gauss2D', pointsourcemodel="GaussMoffat2D", scenemodel="SceneSlice", curved_bkgd=False, nslices=len(SEDM_LBDA), split=False):
         """ """
         xy_in   = cube_int.radec_to_xy(*radec).flatten()
         cubebuilder = delayed(CubeModelBuilder)(cube_in=cube_int, cube_comp=cube_sedm,
                                                 mslice_meta=mslice_meta, mslice_final=mslice_final, 
                                                 xy_in=xy_in,pointsourcemodel=pointsourcemodel,
-                     scenemodel=scenemodel)
+                                                scenemodel=scenemodel, curved_bkgd=curved_bkgd)
         if split:           
             hm=[]
             psm=[]
@@ -254,6 +254,7 @@ class DaskScene( DaskHyperGal ):
                      saveplot_structure=None,
                      mslice_param=None, initguess=None,
                      psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D",
+                     curved_bkgd=False,
                      jointfit=False,
                      fix_pos=False, fix_psf=False,
                      fix_params=['scale', 'rotation'], onlyvalid=False):
@@ -311,6 +312,7 @@ class DaskScene( DaskHyperGal ):
                                                                         savefile=savefile, 
                                                                         whichscene='SceneSlice',
                                                                         pointsource=ps,
+                                                                        curved_bkgd=curved_bkgd,
                                                                         xy_in=xy_in, 
                                                                         xy_comp=xy_comp,
                                                                         guess=guess,

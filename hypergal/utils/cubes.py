@@ -3,7 +3,7 @@ import os
 import numpy as np
 from .. import spectroscopy, fit, psf, io
 from ..scene import basics
-from ..scene.basics import PointSource
+from ..scene.basics import PointSource, BackgroundCurved
 from pysedm.dask.base import DaskCube
 
 class CubeModelBuilder( object ):
@@ -12,7 +12,7 @@ class CubeModelBuilder( object ):
                      mslice_meta, mslice_final, 
                      xy_in=None, 
                      psfmodel='Gauss2D', pointsourcemodel='GaussMoffat2D',
-                     scenemodel="HostSlice"):
+                     scenemodel="HostSlice", curved_bkgd=False):
         """ """
         # - Cubes        
         self.set_cube(cube_in, "in")
@@ -27,6 +27,7 @@ class CubeModelBuilder( object ):
         self._psfmodel = psfmodel
         self._scenemodel = scenemodel
         self._pointsourcemodel = pointsourcemodel if scenemodel in ['SceneSlice', 'SceneCube'] else None
+        self._curved_bkgd = curved_bkgd
         
         
     @classmethod
@@ -118,10 +119,10 @@ class CubeModelBuilder( object ):
             pointsource = PointSource( pointsourcemodel, self.mpoly_comp )
             scene = host.SceneSlice.from_slices(slice_in, slice_comp, 
                                                xy_in=self.xy_in, xy_comp=xy_comp, 
-                                               psfgal=psfmodel, pointsource=pointsource, adapt_flux=adapt_flux, 
+                                                psfgal=psfmodel, pointsource=pointsource, adapt_flux=adapt_flux, curved_bkgd=self._curved_bkgd,
                                                **kwargs)
         else:
-            raise NotImplementedError("Only HostSlice scene has been implemented.")
+            raise NotImplementedError("Only HostSlice and SceneSlice scenes have been implemented.")
         
         scene.update(ignore_extra=True, **slice_param)
         return scene
@@ -139,17 +140,26 @@ class CubeModelBuilder( object ):
             psmod=scene.pointsource.get_model(**{k.replace('_ps',''):v for k,v in slice_param.items() if k in scene.pointsource.BASE_PS_PARAMETERS + scene.pointsource.PSF_PARAMETERS + scene.GEOMETRY_PARAMETERS and '_err' not in k})
         else:
             psmod=0                                                      
-                                                                                                                
+
+        if (self._scenemodel=="SceneSlice" and  not scene.has_curved_bkgd) or self._scenemodel!="SceneSlice":
+           bkgdmod = np.repeat(slice_param["background"],len(modelflux_base))
+        elif self._scenemodel=="SceneSlice" and scene.has_curved_bkgd:
+
+            x,y = scene.slice_comp_xy
+            coeffs = dict({k:v for k,v in slice_param.items() if k in BackgroundCurved.BACKGROUND_PARAMETERS})
+            bkgdmod =  BackgroundCurved.get_background(x, y, coeffs )
+                
+        
         modelflux_in = (modelflux_base - slice_param["bkgd_in"])/slice_param["norm_in"]
-        model = (slice_param["ampl"] * modelflux_in + slice_param["background"] + psmod) * slice_param["norm_comp"] + slice_param["bkgd_comp"]
+        model = (slice_param["ampl"] * modelflux_in + bkgdmod + psmod) * slice_param["norm_comp"] + slice_param["bkgd_comp"]
 
         if split and hasattr(scene, 'pointsource'):
             
             modelhost = (slice_param["ampl"] * modelflux_in ) * slice_param["norm_comp"] #+ slice_param["bkgd_comp"]
             modelps = (psmod) * slice_param["norm_comp"] #+ slice_param["bkgd_comp"]
-            modelbkgd = slice_param["background"] * slice_param["norm_comp"] + slice_param["bkgd_comp"]
+            modelbkgd = bkgdmod * slice_param["norm_comp"] + slice_param["bkgd_comp"]
             
-            return modelhost, modelps, np.repeat(modelbkgd,len(modelhost))
+            return modelhost, modelps, modelbkgd
         
         if as_slice:
             return scene.slice_comp.get_new(newdata=model, newvariance="None")

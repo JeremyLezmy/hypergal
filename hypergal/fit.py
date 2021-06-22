@@ -189,7 +189,7 @@ class SceneFitter( object ):
     @classmethod
     def from_slices(cls, slice_in, slice_comp, psf, whichscene="HostSlice", pointsource=None,
                         xy_in=None, xy_comp=None, 
-                    fix_params=["scale","rotation"], debug=False, priors=None,**kwargs):
+                    fix_params=["scale","rotation"], debug=False, priors=None, curved_bkgd=False, **kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
 
@@ -228,7 +228,7 @@ class SceneFitter( object ):
             from .scene import host
             scene = host.SceneSlice.from_slices(slice_in, slice_comp, 
                                                xy_in=xy_in, xy_comp=xy_comp, 
-                                                psfgal=psf, pointsource=pointsource, **kwargs)
+                                                psfgal=psf, pointsource=pointsource, curved_bkgd=curved_bkgd, **kwargs)
         else:
             raise NotImplementedError("Only HostSlice and SceneSlice scene have been implemented.")
         
@@ -263,7 +263,7 @@ class SceneFitter( object ):
     # Class Method   #
     # ============== #
     @classmethod
-    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice", pointsource=None,
+    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice",curved_bkgd=False, pointsource=None,
                                   xy_in=None, xy_comp=None, 
                                   fix_params=["scale","rotation"], debug=False,
                                   guess=None, limit=None, error=None, use_priors=True,
@@ -328,7 +328,7 @@ class SceneFitter( object ):
         this = cls.from_slices(slice_in, slice_comp,  psf=psf,
                                    whichscene=whichscene, pointsource=pointsource,
                                    xy_in=xy_in, xy_comp=xy_comp, 
-                                   fix_params=fix_params, debug=debug, priors=priors)
+                                   fix_params=fix_params, debug=debug, priors=priors,curved_bkgd=curved_bkgd)
         
         migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
                                  runmigrad=True)

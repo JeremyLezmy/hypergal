@@ -958,7 +958,7 @@ class CubeScene( SliceScene ):
 class FullSliceScene( SliceScene ):
     
     def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
-                     psfgal=None, adapt_flux=True, pointsource=None, **kwargs):
+                     psfgal=None, adapt_flux=True, pointsource=None, curved_bkgd=False, **kwargs):
         
         
         _ = super().__init__(slice_in=slice_in, slice_comp=slice_comp, xy_in=xy_in, xy_comp=xy_comp, load_overlay=load_overlay,
@@ -971,9 +971,11 @@ class FullSliceScene( SliceScene ):
         else:
             mpoly = slice_comp.get_spaxel_polygon( format='multipolygon')
 
+        self._has_curved_bkgd = curved_bkgd
+
 
     @classmethod
-    def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psfgal=None, pointsource=None, **kwargs):
+    def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psfgal=None, pointsource=None, curved_bkgd=False, **kwargs):
         """ 
         Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
         Many transformations might be done to simulate the output scene, such as psf convolution, 
@@ -1003,13 +1005,13 @@ class FullSliceScene( SliceScene ):
         
         """
         return cls(slice_in, slice_comp,
-                       xy_in=xy_in, xy_comp=xy_comp, psfgal=psfgal, pointsource=pointsource,
+                       xy_in=xy_in, xy_comp=xy_comp, psfgal=psfgal, pointsource=pointsource, curved_bkgd=curved_bkgd,
                        **kwargs)
             
             
     def get_model(self, ampl=None, background=None,
                       overlayparam=None,
-                      psfparam=None, ampl_ps=None, fill_comp=False):
+                      psfparam=None, ampl_ps=None, bkgdx=None, bkgdy=None, bkgdxy=None, bkgdxx=None, bkgdyy=None, fill_comp=False):
         """Convolves and project flux_in into the 
 
         Parameters
@@ -1030,8 +1032,19 @@ class FullSliceScene( SliceScene ):
         if ampl_ps is None:
             ampl_ps = self.baseparams["ampl_ps"]
             
-        if background is None:
+        if background is None and not self.has_curved_bkgd:
             background = self.baseparams["background"]
+
+        elif background is None and self.has_curved_bkgd:
+            x,y = self.slice_comp_xy
+            coeffs = dict({k:v for k,v in self.baseparams.items() if k in BackgroundCurved.BACKGROUND_PARAMETERS})
+            background = BackgroundCurved.get_background(x, y, coeffs )
+
+        elif background is not None and self.has_curved_bkgd:
+            
+            x,y = self.slice_comp_xy
+            coeffs = dict({'background':background,'bkgdx':bkgdx, 'bkgdy':bkgdy, 'bkgdxy':bkgdxy, 'bkgdxx':bkgdxx, 'bkgdyy':bkgdyy})
+            background = BackgroundCurved.get_background(x, y, coeffs )
             
         if psfparam is not None:
             psf_hostparam = {k:v for k,v in psfparam.items() if k in super(FullSliceScene, self).PSF_PARAMETERS }
@@ -1083,6 +1096,9 @@ class FullSliceScene( SliceScene ):
         base_guess = {**{k:None for k in self.BASE_PARAMETERS},
                       **{"ampl":ampl, "background": bkgd, "ampl_ps":ampl_ps}
                       }
+        if self.has_curved_bkgd:
+            base_guess.update(**{k:0 for k in BackgroundCurved.BACKGROUND_PARAMETERS})
+            
         geom_guess = self.overlay.geoparam_comp
         psf_guess  = self.host_psf.guess_parameters()
         psf_guess.update( {k+'_ps':v for k,v in self.pointsource_psf.guess_parameters().items()})
@@ -1179,13 +1195,26 @@ class FullSliceScene( SliceScene ):
     def PSF_PARAMETERS(self):
         """ All parameters names """
         return super().PSF_PARAMETERS + self.pointsource.PSF_PARAMETERS
-    
+
+    @property
+    def has_curved_bkgd(self):
+        """ All parameters names """
+        return self._has_curved_bkgd
+
+    @property
+    def slice_comp_xy(self):
+        """ All parameters names """
+        
+        return self.pointsource.centroids.T
     
     @property
     def BASE_PARAMETERS(self):
         """ All parameters names """
         basepar =  super().BASE_PARAMETERS + self.pointsource.BASE_PS_PARAMETERS
         basepar.remove('background_ps')
+        if self.has_curved_bkgd:
+            basepar.remove('background')
+            basepar+=BackgroundCurved.BACKGROUND_PARAMETERS
         return basepar
     
 
@@ -1514,3 +1543,38 @@ class PointSource3D(PointSource):
     def BASE_PS_PARAMETERS(self):
         """ """
         return [f"{k}{i}" for k in self.BASE_PS_SLICE_PARAMETERS for i in range(self.nslices)]
+
+
+
+class BackgroundCurved( ):
+    """ """
+    BACKGROUND_PARAMETERS = ["background","bkgdx","bkgdy","bkgdxy","bkgdxx","bkgdyy"]
+    
+    def __init__(self):
+        
+        pass
+
+    @classmethod
+    def get_background(cls, x, y, bkgdprop=None):
+        """ The background at the given positions """
+        this = cls()
+        if bkgdprop is None or len(bkgdprop)< len(this.BACKGROUND_PARAMETERS):
+            
+            bkgdprop = this.guess_parameters()
+            
+        return this.curved_plane(x, y, [bkgdprop[k] for k in this.BACKGROUND_PARAMETERS])
+
+    @staticmethod
+    def curved_plane(x, y,
+                 bkg_coefs):
+        """ """
+        return np.dot(np.asarray([np.ones(x.shape[0]), x, y, x*y, x*x, y*y]).T, bkg_coefs)
+
+    def guess_parameters(self):
+        """ 
+        Default parameters (init for an eventual fit)
+        """
+        return {**{"background":0.,"bkgdx":0.,"bkgdy":0.,"bkgdxy":0.,"bkgdxx":0.,"bkgdyy":0.}
+                }
+
+
