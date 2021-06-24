@@ -53,13 +53,7 @@ def check_dependencies():
         import astropy
     except ImportError:
         install_requires.append('astropy')
-
-    try:
-        import pylephare
-    except ImportError:
-        install_requires.append('pylephare')
        
-     
     return install_requires
 
 if __name__ == "__main__":
