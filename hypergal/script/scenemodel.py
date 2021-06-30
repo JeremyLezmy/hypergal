@@ -13,6 +13,7 @@ from ..scene.basics import PointSource
 from .. import io
 from dask import delayed
 from astropy.io import fits
+import pyifu
 
 class DaskScene( DaskHyperGal ):
 
