@@ -12,7 +12,7 @@ from .. import psf
 from ..scene.basics import PointSource
 from .. import io
 from dask import delayed
-
+from astropy.io import fits
 
 class DaskScene( DaskHyperGal ):
 
@@ -168,6 +168,8 @@ class DaskScene( DaskHyperGal ):
                                                         "a","b","sigma", 'a_ps', 'b_ps', 'sigma_ps', 'alpha_ps', 'eta_ps'])
         # ---> Storing <--- # 5
         stored.append( bestfit_completfit.to_hdf(*io.get_slicefit_datafile(cubefile, "full")) )
+
+        stored.append( self.get_target_spec(bestfit_completfit, delayed(fits.getheader)(cubefile), savefile=io.e3dfilename_to_hgspec(cubefile, 'target') ) )
 
         # ---> Get the object for future guesses || Guesser        
         full_ms_param = delayed(MultiSliceParameters)(bestfit_completfit, psfmodel=psfmodel.replace("2D","3D"),pointsourcemodel='GaussMoffat3D',
@@ -387,6 +389,23 @@ class DaskScene( DaskHyperGal ):
         # Returns the new bestfit  #
         # ------------------------ #
         return delayed(pandas.concat)(best_fits)
+
+    @staticmethod
+    def get_target_spec(fullfit, header, savefile=None):
+        specval = delayed(fullfit.xs)('ampl_ps', level=1)['values'].values
+        specerr = delayed(fullfit.xs)('ampl_ps', level=1)['errors'].values
+        speclbda = delayed(fullfit.xs)('lbda', level=1)['values'].values
+        speccoef = delayed(fullfit.xs)('norm_comp', level=1)['values'].values
+        specfi = delayed(pyifu.spectroscopy.get_spectrum)(speclbda, specval*speccoef/header['EXPTIME'], (specerr*speccoef/header['EXPTIME'])**2, header)
+        
+        if savefile != None:        
+            if savefile.rsplit('.')[-1]=='txt':
+                asci = True
+            elif savefile.rsplit('.')[-1]=='fits':
+                asci = False
+            specfi = delayed(specfi.writeto)(savefile,  ascii=asci)
+        
+        return(specfi)
 
     
     @staticmethod

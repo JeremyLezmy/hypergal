@@ -12,6 +12,16 @@ def e3dfilename_to_wcscalcube(filename):
     """ """
     return filename.replace(".fits",".h5").replace("e3d","wcube")
 
+def e3dfilename_to_hgspec(filename, which, extension='.txt'):
+    """ """
+    if which =='host':        
+        return filename.replace(".fits",extension).replace("e3d","spec_hghost")
+    
+    if which in ['target','sn']:        
+        return filename.replace(".fits",extension).replace("e3d","spec_hgtarget")
+
+    raise ValueError(f"which can be host, sn or target ; {which} given")
+
 def e3dfilename_to_hgout(filename):
     """ """
     return filename.replace(".fits",".h5").replace("e3d","hgout")
