@@ -89,11 +89,11 @@ def get_target_info(name, verbose=False, client=None):
     astrid = [parse_filename(astr_)["sedmid"] for astr_ in astrmfiles]
     flagok = np.in1d(cubeid, astrid)
     if not np.all(flagok):
-        cubefiles = list(np.asarray(cubes)[flagok])
-        discarded_cubefiles = np.asarray(cubes)[~flagok]
+        cubefiles, discarded_cubefiles  = list(np.asarray(cubefiles)[flagok]), np.asarray(cubefiles)[~flagok]
+        #discarded_cubefiles = np.asarray(cubefiles)[~flagok]
         warnings.warn(f"the following file(s) are discarded for this were not able to find corresponding astrometry {discarded_cubefiles}")
 
-    return cubefiles, radec, redshift
+    return np.unique(cubefiles), radec, redshift
 
 
 def get_calibrated_cube(filename):
