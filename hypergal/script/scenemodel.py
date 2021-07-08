@@ -20,10 +20,14 @@ class DaskScene( DaskHyperGal ):
 
 
     @classmethod
-    def compute_targetcubes(cls, name, client, verbose=False, **kwargs):
+    def compute_targetcubes(cls, name, client, verbose=False, manual_z=None, **kwargs):
         """ """
         cubefiles, radec, redshift = io.get_target_info(name, verbose=True)
         this  = cls(client=client)
+        if manual_z != None:
+            redshift = manual_z
+        elif redshift==None:
+            redshift=0.01        
         storings = [this.compute_single(cubefile_, radec, redshift, **kwargs)
                         for cubefile_ in cubefiles]
         return storings
