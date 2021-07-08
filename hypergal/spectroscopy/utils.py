@@ -9,7 +9,7 @@ import numpy as np
 import multiprocessing as mp
 import shutil
 import warnings
-
+from astropy.convolution import convolve, Gaussian1DKernel
 try:
     from pcigale import init, genconf, check, run
     from pcigale.session.configuration import Configuration
@@ -18,6 +18,7 @@ except:
 
 import pyifu
 import collections.abc
+
 
 def command_cigale(command, file_path=None):
     '''
@@ -277,3 +278,78 @@ def spectra_to_3dcube( spectra, lbda, spx_map, spx_vert=None, **kwargs):
     return pyifu.spectroscopy.get_cube(data=spectra.T, lbda=lbda,
                                         spaxel_mapping=spx_map,
                                         spaxel_vertices=spx_vert, **kwargs)
+
+
+def gauss_convolve_variable_width(a, sig, prec=10.):
+
+    '''
+    approximate convolution with a kernel that varies along the spectral
+        direction, by stretching the data by the inverse of the kernel's
+        width at a given position
+    N.B.: this is an approximation to the proper operation, which
+        involves iterating over each pixel of each template and
+        performing ~10^6 convolution operations
+    Parameters:
+     - a: N-D array; convolution will occur along the final axis
+     - sig: 1-D array (must have same length as the final axis of a);
+        describes the varying width of the kernel
+     - prec: precision argument. When higher, oversampling is more thorough
+    '''
+
+    assert (len(sig) == a.shape[-1]), '\tLast dimension of `a` must equal \
+        length of `sig` (each element of a must have a convolution width)'
+
+    sig0 = sig.max()  # the "base" width that results in minimal blurring
+    # if prec = 1, just use sig0 as base.
+
+    n = np.rint(prec * sig0/sig).astype(int)
+    # print(n.min())
+    print('\tWarped array length: {}'.format(n.sum()))
+    # define "warped" array a_w with n[i] instances of a[:,:,i]
+    a_w = np.repeat(a, n, axis=-1)
+    # now a "warped" array sig_w
+    sig_w = np.repeat(sig, n)
+    # define start and endpoints for each value
+    nl = np.cumsum(np.insert(n, 0, 0))[:-1]
+    nr = np.cumsum(n)
+    # now the middle of the interval
+    nm = np.rint(np.median(np.column_stack((nl, nr)), axis=1)).astype(int)
+
+    # print nm
+
+    # print a_w.shape, sig_w.shape # check against n.sum()
+
+    # now convolve the whole thing with a Gaussian of width sig0
+    print('\tCONVOLVE...')
+    # account for the increased precision required
+    a_w_f = np.empty_like(a_w)
+    # have to iterate over the rows and columns, to avoid MemoryError
+    # c = 0  # counter (don't judge me, it was early in the morning)
+    # return(a_w)
+    for i in range(a_w_f.shape[0]):
+        # for j in range(a_w_f.shape[1]):
+        '''c += 1
+        print '\t\tComputing convolution {} of {}...'.format(
+            c, a_w_f.shape[0] * a_w_f.shape[1])'''
+        # a_w_f[i,] = ndimage.gaussian_filter1d(a_w[i,], prec*sig0)
+        a_w_f[i] = convolve(a_w[i], Gaussian1DKernel(prec*sig0),
+                            boundary='extend')
+    # print a_w_f.shape # should be the same as the original shape
+
+    # and downselect the pixels (take approximate middle of each slice)
+    # f is a mask that will be built and applied to a_w_f
+
+    # un-warp the newly-convolved array by selecting only the slices
+    # in dimension -1 that are in nm
+    a_f = a_w_f[:,  nm]
+
+    return a_f
+
+
+def sedm_lsf(lbda, a=23.585, b=-5.394, slice_unit=True):
+    """ """
+    if slice_unit:
+        from pysedm.sedm import SEDM_LBDA
+        return (a*lbda/6000+b)/(SEDM_LBDA[1]-SEDM_LBDA[0])
+    else:
+        return (a*lbda/6000+b)
