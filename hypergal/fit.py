@@ -483,8 +483,8 @@ class SceneFitter( object ):
         
         return dict_guess
         
-    def get_limits(self, a_limit=[0.01,None], pos_limits=5, sigma_limit=[0,5], airmass_limit=[1,4],
-                       parangle_var_limit=10, ampl_limit=[0,None], ampl_ps_limit=[0,None], a_ps_limit=[0.01,None],
+    def get_limits(self, a_limit=[0.2,5], pos_limits=5, sigma_limit=[0,5], airmass_limit=[1,4],
+                       parangle_var_limit=10, ampl_limit=[0,None], ampl_ps_limit=[0,None], a_ps_limit=[0.2,5],
                        eta_ps_limit=[0,None], sigma_ps_limit=[0.001,10], alpha_ps_limit=[0.001,10], param_guess=None, **kwargs):
         """ 
         Get limits values (bounds) as list for free parameters.
