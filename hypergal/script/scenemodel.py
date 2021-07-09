@@ -109,7 +109,7 @@ class DaskScene( DaskHyperGal ):
         bestfit_cout =  self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
                                                 saveplot_structure = plotbase+"cout_fit_",
                                                 filterin=filters, filters_to_use=filters_fit,
-                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess)
+                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess, onlyvalid=True)
 
         # ---> Storing <--- # 2
         stored.append( bestfit_cout.to_hdf(*io.get_slicefit_datafile(cubefile, "cutout")) )
@@ -418,7 +418,7 @@ class DaskScene( DaskHyperGal ):
                           filterin=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
                           filters_to_use=["ps1.r", "ps1.i","ps1.z"],
                           saveplot_structure=None,
-                          psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", guess=None):
+                          psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", guess=None, onlyvalid=False):
         """ """
         #
         # Get the slices
@@ -450,8 +450,7 @@ class DaskScene( DaskHyperGal ):
                                                                             pointsource=ps,
                                                                             xy_in=xy_in, 
                                                                             xy_comp=xy_comp,
-                                                                            limit = {'ampl':[0,None], 'a':[0.001,None],'a_ps':[0.001,None], 'ampl_ps':[0,None], 'eta_ps':[0,None], 'alpha_ps':[0.001,15], 'sigma_ps':[0.0001,15]},
-                                                                            guess=guess, add_lbda=True, priors=Priors())
+                                                                            guess=guess, add_lbda=True, priors=Priors(), onlyvalid=onlyvalid)
             
         return delayed(pandas.concat)(best_fits)
 
