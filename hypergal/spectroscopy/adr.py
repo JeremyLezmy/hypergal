@@ -86,7 +86,7 @@ class ADRFitter(ADR):
         _ = super().__init__(**kwargs)
 
     @classmethod
-    def fit_adr_from_values(cls, values, lbda, filename_or_header, errors=None, show=False, **kwargs):
+    def fit_adr_from_values(cls, values, lbda, filename_or_header, errors=None, show=False, saveplot=None, **kwargs):
         """
 
         Parameters
@@ -118,7 +118,10 @@ class ADRFitter(ADR):
                                       xpos_err=errors["xoff"] if errors is not None else None,
                                       ypos_err=errors["yoff"] if errors is not None else None,
                                       init_adr=adr, **kwargs)
-        this.fit_adr(show=show)
+
+        if saveplot != None:
+            show=True
+        this.fit_adr(show=show, saveplot=saveplot)
         adr.set(**this.data)
         return adr, (this.fitted_xref,this.fitted_yref)
 
@@ -207,7 +210,7 @@ class ADRFitter(ADR):
             self.show(**kwargs)
         
     
-    def show(self, ax=None, savefile=None):
+    def show(self, ax=None, saveplot=None):
         """
         Show position and current loaded adr (which is the fitted one if you've run self.fit_adr() ) .
 
@@ -260,8 +263,8 @@ class ADRFitter(ADR):
                      fr'$Airmass= {np.round( self._fit_airmass,2)},Parangle= {np.round( self._fit_parangle,2)}  $')
        
         ax.set_aspect('equal',adjustable='datalim')       
-        if savefile != None:            
-            fig.savefig( savefile )
+        if saveplot != None:            
+            fig.savefig( saveplot )
         return ax
         
 

@@ -899,14 +899,14 @@ class MultiSliceParameters():
     """ """
     def __init__(self, dataframe, cubefile=None, 
                  psfmodel="Gauss3D", pointsourcemodel='GaussMoffat3D',
-                 load_adr=False, load_psf=False, load_pointsource=False):
+                 load_adr=False, load_psf=False, load_pointsource=False, saveplot_adr=None):
         """ """
         
         self.set_data(dataframe)
         if load_adr:
             if cubefile is None:
                 raise ValueError("cubefile must be given to load_adr")
-            self.load_adr(cubefile)
+            self.load_adr(cubefile, saveplot=saveplot_adr)
         if load_psf:
             self.load_psf(psfmodel=psfmodel)
             
@@ -946,10 +946,10 @@ class MultiSliceParameters():
     # -------- #
     #  LOADER  #
     # -------- #        
-    def load_adr(self, cubefile):
+    def load_adr(self, cubefile, saveplot=None):
         """ """
         self._adr, self._adr_ref = spectroadr.ADRFitter.fit_adr_from_values(self.values, self.lbda, cubefile, 
-                                                                            errors=self.errors)
+                                                                            errors=self.errors, saveplot=saveplot)
     def load_psf(self, psfmodel="Gauss3D"):
         """ """
         self._psf3d = getattr(psf.gauss,psfmodel).fit_from_values(self.values, self.lbda, errors=self.errors)

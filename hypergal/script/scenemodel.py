@@ -157,7 +157,7 @@ class DaskScene( DaskHyperGal ):
         # ---> Get the object for future guesses || Guesser        
         meta_ms_param = delayed(MultiSliceParameters)(bestfit_mfit, cubefile=cubefile, 
                                                         psfmodel=psfmodel.replace("2D","3D"), pointsourcemodel='GaussMoffat3D',
-                                                      load_adr=True, load_psf=True, load_pointsource=True)
+                                                      load_adr=True, load_psf=True, load_pointsource=True, saveplot_adr = plotbase + "adr_fit.png")
 
                 
         # ------------ #

@@ -386,7 +386,7 @@ class SliceScene( _BaseScene_ ):
     # --------- #
     #  SETTER   #
     # --------- #
-    def set_slice(self, slice_, which, adapt_flux=True, norm="99", bkgd="50"):
+    def set_slice(self, slice_, which, adapt_flux=True, norm="99", bkgd="5"):
         """ Set the 'in' or 'comp' geometry
         
         Parameters
