@@ -1375,7 +1375,7 @@ class PointSource(object):
             colors = [facecolor]*len(self.mpoly)
         
         for i,poly in enumerate(self.mpoly):
-            _ = utils.geometry.show_polygon(poly, facecolor=colors[i], edgecolor=edgecolor, ax=ax, **kwargs)
+            _ = geometry.show_polygon(poly, facecolor=colors[i], edgecolor=edgecolor, ax=ax, **kwargs)
 
         if adjust:
             verts = np.asarray(self.mpoly.convex_hull.exterior.xy).T
