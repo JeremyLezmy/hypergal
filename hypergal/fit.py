@@ -340,7 +340,34 @@ class SceneFitter( object ):
         else:
              return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
 
+         
+    @classmethod
+    def fit_std(cls, std_slice, psf, use_subslice=False, header=None, lbda_thickness=None, adapt_flux=True, curved_bkgd=True,
+                fix_params=None, debug=False, priors=None,
+                guess=None, limit=None, error=None, use_priors=True,
+                savefile=None, plotkwargs={},
+                result_as_dataframe=True,
+                add_lbda=True, add_coefs=True,
+                onlyvalid=False,
+                **kwargs):
+
+        from .scene import std
+        scene = std.STD_SliceScene.from_slice(std_slice, psf, use_subslice=use_subslice, header=header, lbda_thickness=lbda_thickness, adapt_flux=adapt_flux, curved_bkgd=curved_bkgd, **kwargs)
         
+        this = cls.from_scene(scene, fix_params=fix_params, debug=debug, priors=priors)
+        
+        migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
+                                 runmigrad=True)
+        if savefile is not None:
+            this.scene.report_std( savefile=savefile)
+
+        if onlyvalid and not migradout[0].is_valid:
+            return None
+        else:
+             return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
+
+        
+       
     # ============== #
     #   Methods      #
     # ============== #
@@ -740,7 +767,7 @@ class SceneFitter( object ):
     def fit(self, guess=None, limit=None, verbose=False, error=None,
                 use_priors=True, runmigrad=True, errordef=0.5,
                 update_scene=True, **kwargs):
-        """ 
+        """
         Fitter.
 
         Parameters
