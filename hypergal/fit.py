@@ -364,8 +364,15 @@ class SceneFitter( object ):
         if onlyvalid and not migradout[0].is_valid:
             return None
         else:
-             return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
-
+             out = this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
+             if result_as_dataframe:
+                
+                 out.append( pandas.Series(dict({'values':this.scene.fwhm,'errors':np.nan}), name='fwhm'))
+                 return out
+             else:
+                 out['values']['fwhm']=this.scene.fwhm
+                 out['errors']['fwhm']=np.nan
+                 return out
         
        
     # ============== #
