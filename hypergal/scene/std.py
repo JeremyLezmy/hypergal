@@ -185,14 +185,20 @@ class STD_SliceScene( PointSource, SliceScene):
         if not logscale:
             
             title_dat = "Data"
-            title_mod = "Model"
+            if self.has_curved_bkgd:
+                title_mod = "Model (2nd order background)"
+            else:
+                title_mod = "Model (uniform background)"            
             self.show_psf( ax=axes[0], adjust=True, flux=flux_comp , cmap=cmap, vmin=vmin, vmax=vmax, edgecolor=None)
             self.show_psf( ax=axes[1], adjust=True, flux=flux_model, cmap=cmap, vmin=vmin, vmax=vmax, edgecolor=None)               
             
         elif logscale:
             
             title_dat = "Log Data"
-            title_mod = "Log Model"
+            if self.has_curved_bkgd:
+                title_mod = "Log Model (2nd order background)"
+            else:
+                title_mod = "Log Model (uniform background)"  
             self.show_psf( ax=axes[0], adjust=True, flux=np.log(flux_comp ), cmap=cmap, vmin=np.log(vmin), vmax=np.log(vmax), edgecolor=None)
             self.show_psf( ax=axes[1], adjust=True, flux=np.log(flux_model), cmap=cmap, vmin=np.log(vmin), vmax=np.log(vmax), edgecolor=None)    
 
@@ -305,7 +311,7 @@ class STD_SliceScene( PointSource, SliceScene):
 
         if logscale:
             ax.set_yscale('log')
-            ax.set_ylim(1e-3,1.2)
+            ax.set_ylim(0.5*(bkgd*norm_comp +bkgd_comp)/np.max(sndat),1.2)
 
         else:
             ax.set_ylim(-0.2,1.1)
