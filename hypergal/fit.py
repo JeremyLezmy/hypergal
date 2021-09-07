@@ -335,7 +335,7 @@ class SceneFitter( object ):
         if savefile is not None:
             this.scene.show( savefile=savefile, **{**{"vmin":"1","vmax":"90"},**plotkwargs} )
 
-        if onlyvalid and not migradout[0].is_valid:
+        if onlyvalid and ( migradout==None or not migradout[0].is_valid):
             return None
         else:
              return this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
@@ -361,7 +361,7 @@ class SceneFitter( object ):
         if savefile is not None:
             this.scene.report_std( savefile=savefile)
 
-        if onlyvalid and not migradout[0].is_valid:
+        if onlyvalid and ( migradout==None or not migradout[0].is_valid):
             return None
         else:
              out = this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
@@ -843,7 +843,12 @@ class SceneFitter( object ):
             self.set_bestfit(None)
             return m
 
-        migradout = m.migrad()
+        try:
+            migradout = m.migrad()
+        except RuntimeError:
+            warnings.warn("migrad() is not valid.")
+            return None
+        
         if not migradout[0].is_valid:
             warnings.warn("migrad() is not valid.")
             
