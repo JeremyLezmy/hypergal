@@ -275,8 +275,16 @@ class ADRFitter(ADR):
         """
         if self.lbdaref is not None:
             idx = (np.abs(self.lbda-self.lbdaref)).argmin()
-            xref_init = self.xpos[idx]
-            yref_init = self.ypos[idx]
+            if type(self.xpos)==dict:
+                xref_init = list(self.xpos.values())[idx]
+                yref_init = list(self.ypos.values())[idx]
+
+            elif type(self.xpos) in [np.ndarray, list]:
+                xref_init = self.xpos[idx]
+                yref_init = self.ypos[idx]
+            else:
+                xref_init = self.xpos.values[idx]
+                yref_init = self.ypos.values[idx]
         return xref_init, yref_init
         
     # --------- #
