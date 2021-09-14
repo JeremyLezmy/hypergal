@@ -6,9 +6,9 @@ from ..photometry.astrometry import WCSHolder, get_source_ellipses
 from pyifu.spectroscopy import Cube
 
 
-def sedmcube_to_wcscube(cube, store_data=False, get_filename=False):
+def sedmcube_to_wcscube(cube, radec=None, spxy=None, store_data=False, get_filename=False):
     """ """
-    wcscube = WCSCube.from_sedmcube(cube)
+    wcscube = WCSCube.from_sedmcube(cube, radec, spxy)
     
     if store_data:
         wcscube.writeto(wcscube.filename)

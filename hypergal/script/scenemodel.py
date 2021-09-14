@@ -85,7 +85,7 @@ class DaskScene( DaskHyperGal ):
         calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(cubefile, apply_byecr=True))
         
         
-        source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec,
+        source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec, spxy=xy_ifu_guess,
                                                                 binfactor=binfactor,
                                                                 filters=filters,
                                                                 source_filter=source_filter,

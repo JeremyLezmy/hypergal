@@ -18,14 +18,14 @@ class DaskHyperGal( base.DaskCube ):
     
     
     @classmethod
-    def get_sourcecubes(cls, cubefile, radec, binfactor=2,
+    def get_sourcecubes(cls, cubefile, radec, spxy=None, binfactor=2,
                             filters=["ps1.g","ps1.r", "ps1.i","ps1.z","ps1.y"],
                             source_filter="ps1.r", source_thres=2,
                             scale_cout=15, scale_sedm=10, rmtarget=2):
         """ """
         #
         # Cubes
-        sedm_cube = cls.get_calibrated_cube(cubefile, as_wcscube=True, apply_byecr=True)
+        sedm_cube = cls.get_calibrated_cube(cubefile, as_wcscube=True, radec=radec, spxy=spxy, apply_byecr=True)
         cutouts   = cls.get_cutout(radec=radec, binfactor=2, filters=filters)
         #
         # cout_cube->Source & cube
@@ -58,7 +58,7 @@ class DaskHyperGal( base.DaskCube ):
     # =============== #
     @classmethod
     def get_calibrated_cube(cls, cubefile, fluxcalfile=None, apply_byecr=True,
-                            store_data=False, get_filename=False, as_wcscube=True, **kwargs):
+                            store_data=False, get_filename=False, as_wcscube=True, radec=None, spxy=None, **kwargs):
         """ """
         cube = super().get_calibrated_cube(cubefile, fluxcalfile=fluxcalfile,
                                                apply_byecr=apply_byecr,
@@ -69,7 +69,7 @@ class DaskHyperGal( base.DaskCube ):
         if get_filename and not store_data:
             warnings.warn("you requested get_filename without storing the data (store_data=False)")
             
-        return delayed(spectrobasics.sedmcube_to_wcscube)(cube, 
+        return delayed(spectrobasics.sedmcube_to_wcscube)(cube, radec=radec, spxy=spxy,
                                                           store_data=store_data, 
                                                           get_filename=get_filename)
     @staticmethod
