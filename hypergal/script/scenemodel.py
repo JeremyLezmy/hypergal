@@ -82,7 +82,7 @@ class DaskScene( DaskHyperGal ):
         #    STEP 1    #
         # ------------ #
         # ---> Build the cutouts, and the calibrated data cube
-        calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(cubefile, apply_byecr=True))
+        calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(cubefile, apply_byecr=True, radec=radec, spxy=xy_ifu_guess))
         
         
         source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec, spxy=xy_ifu_guess,
