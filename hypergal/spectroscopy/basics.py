@@ -27,7 +27,7 @@ class WCSCube( Cube, WCSHolder ):
     """
 
     @classmethod
-    def read_sedmfile(cls, cubefile):
+    def read_sedmfile(cls, cubefile, radec=None, spxy=None):
         """ 
         Instantiate WCSCube object from filename
 
@@ -42,10 +42,10 @@ class WCSCube( Cube, WCSHolder ):
         
         """
         from pysedm import get_sedmcube
-        return cls.from_sedmcube( get_sedmcube(cubefile) )
+        return cls.from_sedmcube( get_sedmcube(cubefile), radec, spxy)
         
     @classmethod
-    def from_sedmcube(cls, cube):
+    def from_sedmcube(cls, cube, radec=None, spxy=None):
         """ 
         Instantiate WCSCube object from pyifu.Cube object.
 
@@ -61,8 +61,9 @@ class WCSCube( Cube, WCSHolder ):
         """
         from pysedm import astrometry
         from astropy.io import fits
+
         
-        wcsdict = astrometry.get_wcs_dict(cube.filename)
+        wcsdict = astrometry.get_wcs_dict(cube.filename, radec, spxy)
         
         keys = ["EXPTIME", "ADCSPEED","TEMP","GAIN_SET", "ADC","MODEL","SNSR_NM","SER_NO","TELESCOP",
                 "GAIN","CAM_NAME","INSTRUME","UTC","END_SHUT","OBSDATE","OBSTIME","LST","MJD_OBS",
