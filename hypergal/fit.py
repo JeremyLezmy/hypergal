@@ -365,13 +365,22 @@ class SceneFitter( object ):
             return None
         else:
              out = this.get_bestfit_parameters(as_dataframe=result_as_dataframe, add_lbda=add_lbda, add_coefs=add_coefs)
+             chival = migradout.fmin.fval
+             dof = this.dof
              if result_as_dataframe:
                 
                  out = out.append( pandas.Series(dict({'values':this.scene.fwhm,'errors':np.nan}), name='fwhm'))
+                 chipd = pandas.Series(dict({'values':chival,'errors':np.nan}), name='chi_min')
+                 dofpd = pandas.Series(dict({'values':dof,'errors':np.nan}), name='dof')
+                 out = out.append([dofpd,chipd])
                  return out
              else:
                  out['fwhm']=this.scene.fwhm
                  out['fwhm_err']=np.nan
+                 out['chi_min'] = chival
+                 out['chi_min_err']=np.nan
+                 out['dof'] = dof
+                 out['dof_err'] = np.nan
                  return out
         
        
