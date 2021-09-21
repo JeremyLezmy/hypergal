@@ -1093,8 +1093,8 @@ class MultiSliceParameters():
             guess["a_ps"] = self.pointsource3d.a_ell
             guess["b_ps"] = self.pointsource3d.b_ell
             # Profile
-            guess["sigma_ps"] = self.pointsource3d.get_sigma(lbda_)[0]
-            guess["alpha_ps"] = np.average(self.values["alpha_ps"], weights=1/self.errors["alpha_ps"]**2)
+            #guess["sigma_ps"] = self.pointsource3d.get_sigma(lbda_)[0]
+            guess["alpha_ps"] = self.pointsource3d.get_alpha(lbda_)[0] #np.average(self.values["alpha_ps"], weights=1/self.errors["alpha_ps"]**2)
             guess["eta_ps"] = np.average(self.values["eta_ps"], weights=1/self.errors["eta_ps"]**2)
             # -- Base Parameters
             for k in ["ampl_ps", "background"]:
