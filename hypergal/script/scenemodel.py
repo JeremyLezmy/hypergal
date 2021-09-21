@@ -170,7 +170,7 @@ class DaskScene( DaskHyperGal ):
                                         saveplot_structure = None,#plotbase+"full_fit_",
                                         fix_params=['scale', 'rotation',
                                                         "xoff", "yoff",
-                                                        "a","b","sigma", 'a_ps', 'b_ps', 'sigma_ps', 'alpha_ps', 'eta_ps'])
+                                                        "a","b","sigma", 'a_ps', 'b_ps', 'alpha_ps', 'eta_ps'])
         # ---> Storing <--- # 5
         stored.append( bestfit_completfit.to_hdf(*io.get_slicefit_datafile(cubefile, "full")) )
 
@@ -440,7 +440,7 @@ class DaskScene( DaskHyperGal ):
                 savefile = None
             
             mpoly = delayed(sedm_filter_slices[f_].get_spaxel_polygon)( format='multipolygon')
-            gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha':1, 'eta':2, 'sigma':1.5})
+            gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha':2, 'eta':1})
             ps = delayed(PointSource)(gm, mpoly)
             best_fits[f_] = delayed(SceneFitter.fit_slices_projection)(cout_filter_slices[f_], 
                                                                             sedm_filter_slices[f_], 

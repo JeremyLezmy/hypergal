@@ -49,7 +49,7 @@ def get_radial_gaussmoffat(r, alpha, beta, sigma, eta, a_ell=1, b_ell=1):
 
 class GaussMoffat2D( PSF2D ):
     
-    PROFILE_PARAMETERS = ["eta", "sigma", "alpha"] # beta fixed by alpha
+    PROFILE_PARAMETERS = ["eta",  "alpha"] # beta and sigma fixed by alpha
 
     # ============= #
     #  Methods      #
@@ -81,14 +81,14 @@ class GaussMoffat2D( PSF2D ):
         """
         return self._profile_params["alpha"]
 
-    def get_beta(self, b0=1.35, b1=0.22):
+    def get_beta(self, b0=1.51, b1=0.22):
         """ 
-        Return Moffat power. Beta is fixed by alpha value such as beta = b0*alpha + b1
+        Return Moffat power. Beta is fixed by alpha value such as beta = b1*alpha + b0
 
         Parameters
         ----------
         b0: float
-            Default is 1.35
+            Default is 1.51
 
         b1: float
             Default is 0.22 
@@ -99,11 +99,23 @@ class GaussMoffat2D( PSF2D ):
         """
         return b0  + self.get_alpha() * b1 
     
-    def get_sigma(self):
+    def get_sigma(self, sig0=0.38, sig1=0.40):
         """ 
-        Return gaussian radius.
+        Return gaussian radius. Sigma is fixed by alpha value such as sigma = sig1*alpha + sig0
+
+        Parameters
+        ----------
+        sig0: float
+            Default is 0.38
+
+        sig1: float
+            Default is 0.40
+
+        Returns
+        -------
+        Sigma Gaussian radius
         """
-        return self._profile_params["sigma"]
+        return sig0 + self.get_alpha()*sig1
     
     def get_eta(self):
         """ 
@@ -116,7 +128,7 @@ class GaussMoffat2D( PSF2D ):
         Default parameters (init for an eventual fit)
         """
         return {**{"a":1.,"b":0.},
-                **{"alpha":1.5, "eta":1., "sigma":1.5}
+                **{"alpha":2, "eta":1.}
                 }
     
     # ============= #
@@ -126,8 +138,8 @@ class GaussMoffat2D( PSF2D ):
 
 class GaussMoffat3D( PSF3D, GaussMoffat2D ):
 
-    CHROMATIC_PARAMETERS = ['sigma']
-    PROFILE_PARAMETERS = ['alpha', 'eta', 'sigma', 'rho']
+    CHROMATIC_PARAMETERS = ['alpha']
+    PROFILE_PARAMETERS = ['alpha', 'eta', 'rho']
     
     # ============= #
     #  Methods      #
@@ -139,8 +151,8 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         Parameters
         ----------
         values: [dict/serie]
-            dictionary or pandas.Series containing the freerameters 
-            (a, b | sigma)
+            dictionary or pandas.Series containing the free parameters 
+            (a, b | alpha)
 
         lbda: [array]
             wavelength assiated to the input values
@@ -173,21 +185,21 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
                 
             # Non chromatic parameters
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
-                # Sigma
+                # Alpha
                 value = np.asarray(values[param])
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
                        
                 def get_chromparam(arr_):
                     """ function to be minimizing """
-                    sigma_, rho_ = arr_
-                    this.update_parameters(**{"sigma":sigma_, "rho":rho_})
-                    model = this.get_sigma(lbda) # rho has been updated already
+                    alpha_, rho_ = arr_
+                    this.update_parameters(**{"alpha":alpha_, "rho":rho_})
+                    model = this.get_alpha(lbda) # rho has been updated already
                     chi2 = np.sum( (value-model)**2/variance )
                     return chi2
 
-                fit_output= minimize( get_chromparam, np.array([1,1]) )
+                fit_output= minimize( get_chromparam, np.array([2,-0.4]) )
                 
-                param3d["sigma"] = fit_output.x[0]
+                param3d["alpha"] = fit_output.x[0]
                 param3d["rho"]   = fit_output.x[1]
         
         this.update_parameters(**param3d)
@@ -222,10 +234,10 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
     # ---------- #
     # Chromatic  #
     # ---------- #
-    def get_sigma(self, lbda, rho=-1.5):
+    def get_alpha(self, lbda, rho=-0.4):
         """ 
-        Chromatic shape parameter for the gaussian radius.\n
-        Power law such as sigma = sigmaref * (lbda/lbdaref)^rho
+        Chromatic shape parameter for the Moffat radius.\n
+        Power law such as alpha = alpharef * (lbda/lbdaref)^rho
 
         Parameters
         ----------
@@ -240,11 +252,11 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         -------
         Float
         """
-        sigmaref = super().get_sigma()
+        alpharef = super().get_alpha()
         if rho is None:
             rho = self._profile_params['rho']
             
-        return sigmaref * (np.atleast_1d(lbda)/self.lbdaref)**rho
+        return alpharef * (np.atleast_1d(lbda)/self.lbdaref)**rho
 
     def guess_parameters(self):
         """ 
@@ -253,5 +265,5 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         --------
         Elliptical parameters ("a" and "b") and the shape parameter (sigma)
         """
-        return {**super().guess_parameters(), **{"rho":-0.5}}
+        return {**super().guess_parameters(), **{"rho":-0.4}}
     

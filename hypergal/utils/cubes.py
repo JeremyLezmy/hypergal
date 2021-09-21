@@ -34,7 +34,7 @@ class CubeModelBuilder( object ):
     def from_filename(cls, filename, radec, scenemodel='HostSlice'):
         """ """
         dirout = os.path.dirname(filename)
-        intcube = io.e3dfilename_to_hgcubes(cubefile,"intcube")
+        intcube = io.e3dfilename_to_hgcubes(filename, "intcube")
         
         if not os.path.isfile(intcube):
             raise IOError(f"No intrinsic cube file: {intcube}")

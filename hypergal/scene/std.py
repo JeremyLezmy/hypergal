@@ -271,7 +271,7 @@ class STD_SliceScene( PointSource, SliceScene):
             
         eta = self.psf.parameters['eta']
         alpha = self.psf.parameters['alpha']
-        sigma = self.psf.parameters['sigma']
+        sigma = self.psf.get_sigma()
 
         xslice, yslice = np.array(mslice.index_to_xy( mslice.indexes)).T
         xcsn,ycsn=xoff,yoff
