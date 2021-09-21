@@ -49,7 +49,7 @@ def get_radial_gaussmoffat(r, alpha, beta, sigma, eta, a_ell=1, b_ell=1):
 
 class GaussMoffat2D( PSF2D ):
     
-    PROFILE_PARAMETERS = ["eta",  "alpha"] # beta and sigma fixed by alpha
+    PROFILE_PARAMETERS = ["eta", "alpha"] # beta and sigma fixed by alpha
 
     # ============= #
     #  Methods      #

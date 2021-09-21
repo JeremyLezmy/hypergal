@@ -989,11 +989,20 @@ class MultiSliceParameters():
         """ """
         values = dataframe.unstack(level=1)["values"]
         errors = dataframe.unstack(level=1)["errors"]
+
+        values_ps = values[[values.columns[i] for i in range(len(values.columns)) if values.columns[i].endswith('ps')]].copy()
+        values_ps.columns = [values_ps.columns[i].rsplit('_ps')[0] for i in range(len(values_ps.columns))]
+
+        errors_ps = errors[[errors.columns[i] for i in range(len(errors.columns)) if errors.columns[i].endswith('ps')]].copy()
+        errors_ps.columns = [errors_ps.columns[i].rsplit('_ps')[0] for i in range(len(errors_ps.columns))]
+
+        self._values_ps = values_ps
+        self._errors_ps = errors_ps
         
         self._data = dataframe
         self._values = values
         self._errors = errors
-        
+
     # -------- #
     #  LOADER  #
     # -------- #        
@@ -1008,7 +1017,7 @@ class MultiSliceParameters():
         
     def load_pointsource(self, pointsourcemodel="GaussMoffat3D"):
         """ """
-        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values, self.lbda, errors=self.errors)
+        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values_ps, self.lbda, errors=self.errors_ps)
         self._pointsourcemodel = pointsourcemodel
         
     # -------- #
@@ -1125,6 +1134,16 @@ class MultiSliceParameters():
     def errors(self):
         """ """
         return self._errors
+
+    @property
+    def values_ps(self):
+        """ """
+        return self._values_ps
+    
+    @property
+    def errors_ps(self):
+        """ """
+        return self._errors_ps
     
     @property
     def lbda(self):
