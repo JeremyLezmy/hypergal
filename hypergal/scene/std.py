@@ -6,7 +6,8 @@ import warnings
 import matplotlib.pyplot as plt
 import shapely
 from shapely.geometry import Point
-
+from ..spectroscopy import adr as spectroadr
+import pandas
 
 class STD_SliceScene( PointSource, SliceScene):
 
@@ -530,4 +531,198 @@ class STD_SliceScene( PointSource, SliceScene):
         """ All parameters names """
         
         return self.slice_comp
+
+
+class MultiSliceParametersSTD():
+
+    """ """
+    def __init__(self, dataframe, cubefile=None, 
+                 pointsourcemodel='GaussMoffat3D',
+                 load_adr=False, load_pointsource=False, saveplot_adr=None):
+        """ """
         
+        self.set_data(dataframe)
+        if load_adr:
+            if cubefile is None:
+                raise ValueError("cubefile must be given to load_adr")
+            self.load_adr(cubefile, saveplot=saveplot_adr)
+            
+        if load_pointsource:
+            self.load_pointsource(pointsourcemodel=pointsourcemodel)
+        
+    @classmethod
+    def read_hdf(cls, filename, key, 
+                 cubefile=None, pointsourcemodel='GaussMoffat3D', 
+                 load_adr=False):
+        """ """
+        import pandas
+        dataframe = pandas.read_hdf(filename, key)
+        return cls(dataframe, cubefile=cubefile, pointsourcemodel=pointsourcemodel,
+                              load_adr=load_adr)
+    
+    @classmethod
+    def from_dataframe(cls, dataframe, **kwargs):
+        """ """
+        return cls(dataframe,  **kwargs)
+        
+    # ============= #
+    #   Method      #
+    # ============= #
+    # -------- #
+    #  SETTER  #
+    # -------- #
+    def set_data(self, dataframe):
+        """ """
+        values = dataframe.unstack(level=1)["values"]
+        errors = dataframe.unstack(level=1)["errors"]
+
+        values_ps = values[[values.columns[i] for i in range(len(values.columns)) if values.columns[i].endswith('ps')]].copy()
+        values_ps.columns = [values_ps.columns[i].rsplit('_ps')[0] for i in range(len(values_ps.columns))]
+
+        errors_ps = errors[[errors.columns[i] for i in range(len(errors.columns)) if errors.columns[i].endswith('ps')]].copy()
+        errors_ps.columns = [errors_ps.columns[i].rsplit('_ps')[0] for i in range(len(errors_ps.columns))]
+
+        self._values_ps = values_ps
+        self._errors_ps = errors_ps
+        
+        self._data = dataframe
+        self._values = values
+        self._errors = errors
+
+    # -------- #
+    #  LOADER  #
+    # -------- #        
+    def load_adr(self, cubefile, saveplot=None):
+        """ """
+        self._adr, self._adr_ref = spectroadr.ADRFitter.fit_adr_from_values(self.values, self.lbda, cubefile, 
+                                                                            errors=self.errors, saveplot=saveplot)
+        
+    def load_pointsource(self, pointsourcemodel="GaussMoffat3D"):
+        """ """
+        from hypergal import psf
+
+        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values_ps, self.lbda, errors=self.errors_ps)
+        self._pointsourcemodel = pointsourcemodel
+        
+    # -------- #
+    #  GETTER  #
+    # -------- #
+    def get_guess(self, lbda, psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", as_dataframe=False, squeeze=True):
+        """ """
+            
+        if pointsourcemodel=="GaussMoffat2D" and self.pointsourcemodel == "GaussMoffat3D":
+            guesses = self.get_gaussmoffat_guess(lbda)
+                     
+        else:
+            raise NotImplementedError("Only GaussMoffat2D Pointsource model implemented")
+                    
+        if squeeze and len(guesses)==1:
+            return guesses[0]
+        
+        if squeeze and len(guesses)>1:
+            allguess = {}
+            for d in guesses:
+                allguess.update(d)
+            return allguess
+        
+        if not squeeze and len(guesses)>1:
+            allguess = {}
+            for d in guesses:
+                allguess.update(d)
+            return allguess if not as_dataframe else pandas.DataFrame.from_records(allguess).T
+        
+        return guesses if not as_dataframe else pandas.DataFrame.from_records(guesses).T
+        
+    
+    def get_gaussmoffat_guess(self, lbda):
+        """ """
+        lbda = np.atleast_1d(lbda)
+        guesses= []
+        for i,lbda_ in enumerate(lbda):
+            guess = {}
+            # -- ADR        
+            # Position
+            xoff, yoff = self.adr.refract(self.adr_ref[0], self.adr_ref[1], 
+                                          lbda_, 
+                                         unit=spectroadr.IFU_SCALE)
+            guess["xoff"] = xoff
+            guess["yoff"] = yoff
+            # -- PSF
+            # Ellipse
+            guess["a_ps"] = self.pointsource3d.a_ell
+            guess["b_ps"] = self.pointsource3d.b_ell
+            # Profile
+           
+            guess["alpha_ps"] = self.pointsource3d.get_alpha(lbda_)[0] 
+            guess["eta_ps"] = np.average(self.values["eta_ps"], weights=1/self.errors["eta_ps"]**2)
+            # -- Base Parameters
+            for k in ["ampl_ps", "background_ps"]:
+                err = self.errors[k][(self.errors[k]!=0) & (self.errors[k]!=np.NaN)]
+                val = self.values[k][(self.errors[k]!=0) & (self.errors[k]!=np.NaN)]
+                guess[k]  = np.average(val, weights=1/err**2)
+                
+            guesses.append(guess)
+            
+        return guesses
+        
+    # ============= #
+    #  Properties   #
+    # ============= #
+    #
+    # - Input
+    @property
+    def data(self):
+        """ """
+        return self._data
+        
+    @property
+    def values(self):
+        """ """
+        return self._values
+    
+    @property
+    def errors(self):
+        """ """
+        return self._errors
+
+    @property
+    def values_ps(self):
+        """ """
+        return self._values_ps
+    
+    @property
+    def errors_ps(self):
+        """ """
+        return self._errors_ps
+    
+    @property
+    def lbda(self):
+        """ """
+        return self.values["lbda"]
+    
+    #
+    # - Derived
+    @property
+    def adr(self):
+        """ """
+        return self._adr
+    
+    @property
+    def adr_ref(self):
+        """ """
+        return self._adr_ref
+    
+
+    @property
+    def pointsource3d(self):
+        """ """
+        return self._pointsource3d
+    
+    
+    @property
+    def pointsourcemodel(self):
+        """ """
+        if hasattr(self, '_pointsourcemodel'):
+            return self._pointsourcemodel
+        else:
+            return None
