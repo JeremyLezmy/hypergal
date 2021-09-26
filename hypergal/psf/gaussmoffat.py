@@ -205,6 +205,42 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         this.update_parameters(**param3d)
         return this
 
+    def get_beta(self,lbda, b0=1.51, b1=0.22, rho=None):
+        """ 
+        Return Moffat power. Beta is fixed by alpha value such as beta = b1*alpha + b0
+
+        Parameters
+        ----------
+        b0: float
+            Default is 1.51
+
+        b1: float
+            Default is 0.22 
+
+        Returns
+        -------
+        Beta Moffat power
+        """
+        return b0  + self.get_alpha(lbda=lbda, rho=rho) * b1 
+    
+    def get_sigma(self, lbda, sig0=0.38, sig1=0.40, rho=None):
+        """ 
+        Return gaussian radius. Sigma is fixed by alpha value such as sigma = sig1*alpha + sig0
+
+        Parameters
+        ----------
+        sig0: float
+            Default is 0.38
+
+        sig1: float
+            Default is 0.40
+
+        Returns
+        -------
+        Sigma Gaussian radius
+        """
+        return sig0 + self.get_alpha(lbda=lbda, rho=rho)*sig1
+
     
     def get_radial_profile(self, r, lbda):
         """ 
@@ -223,8 +259,8 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         Array of the radial profile at the *r* position and the *lbda* wavelength.
         """
         # Most likely r -> r[:,None]
-        alpha = self.get_alpha()
-        beta  = self.get_beta()
+        alpha = self.get_alpha(lbda)
+        beta  = self.get_beta(lbda)
         sigma = self.get_sigma(lbda)
         eta   = self.get_eta()
         return get_radial_gaussmoffat(r, alpha=alpha, beta=beta,
@@ -234,7 +270,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
     # ---------- #
     # Chromatic  #
     # ---------- #
-    def get_alpha(self, lbda, rho=-0.4):
+    def get_alpha(self, lbda, rho=None):
         """ 
         Chromatic shape parameter for the Moffat radius.\n
         Power law such as alpha = alpharef * (lbda/lbdaref)^rho
@@ -254,7 +290,10 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         """
         alpharef = super().get_alpha()
         if rho is None:
-            rho = self._profile_params['rho']
+            try:
+                rho = self._profile_params['rho']
+            except KeyError:
+                rho = -0.4
             
         return alpharef * (np.atleast_1d(lbda)/self.lbdaref)**rho
 

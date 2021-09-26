@@ -20,9 +20,9 @@ class DaskScene( DaskHyperGal ):
 
 
     @classmethod
-    def compute_targetcubes(cls, name, client, verbose=False, manual_z=None, **kwargs):
+    def compute_targetcubes(cls, name, client, contains=None, verbose=False, manual_z=None, **kwargs):
         """ """
-        cubefiles, radec, redshift = io.get_target_info(name, verbose=True)
+        cubefiles, radec, redshift = io.get_target_info(name, contains=contains, verbose=True)
         this  = cls(client=client)
         if manual_z != None:
             redshift = manual_z
@@ -54,7 +54,7 @@ class DaskScene( DaskHyperGal ):
                            lbda_range=[5000, 9000], nslices=6,
                            filters_fit=["ps1.r", "ps1.i","ps1.z"],
                            psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
-                       split=False, curved_bkgd=False):
+                       split=True, curved_bkgd=True, build_astro=True):
         """ """
         info        = io.parse_filename(cubefile)
         cubeid      = info["sedmid"]
@@ -82,10 +82,16 @@ class DaskScene( DaskHyperGal ):
         #    STEP 1    #
         # ------------ #
         # ---> Build the cutouts, and the calibrated data cube
-        calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(cubefile, apply_byecr=True, radec=radec, spxy=xy_ifu_guess))
+
+        if build_astro and xy_ifu_guess!=None:
+            spxy = xy_ifu_guess
+        else:
+            spxy=None
+            
+        calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(cubefile, apply_byecr=True, radec=radec, spxy=spxy))
         
         
-        source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec, spxy=xy_ifu_guess,
+        source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec, spxy=spxy,
                                                                 binfactor=binfactor,
                                                                 filters=filters,
                                                                 source_filter=source_filter,
@@ -213,6 +219,8 @@ class DaskScene( DaskHyperGal ):
         # ---> Storing <--- # 7
         stored.append(cuberes.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"res") ))
 
+        stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = io.e3dfilename_to_hgspec(cubefile, 'host')) )
+        
         return stored
     #
     #
@@ -517,3 +525,44 @@ class DaskScene( DaskHyperGal ):
                                      filterin=filters, filters_to_use=filters_fit,
                                      psfmodel=psfmodel)
 
+
+    @staticmethod
+    def get_sourcedf(radec, cubefile, client=None):
+        """ """
+        cutout = DaskHyperGal.get_cutout(radec,cubefile, None, ['ps1.r'])
+        sources   = cutout.extract_sources(filter_='ps1.r', thres=35,
+                                                   savefile=None)
+    
+        if client is None:
+            return sources
+        return client.compute(sources).result()
+
+
+    @staticmethod
+    def get_host_spec(sourcedf, coutcube, snmodel, bkgdmodel, datacube, sourcescale=5, lbdarange=[4000,9300], savefile=None):
+
+        hostiso = datacube.get_new( newdata = datacube.data - snmodel.data - bkgdmodel.data)
+        
+        hostobsonly = hostiso.get_extsource_cube(sourcedf, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+
+        flagin = (hostobsonly.lbda>lbdarange[0]) & (hostobsonly.lbda<lbdarange[1])
+
+        spec = delayed(np.nanmean)(hostobsonly.data[flagin].T,axis=0)
+        spec_var = delayed(np.nanmean)(hostobsonly.variance[flagin].T,axis=0)
+        spec_var_ = delayed( np.divide)(spec_var, hostobsonly.lbda[flagin].shape )
+        spec_lbda = hostobsonly.lbda[flagin]
+
+        specfi = delayed(pyifu.spectroscopy.get_spectrum)(spec_lbda, spec, spec_var_, hostobsonly.header)
+        
+        if savefile != None:        
+            if savefile.rsplit('.')[-1]=='txt':
+                asci = True
+            elif savefile.rsplit('.')[-1]=='fits':
+                asci = False
+            specfi = delayed(specfi.writeto)(savefile,  ascii=asci)
+        
+        return(specfi)
+
+        
+
+        

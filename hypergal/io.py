@@ -15,10 +15,10 @@ def e3dfilename_to_wcscalcube(filename):
 def e3dfilename_to_hgspec(filename, which, extension='.txt'):
     """ """
     if which =='host':        
-        return filename.replace(".fits",extension).replace("e3d","spec_hghost")
+        return filename.replace(".fits",extension).replace("e3d","hgspec_host")
     
     if which in ['target','sn']:        
-        return filename.replace(".fits",extension).replace("e3d","spec_hgtarget")
+        return filename.replace(".fits",extension).replace("e3d","hgspec_target")
 
     raise ValueError(f"which can be host, sn or target ; {which} given")
 
@@ -80,7 +80,7 @@ def get_slicefit_datafile(filename, which=None):
 # ============ #
 # Data Access  #
 # ============ #
-def get_target_info(name, verbose=False, client=None):
+def get_target_info(name, contains=None, verbose=False, client=None):
     """ """
     from ztfquery import sedm, fritz
 
@@ -92,8 +92,8 @@ def get_target_info(name, verbose=False, client=None):
         print(f"Target {name} located at {radec} and redshift {redshift}")
 
     squery = sedm.SEDMQuery()
-    cubefiles  = squery.get_target_cubes(name, client=client)
-    astrmfiles = squery.get_target_astrom(name, client=client)
+    cubefiles  = squery.get_target_cubes(name, contains=contains, client=client)
+    astrmfiles = squery.get_target_astrom(name, contains=contains, client=client)
     # Check if all cubes have an astrom
     cubeid = [parse_filename(cube_)["sedmid"] for cube_ in cubefiles]
     astrid = [parse_filename(astr_)["sedmid"] for astr_ in astrmfiles]
