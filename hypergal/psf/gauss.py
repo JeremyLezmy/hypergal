@@ -134,7 +134,7 @@ class Gauss3D( PSF3D, Gauss2D ):
                 from iminuit import cost
                 def model_sigma(lbda, sigmaref, rho):
                     this.update_parameters(**{"sigma":sigmaref, "rho":rho})
-                    return this.get_alpha(lbda)
+                    return this.get_sigma(lbda)
                 
                 c = cost.LeastSquares(lbda, value, variance**0.5, model_sigma)
                 c.loss = "soft_l1"
