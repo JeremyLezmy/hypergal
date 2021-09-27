@@ -178,8 +178,11 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             #   -> Compute weighted mean for non-chromatics parameters
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys(): 
                 value = np.asarray(values[param])
+                flag = (value>3*np.median(value))
+                value = value[~flag]
                 if errors is not None:
                     variance = np.asarray(errors[param])**2
+                    variance = variance[~flag]
                     param3d[param] = np.average(value, weights=1/variance)
                 else:
                     param3d[param] = np.mean(value)
@@ -188,7 +191,10 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Alpha
                 value = np.asarray(values[param])
+                flag = (value>3*np.median(value))
+                value = value[~flag]
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
+                variance = variance[~flag]
 
                 from iminuit import cost
                 def model_alpha(lbda, alpharef, rho):
