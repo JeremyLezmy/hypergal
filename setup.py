@@ -80,7 +80,7 @@ if __name__ == "__main__":
           download_url=DOWNLOAD_URL,
           install_requires=install_requires,
           packages=packages,
-          scripts=["hypergal/scripts/FullProcess.py", "hypergal/script/hypergal.py", "hypergal/script/hypergal.sh" ] ,
+          scripts=["hypergal/scripts/FullProcess.py", "hypergal/script/run_hypergal.py", "hypergal/script/run_hypergal.sh" ] ,
           package_data={'hypergal':['config/cigale.json', 'data/filters/*']},
           include_package_data=True,
           classifiers=[
