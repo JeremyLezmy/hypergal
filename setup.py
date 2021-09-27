@@ -18,7 +18,7 @@ MAINTAINER_EMAIL = 'lezmy@ipnl.in2p3.fr'
 URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
 LICENSE = ''
 DOWNLOAD_URL = 'https://gitlab.in2p3.fr/JLezmy/hypergal'
-VERSION = '1.3.0'
+VERSION = '1.4.0'
 
 try:
     from setuptools import setup, find_packages
@@ -80,7 +80,7 @@ if __name__ == "__main__":
           download_url=DOWNLOAD_URL,
           install_requires=install_requires,
           packages=packages,
-          scripts=["hypergal/scripts/FullProcess.py" ] ,
+          scripts=["hypergal/scripts/FullProcess.py", "hypergal/script/hypergal.py", "hypergal/script/hypergal.sh" ] ,
           package_data={'hypergal':['config/cigale.json', 'data/filters/*']},
           include_package_data=True,
           classifiers=[

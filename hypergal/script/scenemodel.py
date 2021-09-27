@@ -20,14 +20,20 @@ class DaskScene( DaskHyperGal ):
 
 
     @classmethod
-    def compute_targetcubes(cls, name, client, contains=None, verbose=False, manual_z=None, **kwargs):
+    def compute_targetcubes(cls, name, client, contains=None, verbose=False, ignore_astrom=True, manual_radec=None, manual_z=None, **kwargs):
         """ """
-        cubefiles, radec, redshift = io.get_target_info(name, contains=contains, verbose=True)
+        cubefiles, radec, redshift = io.get_target_info(name, contains=contains, ignore_astrom=ignore_astrom, verbose=True)
         this  = cls(client=client)
         if manual_z != None:
             redshift = manual_z
         elif redshift==None:
-            redshift=0.01        
+            redshift=0.01
+
+        if manual_radec != None:
+            radec = radec
+        elif radec==None:
+            raise ValueError('No available radec from datas, you must manually set it to rebuild astrometry') 
+            
         storings = [this.compute_single(cubefile_, radec, redshift, **kwargs)
                         for cubefile_ in cubefiles]
         return storings
@@ -205,6 +211,8 @@ class DaskScene( DaskHyperGal ):
             stored.append(snmodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"snmodel") ))
 
             stored.append(bkgdmodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"bkgdmodel") ))
+
+            stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = io.e3dfilename_to_hgspec(cubefile, 'host')) )
         
             return stored
             
@@ -218,8 +226,6 @@ class DaskScene( DaskHyperGal ):
         stored.append(cubemodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"model") ))
         # ---> Storing <--- # 7
         stored.append(cuberes.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"res") ))
-
-        stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = io.e3dfilename_to_hgspec(cubefile, 'host')) )
         
         return stored
     #

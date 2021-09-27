@@ -80,7 +80,7 @@ def get_slicefit_datafile(filename, which=None):
 # ============ #
 # Data Access  #
 # ============ #
-def get_target_info(name, contains=None, verbose=False, client=None):
+def get_target_info(name, contains=None, ignore_astrom=True, verbose=False, client=None):
     """ """
     from ztfquery import sedm, fritz
 
@@ -94,6 +94,9 @@ def get_target_info(name, contains=None, verbose=False, client=None):
     squery = sedm.SEDMQuery()
     cubefiles  = squery.get_target_cubes(name, contains=contains, client=client)
     astrmfiles = squery.get_target_astrom(name, contains=contains, client=client)
+
+    if ignore_astrom:
+        return np.unique(cubefiles), radec, redshift
     # Check if all cubes have an astrom
     cubeid = [parse_filename(cube_)["sedmid"] for cube_ in cubefiles]
     astrid = [parse_filename(astr_)["sedmid"] for astr_ in astrmfiles]
