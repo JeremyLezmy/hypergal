@@ -46,23 +46,23 @@ if __name__ == '__main__':
         
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-w', "--workers", type=int, nargs=1, default=100, help="Scale the cluster to N workers. Default is 100.")
+    parser.add_argument('-w', "--workers", type=int, default=100, help="Scale the cluster to N workers. Default is 100.")
     
-    parser.add_argument('-t', "--target", type=str, nargs=1, help="Target to process. Might be target name (ex ZTF21aamokak), or a .txt file with list of cube filename.")
+    parser.add_argument('-t', "--target", type=str, help="Target to process. Might be target name (ex ZTF21aamokak), or a .txt file with list of cube filename.")
 
     parser.add_argument("--ignore_astrom", type=str2bool, nargs='?', const=True, default=True, help="If True, still process if astrometry isn't available. In that case, --radec and --xy are mandatory.")
     
-    parser.add_argument( "--contains", type=str, nargs=1, default=None, help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
+    parser.add_argument( "--contains", type=str, default=None, help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
     
     parser.add_argument("--radec", type=float, nargs=2, default=None, help="If no Astrometry, you have to give the radec information. Default is None.")
     
-    parser.add_argument("--redshift", type=float, nargs=1, default=None, help="If known, you can manually set the redshift. Otherwise the one from Fritz will be used. Default is None.")
+    parser.add_argument("--redshift", type=float, default=None, help="If known, you can manually set the redshift. Otherwise the one from Fritz will be used. Default is None.")
     
     parser.add_argument("--xy", type=float, nargs=2, default=None, help=" You can manually set the xy position of the target in the SEDM IFU. Mandatory if no astrometry available. Default is None.")
 
     parser.add_argument("--lbdarange", type=float, nargs=2, default=[5000,8500], help="Wavelength range to consider for the fit process. Default is [5000, 8500] AA")
 
-    parser.add_argument("--nslices", type=int, nargs=1, default=6, help="Number of metaslices to consider for the fit process. Default is 6.")
+    parser.add_argument("--nslices", type=int, default=6, help="Number of metaslices to consider for the fit process. Default is 6.")
     
     parser.add_argument("--build_astro", type=str2bool, nargs='?', const=True, default=False, help="If you want (need) to build astrometry, must be True. Default is False.")
     
