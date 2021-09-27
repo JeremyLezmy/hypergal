@@ -166,6 +166,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         """
         from scipy.optimize import minimize
         from iminuit import Minuit
+        from astropy.stats import sigma_clipping
         this = cls(**kwargs)
         
         param3d = {}
@@ -178,11 +179,11 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             #   -> Compute weighted mean for non-chromatics parameters
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys(): 
                 value = np.asarray(values[param])
-                flag = (value>3*np.median(value))
-                value = value[~flag]
+                flag = sigma_clipping.sigma_clip(value, sigma=2).mask
+                value = value[~flag].copy()
                 if errors is not None:
                     variance = np.asarray(errors[param])**2
-                    variance = variance[~flag]
+                    variance = variance[~flag].copy()
                     param3d[param] = np.average(value, weights=1/variance)
                 else:
                     param3d[param] = np.mean(value)
@@ -191,10 +192,10 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Alpha
                 value = np.asarray(values[param])
-                flag = (value>3*np.median(value))
-                value = value[~flag]
+                flag = sigma_clipping.sigma_clip(value, sigma=2).mask
+                value = value[~flag].copy()
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
-                variance = variance[~flag]
+                variance = variance[~flag].copy()
 
                 from iminuit import cost
                 def model_alpha(lbda, alpharef, rho):
