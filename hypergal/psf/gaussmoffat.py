@@ -181,6 +181,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
                 value = np.asarray(values[param])
                 flag = sigma_clipping.sigma_clip(value, sigma=2).mask
                 value = value[~flag].copy()
+                lbda = lbda[~flag].copy()
                 if errors is not None:
                     variance = np.asarray(errors[param])**2
                     variance = variance[~flag].copy()
@@ -194,6 +195,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
                 value = np.asarray(values[param])
                 flag = sigma_clipping.sigma_clip(value, sigma=2).mask
                 value = value[~flag].copy()
+                lbda = lbda[~flag].copy()
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
                 variance = variance[~flag].copy()
 
