@@ -10,6 +10,14 @@ def limit_numpy(nthreads=4):
     os.environ["VECLIB_MAXIMUM_THREADS"] = threads
 limit_numpy(4)
 
+import os
+import sys
+import datetime
+
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 import numpy as np
 import dask
 from dask_jobqueue import SGECluster
