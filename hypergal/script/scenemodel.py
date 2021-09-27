@@ -119,17 +119,19 @@ class DaskScene( DaskHyperGal ):
         #   Step 1.1 Cutouts
         #
         # ---> fit position and PSF parameters from the cutouts
-        bestfit_cout =  self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
+
+        if prefit_photo:
+            bestfit_cout =  self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
                                                 saveplot_structure = plotbase+"cout_fit_",
                                                 filterin=filters, filters_to_use=filters_fit,
                                                  psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess, onlyvalid=True)
 
-        # ---> Storing <--- # 2
-        stored.append( bestfit_cout.to_hdf(*io.get_slicefit_datafile(cubefile, "cutout")) )
+            # ---> Storing <--- # 2
+            stored.append( bestfit_cout.to_hdf(*io.get_slicefit_datafile(cubefile, "cutout")) )
         
-        # ---> Get the object for future guesses || Guesser
+            # ---> Get the object for future guesses || Guesser
 
-        if prefit_photo:
+        
             cout_ms_param = delayed(MultiSliceParameters)(bestfit_cout, cubefile=cubefile, 
                                                           psfmodel=psfmodel.replace("2D","3D"), pointsourcemodel='GaussMoffat3D',
                                                           load_adr=True, load_psf=True, load_pointsource=True)

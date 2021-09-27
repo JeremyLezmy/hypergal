@@ -106,6 +106,7 @@ class Gauss3D( PSF3D, Gauss2D ):
         Gauss3D
         """
         from scipy.optimize import minimize
+        from iminuit import Minuit
         this = cls(**kwargs)
         
         param3d = {}
@@ -129,19 +130,32 @@ class Gauss3D( PSF3D, Gauss2D ):
                 # Sigma
                 value = np.asarray(values[param])
                 variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
-                       
-                def get_chromparam(arr_):
-                    """ function to be minimizing """
-                    sigma_, rho_ = arr_
-                    this.update_parameters(**{"sigma":sigma_, "rho":rho_})
-                    model = this.get_sigma(lbda) # rho has been updated already
-                    chi2 = np.sum( (value-model)**2/variance )
-                    return chi2
 
-                fit_output= minimize( get_chromparam, np.array([1,1]) )
+                from iminuit import cost
+                def model_sigma(lbda, sigmaref, rho):
+                    this.update_parameters(**{"sigma":sigmaref, "rho":rho})
+                    return this.get_alpha(lbda)
                 
-                param3d["sigma"] = fit_output.x[0]
-                param3d["rho"]   = fit_output.x[1]
+                c = cost.LeastSquares(lbda, value, variance**0.5, model_sigma)
+                c.loss = "soft_l1"
+                m = Minuit(c, sigmaref=2, rho=-0.4)
+                migout = m.migrad()
+                       
+                #def get_chromparam(arr_):
+                #    """ function to be minimizing """
+                #    sigma_, rho_ = arr_
+                #    this.update_parameters(**{"sigma":sigma_, "rho":rho_})
+                #    model = this.get_sigma(lbda) # rho has been updated already
+                #    chi2 = np.sum( (value-model)**2/variance )
+                #    return chi2
+
+                #fit_output= minimize( get_chromparam, np.array([1,1]) )
+                
+                #param3d["sigma"] = fit_output.x[0]
+                #param3d["rho"]   = fit_output.x[1]
+                
+                param3d["sigma"] = m.values[0]
+                param3d["rho"]   = m.values[1]
         
         this.update_parameters(**param3d)
         return this
