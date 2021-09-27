@@ -65,7 +65,7 @@ if __name__ == "__main__":
         print(packages)
     else:
         # This should be updated if new submodules are added
-        packages = ['hypergal', 'hypergal/scripts','hypergal/photometry','hypergal/spectroscopy','hypergal/utils','hypergal/script' ]
+        packages = ['hypergal', 'hypergal/scripts','hypergal/photometry','hypergal/spectroscopy', 'hypergal/psf', 'hypergal/utils','hypergal/script' ]
 
     setup(name=DISTNAME,
           author=AUTHOR,
