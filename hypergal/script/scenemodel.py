@@ -58,7 +58,7 @@ class DaskScene( DaskHyperGal ):
                            source_filter="ps1.r", source_thres=2,
                            scale_cout=15, scale_sedm=10, rmtarget=2,
                            lbda_range=[5000, 9000], nslices=6,
-                           filters_fit=["ps1.r", "ps1.i","ps1.z"],
+                           filters_fit=["ps1.g", "ps1.r", "ps1.i","ps1.z"],
                            psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        split=True, curved_bkgd=True, build_astro=True):
         """ """
