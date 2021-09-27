@@ -14,6 +14,14 @@ def get_adr(header_or_filename, values, lbda, errors=None):
     else:
         adr = ADR.from_header(header_or_filename)
 
+    xpos = values['xoff']
+    ypos = values['yoff']
+    if errors is not None:
+        xpos_err = errors['xoff']
+        ypos_err = errors['yoff']
+    else: 
+        xpos_err, ypos_err = None, None
+        
     if xpos is None or ypos is None or lbda is None:
         return adr
 
@@ -36,7 +44,7 @@ def slicefitparam_to_adr(header_of_filename, dataframe, is_cutout=True):
     else:
         lbda = dataframe.xs("lbda", level=1)
                 
-    return spectroadr.get_adr(header_of_filename,
+    return get_adr(header_of_filename,
                              xoff=xoff["values"].values, 
                              yoff=yoff["values"].values, 
                              lbda=np.asarray(lbda), 
