@@ -263,7 +263,7 @@ class SceneFitter( object ):
     # Class Method   #
     # ============== #
     @classmethod
-    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice",curved_bkgd=False, pointsource=None,
+    def fit_slices_projection(cls, slice_in, slice_comp, psf, whichscene="HostSlice",curved_bkgd=True, pointsource=None,
                                   xy_in=None, xy_comp=None, 
                                   fix_params=["scale","rotation"], debug=False,
                                   guess=None, limit=None, error=None, use_priors=True,

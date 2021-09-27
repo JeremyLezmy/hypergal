@@ -60,6 +60,7 @@ class DaskScene( DaskHyperGal ):
                            lbda_range=[5000, 9000], nslices=6,
                            filters_fit=["ps1.g", "ps1.r", "ps1.i","ps1.z"],
                            psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
+                       prefit_photo = True,
                        split=True, curved_bkgd=True, build_astro=True):
         """ """
         info        = io.parse_filename(cubefile)
@@ -127,10 +128,13 @@ class DaskScene( DaskHyperGal ):
         stored.append( bestfit_cout.to_hdf(*io.get_slicefit_datafile(cubefile, "cutout")) )
         
         # ---> Get the object for future guesses || Guesser
-        cout_ms_param = delayed(MultiSliceParameters)(bestfit_cout, cubefile=cubefile, 
+
+        if prefit_photo:
+            cout_ms_param = delayed(MultiSliceParameters)(bestfit_cout, cubefile=cubefile, 
                                                           psfmodel=psfmodel.replace("2D","3D"), pointsourcemodel='GaussMoffat3D',
                                                           load_adr=True, load_psf=True, load_pointsource=True)
-        
+        else:
+            cout_ms_param=None
         #
         #   Step 1.2 Intrinsic Cube
         #
