@@ -170,6 +170,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         this = cls(**kwargs)
         
         param3d = {}
+        mainlbda = lbda.copy()
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
         #   - fit the instance profile if it is.
@@ -178,13 +179,13 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             # Non chromatic parameters | for instance a and b
             #   -> Compute weighted mean for non-chromatics parameters
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys(): 
-                value = np.asarray(values[param])
-                flag = sigma_clipping.sigma_clip(value, sigma=2).mask
-                value = value[~flag].copy()
-                lbda = lbda[~flag].copy()
+                value_ = np.asarray(values[param])
+                flag = sigma_clipping.sigma_clip(value_, sigma=2).mask
+                value = value_[~flag].copy()
+                
                 if errors is not None:
-                    variance = np.asarray(errors[param])**2
-                    variance = variance[~flag].copy()
+                    variance_ = np.asarray(errors[param])**2
+                    variance = variance_[~flag].copy()
                     param3d[param] = np.average(value, weights=1/variance)
                 else:
                     param3d[param] = np.mean(value)
@@ -192,12 +193,12 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             # Non chromatic parameters
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Alpha
-                value = np.asarray(values[param])
-                flag = sigma_clipping.sigma_clip(value, sigma=2).mask
-                value = value[~flag].copy()
-                lbda = lbda[~flag].copy()
-                variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value) )
-                variance = variance[~flag].copy()
+                value_ = np.asarray(values[param])
+                flag = sigma_clipping.sigma_clip(value_, sigma=2).mask
+                value = value_[~flag].copy()
+                lbda = mainlbda[~flag].copy()
+                variance_ = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )
+                variance = variance_[~flag].copy()
 
                 from iminuit import cost
                 def model_alpha(lbda, alpharef, rho):
