@@ -16,6 +16,7 @@ from pysedm.sedm import SEDM_LBDA
 import pysedm
 from ..spectroscopy import adr as spectroadr
 from dask import delayed
+from pysedm import fluxcalibration
 
 def get_and_dw_cubefile_from_whatdata(overwrite=False, download=True, client=None, **kwargs):
         

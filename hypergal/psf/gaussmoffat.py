@@ -145,7 +145,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
     #  Methods      #
     # ============= #
     @classmethod
-    def fit_from_values(cls, values, lbda, errors=None, **kwargs):
+    def fit_from_values(cls, values, lbda, errors=None, savefig=None, **kwargs):
         """ 
 
         Parameters
@@ -181,7 +181,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
                 if param=='eta':
                     value_ = np.asarray(values[param])
-                    flag = (value_ < 1e-5) & (value_ > 15)
+                    flag = np.logical_or(value_ < 1e-5, value_ > 15)
                     value = value_[~flag].copy()
                     lbda = mainlbda[~flag].copy()
                     variance_ = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )
@@ -203,7 +203,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Alpha
                 value_ = np.asarray(values[param])
-                flag = (value_ > 7) & (value_ < 0.9) ### alpha > 7 means fwhm>4" alpha<0.9 means fwhm<1"
+                flag = np.logical_or(value_ > 7, value_ < 0.9) ### alpha > 7 means fwhm>4" alpha<0.9 means fwhm<1"
                 value = value_[~flag].copy()
                 lbda = mainlbda[~flag].copy()
                 variance_ = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )
@@ -235,6 +235,8 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
                 param3d["rho"]   = m.values[1]
         
         this.update_parameters(**param3d)
+        if savefig is not None:
+            this.show_chromfit( values, mainlbda, errors, savefig )
         return this
 
     def get_beta(self,lbda, b0=1.51, b1=0.22, rho=None):
@@ -338,3 +340,46 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         """
         return {**super().guess_parameters(), **{"rho":-0.4}}
     
+
+    def show_chromfit(self, values, lbda, errors=None, savefig=None):
+        
+        import matplotlib.pyplot as plt
+        nparm = len([k for k in self.parameters if k in values.keys()] )
+        if nparm%2 ==0:
+            fig,axs = plt.subplots(2, int(nparm/2), figsize=(15,10), sharex=True )
+        else:
+            fig,axs = plt.subplots(2, int(nparm/2)+1, figsize=(15,10), sharex=True )
+            
+        #for param in self.PARAMETER_NAMES:            
+            
+        for (ax, param) in zip(axs.flat, self.PARAMETER_NAMES):
+            if param in self.CHROMATIC_PARAMETERS and param in values.keys(): 
+                ax.scatter(lbda, values[param], color='k', label='Metaslices fitted values')
+                ax.plot( np.linspace( np.min(lbda)-100, np.max(lbda)+100, 100), self.get_alpha(np.linspace( np.min(lbda)-100, np.max(lbda)+100, 100)), color='r', 
+                        label=fr'Chromatic Fit (power law) $\alpha(\lambda)={self.parameters["alpha"]:.2f}\left(\frac{{\lambda}}{{{self.lbdaref}}}\right)^{{{self.parameters["rho"]:.2f}}}$')
+                if errors[param] is not None:
+                    ax.errorbar( lbda, values[param], errors[param], fmt='none', color='k')
+            elif param not in self.CHROMATIC_PARAMETERS and param in values.keys():
+                ax.scatter(lbda, values[param], color='k', label='Metaslices fitted values')
+                ax.hlines(self.parameters[param],np.min(lbda)-100, np.max(lbda)+100, color='r', label=fr'Chromatic Fit (constant) {param}={self.parameters[param]:.3f}')
+                if errors[param] is not None:
+                    ax.errorbar( lbda, values[param], errors[param], fmt='none', color='k')
+
+            ax.set_xlabel(r'$\lambda(\AA)$', fontsize=13)
+            if param=='alpha':
+                ax.set_ylabel(r'$\alpha (\lambda)$', fontsize=13)
+                ax.set_ylim(0.5, np.min([8, np.max(values[param])]))
+                
+            elif param=='eta':
+                ax.set_ylabel(r'$\eta (\lambda)$', fontsize=13)
+                ax.set_ylim(-1, np.min([8, np.max(values[param])]))
+            elif param=='sigma':
+                ax.set_ylabel(r'$\sigma (\lambda)$', fontsize=13)
+            else:
+                ax.set_ylabel(param + r' ($\lambda$)', fontsize=13)
+            ax.tick_params(axis='both', labelsize=13)
+            ax.legend( fontsize=11)
+            
+        fig.suptitle('3D fit of Chromatic parameters', fontsize=16, fontweight="bold",y=0.99)
+        if savefig is not None:
+            fig.savefig(savefig)
