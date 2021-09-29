@@ -165,7 +165,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         Gauss3D
         """
         from scipy.optimize import minimize
-        from iminuit import Minuit
+        from iminuit import Minuit, cost
         from astropy.stats import sigma_clipping
         this = cls(**kwargs)
         
@@ -178,29 +178,37 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             
             # Non chromatic parameters | for instance a and b
             #   -> Compute weighted mean for non-chromatics parameters
-            if param not in this.CHROMATIC_PARAMETERS and param in values.keys(): 
-                value_ = np.asarray(values[param])
-                flag = sigma_clipping.sigma_clip(value_, sigma=2).mask
-                value = value_[~flag].copy()
-                
-                if errors is not None:
-                    variance_ = np.asarray(errors[param])**2
+            if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
+                if param=='eta':
+                    value_ = np.asarray(values[param])
+                    flag = (value_ < 1e-5) & (value_ > 15)
+                    value = value_[~flag].copy()
+                    lbda = mainlbda[~flag].copy()
+                    variance_ = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )
                     variance = variance_[~flag].copy()
-                    param3d[param] = np.average(value, weights=1/variance)
-                else:
-                    param3d[param] = np.mean(value)
+                else :
+                    value = np.asarray(values[param])
+                    variance = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )
+                    lbda = mainlbda.copy()
+                def model_cst(lbda, cst): 
+                    return np.tile(cst, len(lbda))
+
+                c = cost.LeastSquares(lbda, value, variance**0.5, model_cst)
+                c.loss = "soft_l1"
+                m = Minuit(c, cst=0)
+                migout = m.migrad()
+                param3d[param] = m.values[0]
                 
             # Non chromatic parameters
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():   ###If param is chromatic
                 # Alpha
                 value_ = np.asarray(values[param])
-                flag = sigma_clipping.sigma_clip(value_, sigma=2).mask
+                flag = (value_ > 7) & (value_ < 0.9) ### alpha > 7 means fwhm>4" alpha<0.9 means fwhm<1"
                 value = value_[~flag].copy()
                 lbda = mainlbda[~flag].copy()
                 variance_ = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )
                 variance = variance_[~flag].copy()
 
-                from iminuit import cost
                 def model_alpha(lbda, alpharef, rho):
                     this.update_parameters(**{"alpha":alpharef, "rho":rho})
                     return this.get_alpha(lbda)
