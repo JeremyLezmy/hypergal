@@ -145,7 +145,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
     #  Methods      #
     # ============= #
     @classmethod
-    def fit_from_values(cls, values, lbda, errors=None, savefig=None, **kwargs):
+    def fit_from_values(cls, values, lbda, errors=None, saveplot=None, **kwargs):
         """ 
 
         Parameters
@@ -235,8 +235,8 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
                 param3d["rho"]   = m.values[1]
         
         this.update_parameters(**param3d)
-        if savefig is not None:
-            this.show_chromfit( values, mainlbda, errors, savefig )
+        if saveplot is not None:
+            this.show_chromfit( values, mainlbda, errors, saveplot )
         return this
 
     def get_beta(self,lbda, b0=1.51, b1=0.22, rho=None):
@@ -341,7 +341,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
         return {**super().guess_parameters(), **{"rho":-0.4}}
     
 
-    def show_chromfit(self, values, lbda, errors=None, savefig=None):
+    def show_chromfit(self, values, lbda, errors=None, saveplot=None):
         
         import matplotlib.pyplot as plt
         nparm = len([k for k in self.parameters if k in values.keys()] )
@@ -381,5 +381,5 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             ax.legend( fontsize=11)
             
         fig.suptitle('3D fit of Chromatic parameters', fontsize=16, fontweight="bold",y=0.99)
-        if savefig is not None:
-            fig.savefig(savefig)
+        if saveplot is not None:
+            fig.savefig(saveplot)

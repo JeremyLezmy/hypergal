@@ -953,7 +953,7 @@ class MultiSliceParameters():
     """ """
     def __init__(self, dataframe, cubefile=None, 
                  psfmodel="Gauss3D", pointsourcemodel='GaussMoffat3D',
-                 load_adr=False, load_psf=False, load_pointsource=False, saveplot_adr=None):
+                 load_adr=False, load_psf=False, load_pointsource=False, saveplot_adr=None, saveplot_pointsource=None):
         """ """
         
         self.set_data(dataframe)
@@ -965,7 +965,7 @@ class MultiSliceParameters():
             self.load_psf(psfmodel=psfmodel)
             
         if load_pointsource:
-            self.load_pointsource(pointsourcemodel=pointsourcemodel)
+            self.load_pointsource(pointsourcemodel=pointsourcemodel, saveplot=saveplot_pointsource)
         
     @classmethod
     def read_hdf(cls, filename, key, 
@@ -1018,9 +1018,9 @@ class MultiSliceParameters():
         self._psf3d = getattr(psf.gauss,psfmodel).fit_from_values(self.values, self.lbda, errors=self.errors)
         self._psfmodel = psfmodel
         
-    def load_pointsource(self, pointsourcemodel="GaussMoffat3D"):
+    def load_pointsource(self, pointsourcemodel="GaussMoffat3D", saveplot=None):
         """ """
-        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values_ps, self.lbda, errors=self.errors_ps)
+        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values_ps, self.lbda, errors=self.errors_ps, saveplot=saveplot)
         self._pointsourcemodel = pointsourcemodel
         
     # -------- #
