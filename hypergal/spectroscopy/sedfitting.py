@@ -277,6 +277,8 @@ class Cigale(SEDFitter):
 
         """
         import pandas
+
+        self._cubeouts = cubeouts
         try:
             bands = [cubeouts.header[f"FILTER{i}"] for i in range(len(cubeouts.data))]
         except:
@@ -462,7 +464,9 @@ class Cigale(SEDFitter):
         newflux = convolve(f_hres, kerbox, boundary='extend', normalize_kernel=True)[::res]
         return pandas.DataFrame({"wavelength": lbda, "flux": newflux})
 
-    def get_sample_spectra(self, bestmodel_dir=None, lbda_sample=None, interp_kind='linear', res=10, apply_sedm_lsf=True, client=None):
+    def get_sample_spectra(self, bestmodel_dir=None, lbda_sample=None, interp_kind='linear',
+                           res=10, apply_sedm_lsf=True, client=None,
+                           saveplot_rmspull=None, saveplot_intcube=None):
         """
         Get spectra fitted by Cigale in the wavelength space of your choice.
 
@@ -544,16 +548,203 @@ class Cigale(SEDFitter):
 
                 ss = da.stack(spd)
                 newd = client.compute(ss).result().squeeze()
+
+                if saveplot_rmspull is not None:
+                    data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
+                    rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
+                    self.show_pull_rms_map(rms, pull, saveplot_rmspull)
+                    intcube = self.cubeouts.get_new(newdata=newd.T, newlbda=lbda_sample, newvariance="None")
+                    self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
                 return newd.T, lbda_sample
 
             for id_ in range(newdatas.shape[0]):
 
                 newdatas[id_, :] = utils.gauss_convolve_variable_width(newdatas[id_][None, ::], sig=sig, prec=100.)
+                if saveplot_rmspull is not None:
+                    data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
+                    rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
+                    self.show_pull_rms_map(rms, pull, saveplot_rmspull)
+                    intcube = self.cubeouts.get_new(newdata=newdatas.T, newlbda=lbda_sample, newvariance="None")
+                    self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
             return newdatas.T, lbda_sample
-
+        
+        if saveplot_rmspull is not None:
+            data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
+            rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
+            self.show_pull_rms_map(rms, pull, saveplot_rmspull)
+            intcube = self.cubeouts.get_new(newdata=np.asarray(data).T, newlbda=lbda_sample, newvariance="None")
+            self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
         return np.asarray(data).T, lbda_sample
 
         ####### Miss Plots ######
+
+
+    @staticmethod
+    def get_data_inout(directory):
+
+        file_in = fits.open(os.path.join(directory, 'observations.fits'))
+        file_out = fits.open(os.path.join(directory, 'results.fits'))
+
+        data_in = Table(file_in[1].data)
+        data_out = Table(file_out[1].data)
+
+        return data_in, data_out
+
+    @staticmethod
+    def get_rms_pull_df(data_in, data_out, idx):
+
+        # Getting the filter names used with these data
+        filterlist = data_in.colnames
+        del filterlist[0:2]  # Remove id and redshift
+        del filterlist[1::2]  # Remove *_err
+
+        rms_df = pandas.DataFrame(columns=filterlist + ['Total'])
+        pull_df = pandas.DataFrame(columns=filterlist + ['Total'])
+
+        col_best_fit = [f'best.{i}' for i in filterlist]
+        filtererrlist = [f'{i}_err' for i in filterlist]
+
+        sni = 0
+        for idx in idx:
+
+            if idx in np.array(data_in['id']):
+
+                filt_res = list((np.array(list(data_out[col_best_fit][sni])) - np.array(list(data_in[filterlist][sni])))/(np.array(list(data_in[filterlist][sni]))))
+                tot_rms = np.sqrt((1/len(filt_res)) * np.nansum(np.array(filt_res)**2))
+
+                filt_pull = list((np.array(list(data_out[col_best_fit][sni])) - np.array(list(data_in[filterlist][sni])))/(np.array(list(data_in[filtererrlist][sni]))))
+                tot_pull = np.sqrt((1/len(filt_pull)) * np.nansum(np.array(filt_pull)**2))
+
+                rms_df.loc[idx] = filt_res + [tot_rms]
+                pull_df.loc[idx] = filt_pull + [tot_pull]
+                sni += 1
+
+            else :
+                rms_df.loc[idx] = [np.nan]*len(rms_df.columns)
+                pull_df.loc[idx] = [np.nan]*len(pull_df.columns)
+        return rms_df, pull_df
+
+
+    @staticmethod
+    def show_pull_rms_map(rms_df, pull_df, saveplot=None,
+                          pixel_bin=2, hist=False, arcsec_unit=False,
+                          px_in_asrcsec=0.25, vmin=5, vmax=95, pull=True, dpi=100):
+
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(15, 10), dpi=dpi, sharex=not hist, sharey=not hist,constrained_layout=True)
+
+        filterlist = rms_df.iloc[:, 0:-1].copy()
+        resmin = np.nanpercentile(filterlist, vmin)
+        resmax = np.nanpercentile(filterlist, vmax)
+        resbound = abs(max(abs(resmin), abs(resmax)))
+
+        filterpulllist = pull_df.iloc[:, 0:-1].copy()
+        pullmin = -5
+        pullmax = 5
+        pullbound = abs(max(abs(pullmin), abs(pullmax)))
+
+
+        idx_thre  = rms_df[~np.isnan(rms_df['Total'])].index.values
+        shape = int(138 + pixel_bin)
+
+        if arcsec_unit:
+            extent = [0,shape*px_in_asrcsec, 0, shape*px_in_asrcsec]
+            centered_extent = [-shape*px_in_asrcsec/2, shape*px_in_asrcsec/2, -shape*px_in_asrcsec/2 , shape*px_in_asrcsec/2]
+            unit = 'arcsec'
+        else :
+            extent = [-0.5,shape-0.5, -0.5, shape-0.5]
+            centered_extent = [-shape/2, shape/2, -shape/2, shape/2]
+            unit = 'px'
+        for ax, filter in zip(axs.flat,filterlist):
+            mean_rms = "{:6.4f}".format(np.sqrt( (1/len( idx_thre)) * np.nansum(filterlist[filter].values**2) ) )
+            mean_pull = "{:6.4f}".format(np.sqrt( (1/len( idx_thre)) * np.nansum(filterpulllist[filter].values**2) ) )
+            if hist:
+                data_to_plot = filterlist[filter].values
+                ax.hist(data_to_plot, bins=30, range=(resmin, resmax))
+                ax.set(title=filter+' RMS='+mean_rms, xlabel='Residuals')
+
+            if pull:
+                imres=ax.imshow( np.rot90(np.reshape(pull_df[filter].values,(int(shape/pixel_bin), int(shape/pixel_bin)))), vmin=-2, vmax=2, cmap='coolwarm',origin='upper',extent = extent, aspect = 1)
+                ax.set(title=filter, xlabel='x ('+unit+')', ylabel='y ( '+unit+')')
+                ax.set_xlabel('x ( '+unit+')', fontsize=15)
+                ax.set_ylabel('y ( '+unit+')', fontsize=15)
+                ax.tick_params(labelsize=15)
+                ax.set_xticks( ax.get_yticks())
+                ax.set_title(filter, fontsize=15)
+                ax.label_outer()
+                ax.set_aspect('equal')
+
+            else:
+                imres=ax.imshow( np.rot90(np.reshape(rms_df[filter].values,(int(shape/pixel_bin), int(shape/pixel_bin)))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='upper',extent = extent, aspect = 1)
+                ax.set(title=filter+' RMS='+mean_rms, xlabel='x ( '+unit+')', ylabel='y ( '+unit+')')
+                ax.label_outer()
+
+        mean_rms = "{:6.4f}".format( np.sqrt( (1/len( idx_thre)) * np.nansum(rms_df['Total'].values**2) ) )
+        mean_pull = "{:6.4f}".format( np.sqrt( (1/len( idx_thre)) * np.nansum(pull_df['Total'].values**2) ) )
+        if hist:
+            data_to_plot = rms_df['Total'].values
+            axs[-1,-1].hist(data_to_plot, bins=30)
+            axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
+
+        else:
+            imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape/pixel_bin), int(shape/pixel_bin)))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
+            axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x ('+unit+')')
+            axs[-1,-1].set_xlabel('x ('+unit+')', fontsize=15)
+            axs[-1,-1].tick_params(labelsize=15)
+            axs[-1,-1].set_title(fr' $ \sum $ filters RMS=' + mean_rms, fontsize=15)
+            axs[-1,-1].set_aspect('equal')
+            cbar_res = fig.colorbar(imres, ax=axs[0].ravel().tolist(), extend='both', label='Pull', aspect=50)
+            cbar_rms = fig.colorbar(imrms, ax=axs[1].ravel().tolist(), extend='max', label='Spectral RMS', aspect=50)
+            cbar_res.set_label('Pull', fontsize=13)
+            cbar_rms.set_label('Spectral RMS', fontsize=13)
+            cbar_rms.ax.tick_params(labelsize=13)
+            cbar_res.ax.tick_params(labelsize=13)
+            cbar_rms.set_label('Spectral RMS', labelpad=10)
+
+        if saveplot is not None:
+            fig.savefig(saveplot, dpi='figure', bbox_inches='tight')
+
+
+    @staticmethod
+    def show_intcube( intcube, lbda_bb, data_in, data_out, saveplot=None):
+
+        from hypergal.spectroscopy import utils
+        import matplotlib.pyplot as plt 
+        filterlist = data_in.colnames
+
+        del filterlist[0:2] #Remove id and redshift
+        del filterlist[1::2] #Remove *_err
+        filtererrlist = [f'{i}_err'  for i in filterlist]
+        col_best_fit = [f'best.{i}'  for i in filterlist]
+        filtererrlist = [f'{i}_err'  for i in filterlist]
+        bestfit_integrated = utils.flux_mjy_to_aa(data_out[col_best_fit].to_pandas(),lbda_bb).sum().values/len(intcube.indexes)
+        val_in_integrated = utils.flux_mjy_to_aa(data_in[filterlist].to_pandas(),lbda_bb).sum().values/len(intcube.indexes)
+        err_in_integrated = np.sqrt(np.sum(utils.flux_mjy_to_aa(data_in[filtererrlist].to_pandas(),lbda_bb).values**2, axis=0))/len(intcube.indexes)
+
+        fig = plt.figure(figsize=(12,4), dpi=150)
+        gs = fig.add_gridspec(1, 3)
+        axim = fig.add_subplot(gs[0, 2])
+        axspec = fig.add_subplot(gs[0, 0:2])
+
+
+        axspec.plot( intcube.lbda, np.mean(intcube.data, axis=1),label="Mean spectrum")
+        #ax.plot(cutouts.lbda,np.mean(intcube.data, axis=0)[~ (np.mean(intcube.data, axis=0)==0)])
+        axspec.scatter(lbda_bb, bestfit_integrated, color='r',s=49, label='Photo. cigale outputs', zorder=10)
+        axspec.scatter(lbda_bb, val_in_integrated, s=49,  facecolors='none',edgecolor='b', label='Photo. PS1 inputs', zorder=11 )
+        axspec.errorbar(lbda_bb, val_in_integrated, err_in_integrated, fmt='none', color='b', zorder=12)
+        axspec.legend()
+        axspec.set_xlabel(r'Wavelength($\AA$)')
+        axspec.set_ylabel(r'Flux ($erg.s^{-1}.cm^{-2}.\AA^{-1}$)')
+
+        intcube._display_im_(axim=axim, rasterized=False)
+        #ax.scatter(x,y, c='k', marker='D', s=4)
+        axim.set_aspect('equal')
+        axim.set_xlabel('x(spx)')
+        axim.set_ylabel('y(spx)')
+        axim.yaxis.tick_right()
+        axim.yaxis.set_label_position("right")
+        if saveplot is not None:
+            fig.savefig(saveplot, dpi='figure', bbox_inches='tight') 
 
     def clean_output(self):
         """
@@ -621,4 +812,7 @@ class Cigale(SEDFitter):
             return None
         return self._currentpwd
 
-   
+    @property
+    def cubeouts(self):
+        return self._cubeouts
+                    

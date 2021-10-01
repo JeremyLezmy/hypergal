@@ -84,7 +84,8 @@ class DaskHyperGal( base.DaskCube ):
         raise ValueError("cubefile or radec must be given. Both are None")
 
     @staticmethod
-    def run_sedfitter(cube_cutout, redshift, working_dir, sedfitter="cigale", ncores=1, lbda=None, **kwargs):
+    def run_sedfitter(cube_cutout, redshift, working_dir, sedfitter="cigale", ncores=1, lbda=None,
+                      saveplot_rmspull=None, saveplot_intcube=None, **kwargs):
         """ """
         if lbda is None:
             from pysedm.sedm import SEDM_LBDA
@@ -105,10 +106,10 @@ class DaskHyperGal( base.DaskCube ):
         bestmodel_dir = sfitter.run() # bestmodel_dir trick is for dask
 
         # get the results
-        spectra_lbda = sfitter.get_sample_spectra(bestmodel_dir=bestmodel_dir, 
-                                                  lbda_sample=lbda)
+        spectra_lbda = sfitter.get_sample_spectra(bestmodel_dir=bestmodel_dir,
+                                                  lbda_sample=lbda,
+                                                  saveplot_rmspull=saveplot_rmspull,
+                                                  saveplot_intcube=saveplot_intcube)
         specdata = spectra_lbda[0]
         lbda = spectra_lbda[1]
-
-
         return cube_cutout.get_new(newdata=specdata, newlbda=lbda, newvariance="None")

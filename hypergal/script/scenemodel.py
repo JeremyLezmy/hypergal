@@ -2,6 +2,7 @@ import os
 import numpy as np
 from .daskbasics import DaskHyperGal
 from pysedm.sedm import SEDM_LBDA
+from ztfquery.sedm import SEDMLOCAL_BASESOURCE
 
 from ..photometry import basics as photobasics
 from ..spectroscopy import adr as spectroadr
@@ -74,6 +75,13 @@ class DaskScene( DaskHyperGal ):
         plotbase    = os.path.join(filedir, "hypergal", info["name"], info["sedmid"])
         dirplotbase = os.path.dirname(plotbase)
 
+        #dirspec = os.path.join( SEDMLOCAL_BASESOURCE, "hypergal_output", "target_spec", name) 
+        #dirhost = os.path.join( SEDMLOCAL_BASESOURCE, "hypergal_output", "host_spec", name)
+        #dirplot = os.path.join( SEDMLOCAL_BASESOURCE, "hypergal_output", "plots", name)
+        #for dirs in [dirspec, dirhost, dirplot]:
+        #    if not os.path.isdir(dirs):
+        #        os.makedirs(dirs, exist_ok=True)
+
         if xy_ifu_guess is not None:
             initguess = dict({k:v for k,v in zip(['xoff','yoff'],xy_ifu_guess)})
         else:
@@ -121,8 +129,10 @@ class DaskScene( DaskHyperGal ):
         # ---> fit position and PSF parameters from the cutouts
 
         if prefit_photo:
+
+            saveplot_structure = plotbase + '_' + name + '_cout_fit_'
             bestfit_cout =  self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
-                                                saveplot_structure = plotbase+"cout_fit_",
+                                                saveplot_structure = saveplot_structure,
                                                 filterin=filters, filters_to_use=filters_fit,
                                                  psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess, onlyvalid=True)
 
@@ -141,10 +151,15 @@ class DaskScene( DaskHyperGal ):
         #   Step 1.2 Intrinsic Cube
         #
         # ---> SED fitting of the cutouts
+
+        saveplot_rmspull = plotbase + '_' + name + '_cigale_pullrms.png'
+        saveplot_intcube = plotbase + '_' + name + '_intcube.png'
         int_cube = self.run_sedfitter(source_coutcube,
                                           redshift=redshift, working_dir=working_dir,
                                           sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
-                                          testmode=testmode)
+                                          testmode=testmode,
+                                          saveplot_rmspull=saveplot_rmspull,
+                                          saveplot_intcube=saveplot_intcube)
 
         # ---> Storing <--- # 3
         stored.append( int_cube.to_hdf( io.e3dfilename_to_hgcubes(cubefile,"intcube") ) )
@@ -160,8 +175,10 @@ class DaskScene( DaskHyperGal ):
         mcube_intr = int_cube.to_metacube(lbda_range, nslices=nslices)
 
         # ---> fit position and PSF parameters from the cutouts
+
+        saveplot_structure = plotbase + '_' + name + '_metaslice_fit_'
         bestfit_mfit = self.fit_cube(mcube_sedm, mcube_intr, radec, nslices=nslices,
-                                         saveplot_structure = plotbase+"metaslice_fit_",
+                                        saveplot_structure = saveplot_structure,
                                         mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False,
                                         fix_params=['scale', 'rotation'], onlyvalid=True)
         
@@ -172,10 +189,13 @@ class DaskScene( DaskHyperGal ):
         #bestfit_mfit = bestfit_mfit.drop(np.unique(badfit.index.codes[0].values()))
         
 
-        # ---> Get the object for future guesses || Guesser        
+        # ---> Get the object for future guesses || Guesser
+
+        saveplot_adr = plotbase + '_' + name + '_adr_fit.png'
+        saveplot_psf = plotbase + '_' + name + '_psf3d_fit.png'
         meta_ms_param = delayed(MultiSliceParameters)(bestfit_mfit, cubefile=cubefile, 
                                                         psfmodel=psfmodel.replace("2D","3D"), pointsourcemodel='GaussMoffat3D',
-                                                      load_adr=True, load_psf=True, load_pointsource=True, saveplot_adr = plotbase + "_adr_fit.png", saveplot_pointsource = plotbase + "_chrom_psf_fit.png")
+                                                      load_adr=True, load_psf=True, load_pointsource=True, saveplot_adr = saveplot_adr, saveplot_pointsource = saveplot_psf)
 
                 
         # ------------ #
@@ -192,7 +212,8 @@ class DaskScene( DaskHyperGal ):
         # ---> Storing <--- # 5
         stored.append( bestfit_completfit.to_hdf(*io.get_slicefit_datafile(cubefile, "full")) )
 
-        stored.append( self.get_target_spec(bestfit_completfit, delayed(fits.getheader)(cubefile), savefile=io.e3dfilename_to_hgspec(cubefile, 'target') ) )
+        target_specfile = io.e3dfilename_to_hgspec( cubefile, 'target')
+        stored.append( self.get_target_spec(bestfit_completfit, delayed(fits.getheader)(cubefile), savefile=target_specfile))
 
         # ---> Get the object for future guesses || Guesser        
         full_ms_param = delayed(MultiSliceParameters)(bestfit_completfit, psfmodel=psfmodel.replace("2D","3D"),pointsourcemodel='GaussMoffat3D',
@@ -218,7 +239,9 @@ class DaskScene( DaskHyperGal ):
 
             stored.append(bkgdmodel.to_hdf(  io.e3dfilename_to_hgcubes(cubefile,"bkgdmodel") ))
 
-            stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = io.e3dfilename_to_hgspec(cubefile, 'host')) )
+            host_specfile = io.e3dfilename_to_hgspec( cubefile, 'host')
+
+            stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = host_specfile) )
         
             return stored
             
@@ -455,7 +478,7 @@ class DaskScene( DaskHyperGal ):
         best_fits = {}
         for f_ in filters_to_use:
             if saveplot_structure is not None:
-                savefile = saveplot_structure+"{f_}.pdf"
+                savefile = saveplot_structure+ f"{f_}.pdf"
             else:
                 savefile = None
             
