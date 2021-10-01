@@ -41,7 +41,7 @@ class DaskSTD():
     
     
     @classmethod
-    def compute_single(cls, cubefile, lbda_range=[5000,9000], nslices=10, 
+    def compute_single(cls, cubefile, lbda_range=[4500,9000], nslices=9, 
                        psfmodel = 'GaussMoffat2D', curved_bkgd=True, 
                        fix_params=None, use_subslice=False, onlyvalid=True,
                        save_metaplot=True, save_result=True, return_result=True, returnspec=True, compute_calib=True):
@@ -97,10 +97,11 @@ class DaskSTD():
                 stored.append( best_meta_fit.to_hdf(*io.get_slicefit_datafile(cubefile, "meta")) )
             if return_result: 
                 stored.append( best_meta_fit)
-                
+            
+            saveplot_psf = plotbase + '_' + name + '_psf3d_fit.png'
             meta_ms_param = delayed(MultiSliceParametersSTD)(best_meta_fit, cubefile=cubefile, 
                                                          pointsourcemodel='GaussMoffat3D',
-                                                      load_adr=True, load_pointsource=True, saveplot_adr = plotbase + "_adr_fit.png")
+                                                             load_adr=True, load_pointsource=True, saveplot_adr = plotbase + "_adr_fit.png", saveplot_psf = saveplot_psf)
             
             bestfit_completfit = cls.fit_std_cube(stdcube, nslices=len(SEDM_LBDA),
                                         mslice_param=meta_ms_param,  psfmodel=psfmodel,  curved_bkgd=curved_bkgd,
@@ -123,9 +124,10 @@ class DaskSTD():
                 lbda = delayed(best_meta_fit.unstack)()['values']['lbda']
                 adr,x = delayed(spectroadr.ADRFitter.fit_adr_from_values, nout=2)(values=values, lbda=lbda, errors = errors,filename_or_header = delayed(fits.getheader)(cubefile))
                 airmass = adr.airmass
+                savefluxcal = os.path.join(os.path.dirname(cubefile), 'fluxcal_hypergal_' + info["sedmid"] + '_' + name + '.fits')
                 
                 stored.append(cls.get_fluxcalib( spobj=cls.get_target_spec(bestfit_completfit, delayed(fits.getheader)(cubefile)), airmass=airmass, cubefile=cubefile
-                                            , savefluxcal=os.path.join(dirplotbase, "fluxcal_" + 'hypergal_'+ cubeid + '_' + name + '.fits' ), saveplot=None))
+                                            , savefluxcal=savefluxcal, saveplot=None))
             
             return stored
     
@@ -233,7 +235,7 @@ class DaskSTD():
     
     @staticmethod
     def get_fluxcalib( spobj, airmass, cubefile, savefluxcal, saveplot=None):
-        
+        from pysedm import fluxcalibration
         newsp, fl = delayed(fluxcalibration.get_fluxcalibrator, nout=2)( spobj)
         spobj = delayed(DaskSTD.apply_fluxcal)( spobj, airmass, newsp)
         

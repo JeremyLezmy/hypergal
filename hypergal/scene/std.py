@@ -47,7 +47,7 @@ class STD_SliceScene( PointSource, SliceScene):
         from shapely.geometry import Point
         x, y = geom_guess['xoff'], geom_guess['yoff']
         p = Point(x, y)
-        circle = p.buffer(3)
+        circle = p.buffer(5)
         idx = self.slice_comp.get_spaxels_within_polygon( circle )
         
         ampl = np.nansum(self.flux_comp[[self.slice_comp.indexes[i] in np.array(idx) for i in range(len(self.slice_comp.indexes) )]])
@@ -538,7 +538,7 @@ class MultiSliceParametersSTD():
     """ """
     def __init__(self, dataframe, cubefile=None, 
                  pointsourcemodel='GaussMoffat3D',
-                 load_adr=False, load_pointsource=False, saveplot_adr=None):
+                 load_adr=False, load_pointsource=False, saveplot_adr=None, saveplot_psf=None):
         """ """
         
         self.set_data(dataframe)
@@ -548,7 +548,7 @@ class MultiSliceParametersSTD():
             self.load_adr(cubefile, saveplot=saveplot_adr)
             
         if load_pointsource:
-            self.load_pointsource(pointsourcemodel=pointsourcemodel)
+            self.load_pointsource(pointsourcemodel=pointsourcemodel, saveplot=saveplot_psf)
         
     @classmethod
     def read_hdf(cls, filename, key, 
@@ -597,11 +597,11 @@ class MultiSliceParametersSTD():
         self._adr, self._adr_ref = spectroadr.ADRFitter.fit_adr_from_values(self.values, self.lbda, cubefile, 
                                                                             errors=self.errors, saveplot=saveplot)
         
-    def load_pointsource(self, pointsourcemodel="GaussMoffat3D"):
+    def load_pointsource(self, pointsourcemodel="GaussMoffat3D", saveplot=None):
         """ """
         from hypergal import psf
 
-        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values_ps, self.lbda, errors=self.errors_ps)
+        self._pointsource3d = getattr(psf.gaussmoffat,pointsourcemodel).fit_from_values(self.values_ps, self.lbda, errors=self.errors_ps, saveplot=saveplot)
         self._pointsourcemodel = pointsourcemodel
         
     # -------- #
