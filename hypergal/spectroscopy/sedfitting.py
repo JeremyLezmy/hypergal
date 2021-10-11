@@ -226,12 +226,12 @@ class Cigale(SEDFitter):
     FITTER_NAME = "cigale"
 
     def __init__(self, dataframe, redshift, snr=None, setup=True, tmp_inputpath=None,
-                     initiate=True, ncores="auto", working_dir=None, testmode=False):
+                     initiate=True, ncores="auto", working_dir=None, testmode=False, cubeouts=None):
         """ """
         _ = super().__init__(dataframe, redshift, snr=snr, setup=setup, tmp_inputpath=tmp_inputpath)
         if initiate:
             self.initiate_cigale(working_dir=working_dir, cores=ncores, testmode=testmode)
-
+        self._cubeouts = cubeouts
     # ============= #
     #  Methods      #
     # ============= #
@@ -277,8 +277,6 @@ class Cigale(SEDFitter):
 
         """
         import pandas
-
-        self._cubeouts = cubeouts
         try:
             bands = [cubeouts.header[f"FILTER{i}"] for i in range(len(cubeouts.data))]
         except:
@@ -309,7 +307,7 @@ class Cigale(SEDFitter):
 
         return cls(dataframe=df, redshift=redshift, snr=snr,
                    tmp_inputpath=tmp_inputpath,
-                   initiate=initiate, ncores=ncores, working_dir=working_dir, **kwargs)
+                   initiate=initiate, ncores=ncores, working_dir=working_dir, cubeouts=cubeouts, **kwargs)
 
     def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None, testmode=False):
         """  Initiate Cigale (not launch yet)
