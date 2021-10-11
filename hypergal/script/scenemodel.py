@@ -278,7 +278,7 @@ class DaskScene( DaskHyperGal ):
             stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = host_specfile) )
 
             saveplot_coeff = plotbase + '_' + name + '_all_comp_fit.png'
-            stored.append( self.show_host_ampl(bestfit_completfit, delayed(fits.getheader)(cubefile), hostmodel, saveplot_coeff) )
+            stored.append( self.show_host_ampl(bestfit_completfit, delayed(fits.getheader)(cubefile), calcube, snmodel, bkgdmodel, hostmodel, self.get_sourcedf(radec, cubefile), source_coutcube, saveplot_coeff) )
 
             saveplot_report = plotbase + '_' + name + '_global_report.png'
             stored.append( self.global_report(calcube, hostmod, snmod, bkgdmod, source_coutcube, self.get_sourcedf(radec, cubefile),
@@ -642,7 +642,7 @@ class DaskScene( DaskHyperGal ):
 
     @staticmethod
     @dask.delayed
-    def show_host_ampl( fullparam, header, hostmodel, saveplot=None):
+    def show_host_ampl( fullparam, header, datacub, snmod, bkgdmod, hostmod, df, coutcube, saveplot=None):
 
         import pandas as pd
         import matplotlib.pyplot as plt
@@ -660,7 +660,14 @@ class DaskScene( DaskHyperGal ):
         ax.tick_params(axis='y', colors='blue')
         ax.set_xlim(4000,None)
         ax2 = ax.twinx()
-        ax2.plot( hostmodel.lbda, hostmodel.data.mean(axis=1)*1e15,'g-', c='g')
+        hostiso = datacub.get_new( newdata = datacub.data - snmod.data - bkgdmod.data)
+        hostobsonly = hostiso.get_extsource_cube(df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+        hostmodonly = hostmod.get_extsource_cube(df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+        x,y = np.transpose(hostobsonly.index_to_xy( hostobsonly.indexes ))
+
+        ax2.plot(hostmodonly.lbda, np.nanmean(hostmodonly.data.T,axis=0)*1e15, c='forestgreen', lw=2, linestyle= (0, (3, 1, 1, 1)), label='Host Model')
+        ax2.plot(hostobsonly.lbda, np.nanmean(hostobsonly.data.T,axis=0)*1e15, label='Host Data', color='g')
+        ax2.fill_between(hostobsonly.lbda, (np.nanmean(hostobsonly.data.T,axis=0)- (np.nanmean(hostobsonly.variance.T,axis=0)/len(hostobsonly.lbda))**0.5)*1e15, (np.nanmean(hostobsonly.data.T,axis=0)+ (np.nanmean(hostobsonly.variance.T,axis=0)/len(hostobsonly.lbda))**0.5)*1e15,color='g', alpha=0.3)
         ax2.set_ylabel(r' Host Model ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)',color='g')
         ax2.tick_params(axis='y', colors='green')
         
@@ -669,7 +676,7 @@ class DaskScene( DaskHyperGal ):
         bkerr = fullparam.xs('background',level=1)['errors'].values
         norm_comp = fullparam.xs('norm_comp',level=1)['values'].values
         bk_comp = fullparam.xs('bkgd_comp',level=1)['values'].values
-        ax3.plot( fullparam.xs('lbda', level=1)['values'].values, (bkdat*norm_comp+bk_comp)*1e15 , color='r')
+        ax3.plot( fullparam.xs('lbda', level=1)['values'].values, (bkdat*norm_comp+bk_comp)*1e15 , color='r', label='Sky Model')
         ax3.fill_between(x=fullparam.xs('lbda',level=1)['values'].values, y1=(bkdat*norm_comp+bk_comp)*1e15 - (bkerr*norm_comp)*1e15 ,
                y2= (bkdat*norm_comp+bk_comp)*1e15 + (bkerr*norm_comp)*1e15,            
                alpha=0.3, color='red')
@@ -685,7 +692,7 @@ class DaskScene( DaskHyperGal ):
         specerr = fullparam.xs('ampl_ps', level=1)['errors'].values*speccoef/header['EXPTIME']
         speclbda = fullparam.xs('lbda', level=1)['values'].values
         
-        ax4.plot(speclbda, specval*1e15, color='k', label = f'Target Spectra')
+        ax4.plot(speclbda, specval*1e15, color='k', label = f'SN Spectra')
         ax4.fill_between(speclbda, specval*1e15 + (specerr)*1e15, specval*1e15 - (specerr)*1e15, color='k', alpha=0.3)
         ax4.set_ylabel(r' Target spectra ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)',color='k')
         ax4.tick_params(axis='y', colors='black', )
@@ -693,8 +700,8 @@ class DaskScene( DaskHyperGal ):
         ax4.yaxis.set_label_position("left")
         ax4.spines['left'].set_position(('outward', 60))
         ax4.set_ylim(None, np.max( specval*1e15))
-        
-        fig.suptitle(f'Fitted Host model coefficient (blue), mean Host spectra (green), Target spectra (black) and sky component (red)' + '\n' + f' {header["NAME"]} ({header["OBSDATE"]}, ID: {header["OBSTIME"].rsplit(".")[0].replace(":","-")})', fontsize=11, fontweight="bold")     
+        fig.legend(loc="upper right", bbox_to_anchor=(1,1), bbox_transform=ax.transAxes)
+        fig.suptitle(f'Fitted Host model coefficient (blue), mean Host observed/modeled spectra (green/dashed green), Target spectra (black) and Sky component (red)' + '\n' + f'{header["NAME"]} ({header["OBSDATE"]}, ID: {header["OBSTIME"].rsplit(".")[0].replace(":","-")})', fontsize=11, fontweight="bold")     
         if saveplot is not None:
             fig.savefig(saveplot)
 
