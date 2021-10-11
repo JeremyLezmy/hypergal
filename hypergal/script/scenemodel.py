@@ -32,7 +32,7 @@ O3_a = 4932.603
 O3_b = 4958.911
 O3_c = 5006.843
 
-all_em = np.array([  Hbeta, O1, Halpha, S2_2, N1])
+all_em = np.array([  Hbeta, Halpha, S2_2, N1])
 all_em_names = [r'$H_{\beta}$',r'$H_{\alpha}$', r'$S[II]$', r'$N[I]$' ]
 
 O3li = np.array([O3_a, O3_b, O3_c])
