@@ -550,7 +550,7 @@ class Cigale(SEDFitter):
                 if saveplot_rmspull is not None:
                     data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
                     rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-                    self.show_pull_rms_map(rms, pull, saveplot_rmspull)
+                    self.show_pull_rms_map(rms, pull, self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
                     intcube = self.cubeouts.get_new(newdata=newd.T, newlbda=lbda_sample, newvariance="None")
                     self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
                 return newd.T, lbda_sample
@@ -561,7 +561,7 @@ class Cigale(SEDFitter):
                 if saveplot_rmspull is not None:
                     data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
                     rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-                    self.show_pull_rms_map(rms, pull, saveplot_rmspull)
+                    self.show_pull_rms_map(rms, pull,self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
                     intcube = self.cubeouts.get_new(newdata=newdatas.T, newlbda=lbda_sample, newvariance="None")
                     self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
             return newdatas.T, lbda_sample
@@ -569,7 +569,7 @@ class Cigale(SEDFitter):
         if saveplot_rmspull is not None:
             data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
             rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-            self.show_pull_rms_map(rms, pull, saveplot_rmspull)
+            self.show_pull_rms_map(rms, pull,self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
             intcube = self.cubeouts.get_new(newdata=np.asarray(data).T, newlbda=lbda_sample, newvariance="None")
             self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
         return np.asarray(data).T, lbda_sample
@@ -624,8 +624,8 @@ class Cigale(SEDFitter):
 
 
     @staticmethod
-    def show_pull_rms_map(rms_df, pull_df, saveplot=None,
-                          pixel_bin=2, hist=False, arcsec_unit=False,
+    def show_pull_rms_map(rms_df, pull_df, shape, pixel_bin, saveplot=None,
+                          hist=False, arcsec_unit=False,
                           px_in_asrcsec=0.25, vmin=5, vmax=95, pull=True, dpi=100):
 
         import matplotlib.pyplot as plt
@@ -643,14 +643,13 @@ class Cigale(SEDFitter):
 
 
         idx_thre  = rms_df[~np.isnan(rms_df['Total'])].index.values
-        shape = int(138 + pixel_bin)
 
         if arcsec_unit:
-            extent = [0,shape*px_in_asrcsec, 0, shape*px_in_asrcsec]
+            extent = [0,shape[0]*px_in_asrcsec, 0, shape[1]*px_in_asrcsec]
             centered_extent = [-shape*px_in_asrcsec/2, shape*px_in_asrcsec/2, -shape*px_in_asrcsec/2 , shape*px_in_asrcsec/2]
             unit = 'arcsec'
         else :
-            extent = [-0.5,shape-0.5, -0.5, shape-0.5]
+            extent = [-0.5,shape[0]*pixel_bin-0.5, -0.5, shape[1]*pixel_bin-0.5]
             centered_extent = [-shape/2, shape/2, -shape/2, shape/2]
             unit = 'px'
         for ax, filter in zip(axs.flat,filterlist):
@@ -662,7 +661,7 @@ class Cigale(SEDFitter):
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='Residuals')
 
             if pull:
-                imres=ax.imshow( np.rot90(np.reshape(pull_df[filter].values,(int(shape/pixel_bin), int(shape/pixel_bin)))), vmin=-2, vmax=2, cmap='coolwarm',origin='upper',extent = extent, aspect = 1)
+                imres=ax.imshow( np.rot90(np.reshape(pull_df[filter].values,(int(shape[0]/pixel_bin), int(shape[1]/pixel_bin)))), vmin=-2, vmax=2, cmap='coolwarm',origin='upper',extent = extent, aspect = 1)
                 ax.set(title=filter, xlabel='x ('+unit+')', ylabel='y ( '+unit+')')
                 ax.set_xlabel('x ( '+unit+')', fontsize=15)
                 ax.set_ylabel('y ( '+unit+')', fontsize=15)
@@ -673,7 +672,7 @@ class Cigale(SEDFitter):
                 ax.set_aspect('equal')
 
             else:
-                imres=ax.imshow( np.rot90(np.reshape(rms_df[filter].values,(int(shape/pixel_bin), int(shape/pixel_bin)))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='upper',extent = extent, aspect = 1)
+                imres=ax.imshow( np.rot90(np.reshape(rms_df[filter].values,(int(shape[0]/pixel_bin), int(shape[1]/pixel_bin)))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='upper',extent = extent, aspect = 1)
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='x ( '+unit+')', ylabel='y ( '+unit+')')
                 ax.label_outer()
 
@@ -685,7 +684,7 @@ class Cigale(SEDFitter):
             axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
 
         else:
-            imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape/pixel_bin), int(shape/pixel_bin)))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
+            imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape[0]/pixel_bin), int(shape[1]/pixel_bin)))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
             axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x ('+unit+')')
             axs[-1,-1].set_xlabel('x ('+unit+')', fontsize=15)
             axs[-1,-1].tick_params(labelsize=15)
@@ -813,4 +812,22 @@ class Cigale(SEDFitter):
     @property
     def cubeouts(self):
         return self._cubeouts
-                    
+
+    @property
+    def cubeouts_shape(self):
+        if self.cubeouts is not None:
+            xax,yax =np.array(list(self.cubeouts.spaxel_mapping.values())).T
+            shape = (len(np.unique(xax)), len(np.unique(yax)) )
+            return shape
+        else:
+            return None
+
+    @property
+    def cubeouts_pixbins(self):
+        if self.cubeouts is not None:
+            xax,yax =np.array(list(self.cubeouts.spaxel_mapping.values())).T
+            bins  = np.unique(xax)[1] - np.unique(xax)[0]
+            return int(bins)
+        
+        else:
+            return None
