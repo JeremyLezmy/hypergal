@@ -281,8 +281,7 @@ class DaskScene( DaskHyperGal ):
             stored.append( self.show_host_ampl(bestfit_completfit, delayed(fits.getheader)(cubefile), calcube, snmodel, bkgdmodel, hostmodel, self.get_sourcedf(radec, cubefile), source_coutcube, saveplot_coeff) )
 
             saveplot_report = plotbase + '_' + name + '_global_report.png'
-            stored.append( self.global_report(calcube, hostmod, snmod, bkgdmod, source_coutcube, self.get_sourcedf(radec, cubefile),
-                                              bestfit_completfit, bestfit_mfit, radec, redshift, cubefile, saveplot=saveplot_report) )
+            stored.append( self.global_report(calcube, hostmodel, snmodel, bkgdmodel, source_coutcube, self.get_sourcedf(radec, cubefile), bestfit_completfit, bestfit_mfit, radec, redshift, cubefile, saveplot=saveplot_report) )
             
             return stored
             
