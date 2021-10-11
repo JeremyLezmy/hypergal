@@ -242,6 +242,9 @@ class DaskScene( DaskHyperGal ):
             host_specfile = io.e3dfilename_to_hgspec( cubefile, 'host')
 
             stored.append( self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube, snmodel, bkgdmodel, calcube, sourcescale=5, savefile = host_specfile) )
+
+            saveplot_coeff = plotbase + '_' + name + '_all_comp_fit.png'
+            stored.append( self.show_host_ampl(bestfit_completfit, delayed(fits.getheader)(cubefile), hostmodel, saveplot_coeff) )
         
             return stored
             
@@ -578,7 +581,7 @@ class DaskScene( DaskHyperGal ):
 
         hostiso = datacube.get_new( newdata = datacube.data - snmodel.data - bkgdmodel.data)
         
-        hostobsonly = hostiso.get_extsource_cube(sourcedf, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+        hostobsonly = hostiso.get_extsource_cube(sourcedf, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=sourcescale, )
 
         flagin = (hostobsonly.lbda>lbdarange[0]) & (hostobsonly.lbda<lbdarange[1])
 
@@ -598,6 +601,61 @@ class DaskScene( DaskHyperGal ):
         
         return(specfi)
 
+
+    @staticmethod
+    def show_host_ampl( fullparam, header, hostmodel, saveplot=None):
+
+        import pandas as pd
+        import matplotlib.pyplot as plt
+       
+        fig,ax = plt.subplots(1, figsize=(10,5))
         
+        ax.scatter(fullparam.xs('lbda',level=1)['values'].values, 
+            fullparam.xs('ampl',level=1)['values'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/header['EXPTIME'], s=4)
+        ax.set_xlabel(r'Wavelength ($\AA$)')
+        ax.errorbar(x=fullparam.xs('lbda',level=1)['values'].values, y=fullparam.xs('ampl',level=1)['values'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/ header['EXPTIME'],
+                   yerr=fullparam.xs('ampl',level=1)['errors'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/ header['EXPTIME']  ,            
+                   fmt='none', c='r', zorder=0)
+       
+        ax.set_ylabel(r'$\alpha$ (coefficent for Host Model)',color='b')
+        ax.tick_params(axis='y', colors='blue')
+        
+        ax2 = ax.twinx()
+        ax2.plot( hostmodel.lbda, hostmodel.data.mean(axis=1)*1e15,'g-', c='g')
+        ax2.set_ylabel(r' Host Model ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)',color='g')
+        ax2.tick_params(axis='y', colors='green')
+        
+        ax3 = ax.twinx()
+        bkdat = fullparam.xs('background',level=1)['values'].values
+        bkerr = fullparam.xs('background',level=1)['errors'].values
+        norm_comp = fullparam.xs('norm_comp',level=1)['values'].values
+        bk_comp = fullparam.xs('bkgd_comp',level=1)['values'].values
+        ax3.plot( fullparam.xs('lbda', level=1)['values'].values, (bkdat*norm_comp+bk_comp)*1e15 , color='r')
+        ax3.fill_between(x=fullparam.xs('lbda',level=1)['values'].values, y1=(bkdat*norm_comp+bk_comp)*1e15 - (bkerr*norm_comp)*1e15 ,
+               y2= (bkdat*norm_comp+bk_comp)*1e15 + (bkerr*norm_comp)*1e15,            
+               alpha=0.3, color='red')
+
+        ax3.set_ylabel(r' Sky Model ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)',color='r')
+        ax3.tick_params(axis='y', colors='red')
+        ax3.spines['right'].set_position(('outward', 60))
+
+        ax4 = ax.twinx()
+
+        speccoef = fullparam.xs('norm_comp', level=1)['values'].values
+        specval = fullparam.xs('ampl_ps', level=1)['values'].values *speccoef/header['EXPTIME']
+        specerr = fullparam.xs('ampl_ps', level=1)['errors'].values*speccoef/header['EXPTIME']
+        speclbda = fullparam.xs('lbda', level=1)['values'].values
+        
+        ax4.plot(speclbda, specval*1e15, color='k', label = f'Target Spectra')
+        ax4.fill_between(speclbda, specval*1e15 + (specerr)*1e15, specval*1e15 - (specerr)*1e15, color='k', alpha=0.3)
+        ax4.set_ylabel(r' Target spectra ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)',color='k')
+        ax4.tick_params(axis='y', colors='black', )
+        ax4.yaxis.tick_left()
+        ax4.yaxis.set_label_position("left")
+        ax4.spines['left'].set_position(('outward', 60))
+        
+        fig.suptitle(f'Fitted Host model coefficient (blue), mean Host spectra (green), Target spectra (black) and Sky component (red)' + '\n' + f' {header["NAME"]} ({header["OBSDATE"]}, ID: {header["OBSTIME"].rsplit(".")[0].replace(":","-")})', fontsize=11, fontweight="bold")     
+        if saveplot is not None:
+            fig.savefig(saveplot)
 
         
