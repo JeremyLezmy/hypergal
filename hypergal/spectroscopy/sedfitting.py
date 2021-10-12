@@ -558,12 +558,12 @@ class Cigale(SEDFitter):
             for id_ in range(newdatas.shape[0]):
 
                 newdatas[id_, :] = utils.gauss_convolve_variable_width(newdatas[id_][None, ::], sig=sig, prec=100.)
-                if saveplot_rmspull is not None:
-                    data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
-                    rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-                    self.show_pull_rms_map(rms, pull,self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
-                    intcube = self.cubeouts.get_new(newdata=newdatas.T, newlbda=lbda_sample, newvariance="None")
-                    self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
+            if saveplot_rmspull is not None:
+                data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
+                rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
+                self.show_pull_rms_map(rms, pull,self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
+                intcube = self.cubeouts.get_new(newdata=newdatas.T, newlbda=lbda_sample, newvariance="None")
+                self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
             return newdatas.T, lbda_sample
         
         if saveplot_rmspull is not None:
@@ -666,7 +666,9 @@ class Cigale(SEDFitter):
                 ax.set_xlabel('x ( '+unit+')', fontsize=15)
                 ax.set_ylabel('y ( '+unit+')', fontsize=15)
                 ax.tick_params(labelsize=15)
-                ax.set_xticks( ax.get_yticks())
+                if shape[0]==shape[1]:
+                    ax.set_xticks( ax.get_yticks())
+                    
                 ax.set_title(filter, fontsize=15)
                 ax.label_outer()
                 ax.set_aspect('equal')
