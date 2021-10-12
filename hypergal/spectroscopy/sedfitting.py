@@ -650,7 +650,7 @@ class Cigale(SEDFitter):
             unit = 'arcsec'
         else :
             extent = [-0.5,shape[0]*pixel_bin-0.5, -0.5, shape[1]*pixel_bin-0.5]
-            centered_extent = [-shape/2, shape/2, -shape/2, shape/2]
+            centered_extent = [-shape[0]/2, shape[0]/2, -shape[1]/2, shape[1]/2]
             unit = 'px'
         for ax, filter in zip(axs.flat,filterlist):
             mean_rms = "{:6.4f}".format(np.sqrt( (1/len( idx_thre)) * np.nansum(filterlist[filter].values**2) ) )
