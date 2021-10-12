@@ -646,7 +646,7 @@ class DaskScene( DaskHyperGal ):
         import pandas as pd
         import matplotlib.pyplot as plt
        
-        fig,ax = plt.subplots(1, figsize=(10,5))
+        fig,ax = plt.subplots(1, figsize=(15,8))
         
         ax.scatter(fullparam.xs('lbda',level=1)['values'].values, 
             fullparam.xs('ampl',level=1)['values'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/header['EXPTIME'], s=4)
@@ -993,8 +993,8 @@ class DaskScene( DaskHyperGal ):
         axsnprof.legend()
 
         speccoef = fullparam.xs('norm_comp', level=1)['values'].values
-        specval = fullparam.xs('ampl_ps', level=1)['values'].values *speccoef/header['EXPTIME']
-        specerr = fullparam.xs('ampl_ps', level=1)['errors'].values*speccoef/header['EXPTIME']
+        specval = fullparam.xs('ampl_ps', level=1)['values'].values *speccoef/datacub.header['EXPTIME']
+        specerr = fullparam.xs('ampl_ps', level=1)['errors'].values*speccoef/datacub.header['EXPTIME']
         speclbda = fullparam.xs('lbda', level=1)['values'].values
 
         axsnspec.plot(speclbda, specval, label='Target model spectra ')
