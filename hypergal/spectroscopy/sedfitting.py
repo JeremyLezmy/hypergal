@@ -661,7 +661,7 @@ class Cigale(SEDFitter):
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='Residuals')
 
             if pull:
-                imres=ax.imshow( np.rot90(np.reshape(pull_df[filter].values,(int(shape[0]/pixel_bin), int(shape[1]/pixel_bin)))), vmin=-2, vmax=2, cmap='coolwarm',origin='upper',extent = extent, aspect = 1)
+                imres=ax.imshow( np.rot90(np.reshape(pull_df[filter].values,(int(shape[0]), int(shape[1])))), vmin=-2, vmax=2, cmap='coolwarm',origin='upper',extent = extent, aspect = 1)
                 ax.set(title=filter, xlabel='x ('+unit+')', ylabel='y ( '+unit+')')
                 ax.set_xlabel('x ( '+unit+')', fontsize=15)
                 ax.set_ylabel('y ( '+unit+')', fontsize=15)
@@ -672,7 +672,7 @@ class Cigale(SEDFitter):
                 ax.set_aspect('equal')
 
             else:
-                imres=ax.imshow( np.rot90(np.reshape(rms_df[filter].values,(int(shape[0]/pixel_bin), int(shape[1]/pixel_bin)))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='upper',extent = extent, aspect = 1)
+                imres=ax.imshow( np.rot90(np.reshape(rms_df[filter].values,(int(shape[0]), int(shape[1])))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='upper',extent = extent, aspect = 1)
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='x ( '+unit+')', ylabel='y ( '+unit+')')
                 ax.label_outer()
 
@@ -684,7 +684,7 @@ class Cigale(SEDFitter):
             axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
 
         else:
-            imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape[0]/pixel_bin), int(shape[1]/pixel_bin)))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
+            imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape[0]), int(shape[1])))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
             axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x ('+unit+')')
             axs[-1,-1].set_xlabel('x ('+unit+')', fontsize=15)
             axs[-1,-1].tick_params(labelsize=15)
