@@ -649,11 +649,11 @@ class DaskScene( DaskHyperGal ):
         fig,ax = plt.subplots(1, figsize=(15,8))
         
         ax.scatter(fullparam.xs('lbda',level=1)['values'].values, 
-            fullparam.xs('ampl',level=1)['values'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/header['EXPTIME'], s=4)
+                   fullparam.xs('ampl',level=1)['values'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/header['EXPTIME'], s=4, c='b')
         ax.set_xlabel(r'Wavelength ($\AA$)')
         ax.errorbar(x=fullparam.xs('lbda',level=1)['values'].values, y=fullparam.xs('ampl',level=1)['values'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/ header['EXPTIME'],
                    yerr=fullparam.xs('ampl',level=1)['errors'].values*fullparam.xs('norm_comp',level=1)['values'].values/fullparam.xs('norm_in',level=1)['values'].values/ header['EXPTIME']  ,            
-                   fmt='none', c='r', zorder=0)
+                   fmt='none', c='b', zorder=0)
        
         ax.set_ylabel(r'$\alpha$ (coefficent for Host Model)',color='b')
         ax.tick_params(axis='y', colors='blue')

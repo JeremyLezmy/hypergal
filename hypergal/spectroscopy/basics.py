@@ -62,8 +62,11 @@ class WCSCube( Cube, WCSHolder ):
         from pysedm import astrometry
         from astropy.io import fits
 
-        
-        wcsdict = astrometry.get_wcs_dict(cube.filename, radec, spxy)
+        try:
+            wcsdict = astrometry.get_wcs_dict(cube.filename, radec, spxy)
+        except OSError:
+            warnings.warn(f'No Astrometry file for {cube.filename} , build of the astrometry assuming radec={radec} at (x,y)=(0,0)')
+            wcsdict = astrometry.get_wcs_dict(cube.filename, radec, (0, 0))
         
         keys = ["EXPTIME", "ADCSPEED","TEMP","GAIN_SET", "ADC","MODEL","SNSR_NM","SER_NO","TELESCOP",
                 "GAIN","CAM_NAME","INSTRUME","UTC","END_SHUT","OBSDATE","OBSTIME","LST","MJD_OBS",
