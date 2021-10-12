@@ -181,7 +181,7 @@ class GaussMoffat3D( PSF3D, GaussMoffat2D ):
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
                 if param=='eta':
                     value_ = np.asarray(values[param])
-                    flag = np.logical_or(value_ < 1e-5, value_ > 15)
+                    flag = np.logical_or(value_ < 1e-10, value_ > 100)
                     value = value_[~flag].copy()
                     lbda = mainlbda[~flag].copy()
                     variance_ = np.asarray(errors[param])**2 if errors is not None else np.ones( len(value_) )

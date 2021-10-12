@@ -686,14 +686,15 @@ class Cigale(SEDFitter):
             axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
 
         else:
+            imratio = shape[1]/shape[0]
             imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape[0]), int(shape[1])))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
             axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x ('+unit+')')
             axs[-1,-1].set_xlabel('x ('+unit+')', fontsize=15)
             axs[-1,-1].tick_params(labelsize=15)
             axs[-1,-1].set_title(fr' $ \sum $ filters RMS=' + mean_rms, fontsize=15)
             axs[-1,-1].set_aspect('equal')
-            cbar_res = fig.colorbar(imres, ax=axs[0].ravel().tolist(), extend='both', label='Pull', aspect=50)
-            cbar_rms = fig.colorbar(imrms, ax=axs[1].ravel().tolist(), extend='max', label='Spectral RMS', aspect=50)
+            cbar_res = fig.colorbar(imres, shrink=imratio, ax=axs[0].ravel().tolist(), extend='both', label='Pull', aspect=40)
+            cbar_rms = fig.colorbar(imrms, shrink=imratio, ax=axs[1].ravel().tolist(), extend='max', label='Spectral RMS', aspect=40)
             cbar_res.set_label('Pull', fontsize=13)
             cbar_rms.set_label('Spectral RMS', fontsize=13)
             cbar_rms.ax.tick_params(labelsize=13)
