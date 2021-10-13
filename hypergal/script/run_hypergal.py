@@ -43,16 +43,22 @@ if __name__ == '__main__':
             return False
         else:
             raise argparse.ArgumentTypeError('Boolean value expected.')
+
+    def none_or_str(value):
+        if value == 'None':
+            return None
+        return value
         
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-w', "--workers", type=int, default=100, help="Scale the cluster to N workers. Default is 100.")
+    parser.add_argument('-w', "--workers", type=int, default=100, help="Scale the cluster to N workers/target. Default is 10.")
+    parser.add_argument('-f', "--filename", default=None, type=str, help="File to use with list of cube format (ex e3d_crr_b_ifu20210222_09_18_45_ZTF21aamokak.fits)")
     
-    parser.add_argument('-t', "--target", type=str, help="Target to process. Might be target name (ex ZTF21aamokak), or a .txt file with list of cube filename.")
+    parser.add_argument('-t', "--target", nargs='*', type=str, help="Targets to process. Must be target name format (ex ZTF21aamokak)")
 
     parser.add_argument("--ignore_astrom", type=str2bool, nargs='?', const=True, default=True, help="If True, still process if astrometry isn't available. In that case, --radec and --xy are mandatory.")
     
-    parser.add_argument( "--contains", type=str, default=None, help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
+    parser.add_argument( "--contains", nargs='*', type=none_or_str, help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
     
     parser.add_argument("--radec", type=float, nargs=2, default=None, help="If no Astrometry, you have to give the radec information. Default is None.")
     
@@ -75,29 +81,41 @@ if __name__ == '__main__':
                      memory="5GB", death_timeout=120,
                      project="P_ztf", resource_spec="sps=1",
                      cores=1, processes=1)
-
-    cluster.scale(args.workers)
-    client = Client(cluster)
     
-    stored = []
-    if '.txt' in args.target:
-        cubes = np.loadtxt(args.target, dtype=str)
+    if args.filename is not None:
+        cubes = np.loadtxt(args.filename, dtype=str)
         dates, sedmid, _, names = pd.DataFrame([ parse_filename( files) for files in cubes ]).values.transpose()
+
+        cluster.scale(args.workers)
+        client = Client(cluster)
+    
+        for (targ, date) in zip(names, dates):
+            
+            currentpwd = os.getcwd()
+            stored = []
+            stored.append(scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=date, manual_z=args.redshift, manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd) )
+            future = client.compute(stored)
+            dask.distributed.wait(future)
+            if os.getcwd() != currentpwd:
+                os.chdir(currentpwd)
+    elif args.filename is None and len(args.target)>0:
         
-        for targ in names:
+        cluster.scale(args.workers)
+        client = Client(cluster)
+        if args.contains==None or len(args.contains)!=len(args.target):
+            contains = np.tile(None, len(args.target))
+        else :
+            contains = args.contains
+        for (targ, contain) in zip(args.target, contains):
 
-            stored.append( scenemodel.DaskScene.compute_targetcubes( name=targ, client=client, contains=args.contains, manual_z=args.redshift, manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd) )
-
-        future = client.compute(stored)
-        dask.distributed.wait(future)
-
-    elif '.txt' not in args.target:
-
-        stored.append( scenemodel.DaskScene.compute_targetcubes( name=args.target, client=client, contains=args.contains, manual_z=args.redshift, manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd) )
-
-        future = client.compute(stored)
-        dask.distributed.wait(future)
-
+            currentpwd = os.getcwd()
+            stored = []
+            stored.append(scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd) )
+            future = client.compute(stored)
+            dask.distributed.wait(future)
+            if os.getcwd() != currentpwd:
+                os.chdir(currentpwd)
     else:
 
         raise ValueError('Target input has to be ZTF format as "ZTF21aamokak", or a .txt file with filename or filepath for each target')
+
