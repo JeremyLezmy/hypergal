@@ -376,9 +376,7 @@ class DaskScene(DaskHyperGal):
         xy_in = cube_intr.radec_to_xy(*radec).flatten()
         xy_comp = cube_sedm.radec_to_xy(*radec).flatten()
 
-        mpoly = delayed(cube_sedm.get_spaxel_polygon)(format='multipolygon')
-        gm = psf.gaussmoffat.GaussMoffat2D()
-        ps = delayed(PointSource)(gm, mpoly)
+        #mpoly = delayed(cube_sedm.get_spaxel_polygon)(format='multipolygon')
 
         # --------------------- #
         # Loop over the slices  #
@@ -389,6 +387,11 @@ class DaskScene(DaskHyperGal):
             # the slices
             slice_in = cube_intr.get_slice(index=i_, slice_object=True)
             slice_comp = cube_sedm.get_slice(index=i_, slice_object=True)
+            mpoly = delayed(slice_comp.get_spaxel_polygon)(
+                format='multipolygon')
+            gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha': 2, 'eta': 1})
+            ps = delayed(PointSource)(gm, mpoly)
+
             if mslice_param is not None:
                 guess = mslice_param.get_guess(slice_in.lbda, squeeze=True)
             else:

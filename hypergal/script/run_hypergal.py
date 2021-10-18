@@ -105,14 +105,12 @@ if __name__ == '__main__':
 
         for (targ, date) in zip(names, dates):
 
-            currentpwd = os.getcwd()
             stored = []
             stored.append(scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=date, manual_z=args.redshift,
                           manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd))
             future = client.compute(stored)
             dask.distributed.wait(future)
-            if os.getcwd() != currentpwd:
-                os.chdir(currentpwd)
+
     elif args.filename is None and len(args.target) > 0:
 
         cluster.scale(args.workers)
@@ -123,14 +121,12 @@ if __name__ == '__main__':
             contains = args.contains
         for (targ, contain) in zip(args.target, contains):
 
-            currentpwd = os.getcwd()
             stored = []
             stored.append(scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift,
                           manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd))
             future = client.compute(stored)
             dask.distributed.wait(future)
-            if os.getcwd() != currentpwd:
-                os.chdir(currentpwd)
+
     else:
 
         raise ValueError(

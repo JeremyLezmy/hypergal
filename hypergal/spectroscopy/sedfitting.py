@@ -22,7 +22,8 @@ from . import utils
 
 
 PS1_FILTER = ['ps1_g', 'ps1_r', 'ps1_i', 'ps1_z', 'ps1_y']
-PS1_FILTER_err = ['ps1_g_err', 'ps1_r_err', 'ps1_i_err', 'ps1_z_err', 'ps1_y_err']
+PS1_FILTER_err = ['ps1_g_err', 'ps1_r_err',
+                  'ps1_i_err', 'ps1_z_err', 'ps1_y_err']
 
 
 # = np.linspace(3700, 9300, 220)
@@ -31,7 +32,8 @@ PS1_FILTER_err = ['ps1_g_err', 'ps1_r_err', 'ps1_i_err', 'ps1_z_err', 'ps1_y_err
 ORDER = "ugrizy"
 POS = {c: p for (p, c) in enumerate(ORDER)}
 
-DEFAULT_CIGALE_MODULES = ['sfhdelayed', 'bc03', 'nebular', 'dustatt_modified_CF00', 'dale2014', 'redshifting']
+DEFAULT_CIGALE_MODULES = ['sfhdelayed', 'bc03', 'nebular',
+                          'dustatt_modified_CF00', 'dale2014', 'redshifting']
 CIGALE_CONFIG_PATH = os.path.join(_PACKAGE_ROOT, 'config/cigale.json')
 
 
@@ -63,7 +65,6 @@ class SEDFitter():
             self.setup_df(tmp_inputpath=tmp_inputpath)
 
     def setup_df(self, tmp_inputpath=None):
-
         """
         Make the input dataframe compatible with the sedfitter.
 
@@ -95,23 +96,27 @@ class SEDFitter():
 
         if self.FITTER_NAME in ['cigale']:
             df['id'] = df.index
-            df = df.reindex(columns=(['id', 'redshift'] + list([a for a in df.columns if a not in ['id', 'redshift']])))
+            df = df.reindex(columns=(
+                ['id', 'redshift'] + list([a for a in df.columns if a not in ['id', 'redshift']])))
 
         self.set_clean_df(df)
         filt = [ele for ele in lst if ('err' not in ele)]
         self._filters = filt
-        idx = df.loc[ np.logical_and.reduce([df[i].values / df[i + '_err'].values > self.snr for i in filt])].index
+        idx = df.loc[np.logical_and.reduce(
+            [df[i].values / df[i + '_err'].values > self.snr for i in filt])].index
         df_threshold = df.loc[idx].copy()
         self.set_input_sedfitter(df_threshold)
 
         if tmp_inputpath is None:
-            df_threshold.to_csv('in_sedfitter.txt', header=True, index=None, sep='\t', mode='w+')
+            df_threshold.to_csv('in_sedfitter.txt', header=True,
+                                index=None, sep='\t', mode='w+')
             self._dfpath = os.path.abspath('in_sedfitter.txt')
         else:
             dirout = os.path.dirname(tmp_inputpath)
             if not os.path.isdir(dirout):
                 os.makedirs(dirout, exist_ok=True)
-            df_threshold.to_csv(tmp_inputpath, header=True, index=None, sep='\t', mode='w+')
+            df_threshold.to_csv(tmp_inputpath, header=True,
+                                index=None, sep='\t', mode='w+')
             self._dfpath = os.path.abspath(tmp_inputpath)
 
         self._idx_used = idx
@@ -226,20 +231,22 @@ class Cigale(SEDFitter):
     FITTER_NAME = "cigale"
 
     def __init__(self, dataframe, redshift, snr=None, setup=True, tmp_inputpath=None,
-                     initiate=True, ncores="auto", working_dir=None, testmode=False, cubeouts=None):
+                 initiate=True, ncores="auto", working_dir=None, testmode=False, cubeouts=None):
         """ """
-        _ = super().__init__(dataframe, redshift, snr=snr, setup=setup, tmp_inputpath=tmp_inputpath)
+        _ = super().__init__(dataframe, redshift, snr=snr,
+                             setup=setup, tmp_inputpath=tmp_inputpath)
         if initiate:
-            self.initiate_cigale(working_dir=working_dir, cores=ncores, testmode=testmode)
+            self.initiate_cigale(working_dir=working_dir,
+                                 cores=ncores, testmode=testmode)
         self._cubeouts = cubeouts
     # ============= #
     #  Methods      #
     # ============= #
+
     @classmethod
     def from_cube_cutouts(cls, cubeouts, redshift, snr=3, in_unit="aa",
-                              tmp_inputpath=None,
-                              initiate=True, ncores="auto", working_dir=None, **kwargs):
-
+                          tmp_inputpath=None,
+                          initiate=True, ncores="auto", working_dir=None, **kwargs):
         """  Initiate Cigale from cube of cutouts.
 
         Parameters
@@ -278,32 +285,38 @@ class Cigale(SEDFitter):
         """
         import pandas
         try:
-            bands = [cubeouts.header[f"FILTER{i}"] for i in range(len(cubeouts.data))]
+            bands = [cubeouts.header[f"FILTER{i}"]
+                     for i in range(len(cubeouts.data))]
         except:
-            raise TypeError("the given cube is not a cutout cube, no FILTER{i} entries in the header")
-        
+            raise TypeError(
+                "the given cube is not a cutout cube, no FILTER{i} entries in the header")
+
         cigale_bands = [b.replace(".", "_") for b in bands]
         #
         # Build the input dataframe
         pdict = cubeouts.to_pandas()
-        
-        df = pandas.concat({"data":pdict["data"], "variance":pdict["variance"]}, )
-        
-        df = pdict["data"].rename({k: v for k, v in enumerate(cigale_bands)}, axis=1)  # correct column names
+
+        df = pandas.concat(
+            {"data": pdict["data"], "variance": pdict["variance"]}, )
+
+        df = pdict["data"].rename({k: v for k, v in enumerate(
+            cigale_bands)}, axis=1)  # correct column names
         df_err = pandas.DataFrame(np.sqrt(pdict["variance"].values), index=df.index,
                                   columns=[k+"_err" for k in df.columns])  # errors and not variance
         #
         # good unit if necessary
         if in_unit is not None and in_unit != "mjy":
             if in_unit == 'aa':
-                convertion = getattr(utils, f"flux_{in_unit}_to_mjy")(1, cubeouts.lbda)
+                convertion = getattr(
+                    utils, f"flux_{in_unit}_to_mjy")(1, cubeouts.lbda)
             else:
                 convertion = getattr(utils, f"flux_{in_unit}_to_mjy")(1)
 
             df *= convertion
             df_err *= convertion
-        
-        df = df.merge(df_err, right_index=True, left_index=True)  # combined them
+
+        df = df.merge(df_err, right_index=True,
+                      left_index=True)  # combined them
 
         return cls(dataframe=df, redshift=redshift, snr=snr,
                    tmp_inputpath=tmp_inputpath,
@@ -345,7 +358,8 @@ class Cigale(SEDFitter):
         self._working_dir = working_dir
 
         utils.command_cigale('init')
-        config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
+        config = ConfigObj('pcigale.ini', encoding='utf8',
+                           write_empty_values=True)
 
         config['data_file'] = self.dfpath
 
@@ -365,7 +379,8 @@ class Cigale(SEDFitter):
 
         utils.command_cigale('genconf')
 
-        config = ConfigObj('pcigale.ini', encoding='utf8', write_empty_values=True)
+        config = ConfigObj('pcigale.ini', encoding='utf8',
+                           write_empty_values=True)
 
         if sed_modules == 'default':
             with open(CIGALE_CONFIG_PATH) as data_file:
@@ -375,7 +390,8 @@ class Cigale(SEDFitter):
             else:
                 config = utils.update_config(config, params)
 
-        config['sed_modules_params'][[k for k in config['sed_modules_params'].keys() if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands']  if ('err' not in ele))
+        config['sed_modules_params'][[k for k in config['sed_modules_params'].keys(
+        ) if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands'] if ('err' not in ele))
 
         config.write()
         self._config = config
@@ -393,21 +409,27 @@ class Cigale(SEDFitter):
             import datetime
             warnings.warn("path_result is None. DEPRECATED")
             actual_path = os.getcwd()+'/'
-            if os.path.exists(path_result+ result_dir_name):
-                name = path_result+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
+            if os.path.exists(path_result + result_dir_name):
+                name = path_result+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + \
+                    '_' + result_dir_name
                 shutil.move(path_result+result_dir_name, name)
-                print(f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
+                print(
+                    f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
 
             if os.path.exists(actual_path+result_dir_name):
-                name = actual_path+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_'+ result_dir_name
+                name = actual_path+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + \
+                    '_' + result_dir_name
                 shutil.move(actual_path+result_dir_name, name)
-                print(f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
-            if result_dir_name!='out/':
+                print(
+                    f"The {result_dir_name} directory already exists, the old one was renamed to {name}")
+            if result_dir_name != 'out/':
                 shutil.move(actual_path+'out/', actual_path+result_dir_name)
-                files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt', result_dir_name]
+                files = ['pcigale.ini', 'pcigale.ini.spec',
+                         'cig_df.txt', result_dir_name]
             else:
                 shutil.move(name, actual_path+'out/')
-                files = ['pcigale.ini','pcigale.ini.spec','cig_df.txt',result_dir_name]
+                files = ['pcigale.ini', 'pcigale.ini.spec',
+                         'cig_df.txt', result_dir_name]
 
             utils.move_files(actual_path, path_result, files)
 
@@ -424,7 +446,8 @@ class Cigale(SEDFitter):
                             columns=None, flux_units="aa"):
         """ """
         try:
-            datafile = fits.open( os.path.join(self._path_result, self._out_dir, f'{id_}_best_model.fits'))
+            datafile = fits.open(os.path.join(
+                self._path_result, self._out_dir, f'{id_}_best_model.fits'))
             data = Table(datafile[1].data).to_pandas()
         except:
             warnings.warn(f"Cannot read the corresponding output {id_}")
@@ -442,7 +465,8 @@ class Cigale(SEDFitter):
             data["Fnu"] *= utils.flux_mjy_to_hz(1)
             data.rename({"Fnu": "flux"}, axis=1, inplace=True)
         elif flux_units is not None and flux_units != "mjy":
-            raise ValueError(f"Cannot parse the input flux_units {flux_units} ; aa, hz or mjy implemented")
+            raise ValueError(
+                f"Cannot parse the input flux_units {flux_units} ; aa, hz or mjy implemented")
         else:
             data.rename({"Fnu": "flux"}, axis=1, inplace=True)
 
@@ -459,12 +483,13 @@ class Cigale(SEDFitter):
 
         f_hres = f(np.linspace(lbda[0], lbda[-1], len(lbda)*res))
         kerbox = Box1DKernel(res)
-        newflux = convolve(f_hres, kerbox, boundary='extend', normalize_kernel=True)[::res]
+        newflux = convolve(f_hres, kerbox, boundary='extend',
+                           normalize_kernel=True)[::res]
         return pandas.DataFrame({"wavelength": lbda, "flux": newflux})
 
     def get_sample_spectra(self, bestmodel_dir=None, lbda_sample=None, interp_kind='linear',
                            res=10, apply_sedm_lsf=True, client=None,
-                           saveplot_rmspull=None, saveplot_intcube=None):
+                           saveplot_rmspull=None, saveplot_intcube=None, backcurrent_dir=True):
         """
         Get spectra fitted by Cigale in the wavelength space of your choice.
 
@@ -499,12 +524,13 @@ class Cigale(SEDFitter):
         if bestmodel_dir is None:
             bestmodel_dir = os.path.join(self._path_result, self._out_dir)
 
-        cigale_output = np.sort(glob(os.path.join(bestmodel_dir, "*_best_model.fits")))
+        cigale_output = np.sort(
+            glob(os.path.join(bestmodel_dir, "*_best_model.fits")))
 
         # Build the datafile
         datafile = pandas.DataFrame(cigale_output, columns=["outputfile"])
         datafile["id"] = datafile["outputfile"].astype("str").str.split("/", expand=True
-                                                              ).iloc[:,-1].astype("str").str.split("_", expand=True).iloc[:,0].rename({"0":"id"}).values
+                                                                        ).iloc[:, -1].astype("str").str.split("_", expand=True).iloc[:, 0].rename({"0": "id"}).values
         datafile["id"] = datafile["id"].astype("int")
         datafile = datafile.set_index("id").sort_index()
 
@@ -514,14 +540,16 @@ class Cigale(SEDFitter):
             from dask import delayed
             d_dout = {}
             for id_ in datafile.index:
-                cigale_dl = delayed(self.read_cigale_specout)(id_, columns=["wavelength", "flux"])
-                d_dout[id_] = delayed(self.cigale_as_lbda)(cigale_dl, lbda_sample, interp_kind=interp_kind, res=res)
+                cigale_dl = delayed(self.read_cigale_specout)(
+                    id_, columns=["wavelength", "flux"])
+                d_dout[id_] = delayed(self.cigale_as_lbda)(
+                    cigale_dl, lbda_sample, interp_kind=interp_kind, res=res)
 
             dictdout = client.compute(d_dout).result()
         else:
-            dictdout = {k: self.cigale_as_lbda( self.read_cigale_specout(k, columns=["wavelength", "flux"]),
-                                                lbda_sample, interp_kind=interp_kind, res=res)
-                                            for k in datafile.index}
+            dictdout = {k: self.cigale_as_lbda(self.read_cigale_specout(k, columns=["wavelength", "flux"]),
+                                               lbda_sample, interp_kind=interp_kind, res=res)
+                        for k in datafile.index}
 
         dflux = pandas.concat(dictdout)["flux"]
 
@@ -541,41 +569,63 @@ class Cigale(SEDFitter):
                 from dask import delayed
                 spd = []
                 for id_ in range(newdatas.shape[0]):
-                    fulldel = da.from_delayed(delayed(utils.gauss_convolve_variable_width)(newdatas[id_][None, ::], sig=sig, prec=10.), shape=(1, len(sig)), dtype='float')
+                    fulldel = da.from_delayed(delayed(utils.gauss_convolve_variable_width)(
+                        newdatas[id_][None, ::], sig=sig, prec=10.), shape=(1, len(sig)), dtype='float')
                     spd.append(fulldel)
 
                 ss = da.stack(spd)
                 newd = client.compute(ss).result().squeeze()
 
                 if saveplot_rmspull is not None:
-                    data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
-                    rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-                    self.show_pull_rms_map(rms, pull, self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
-                    intcube = self.cubeouts.get_new(newdata=newd.T, newlbda=lbda_sample, newvariance="None")
-                    self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
+                    data_in, data_out = self.get_data_inout(
+                        os.path.join(self.working_dir, 'out'))
+                    rms, pull = self.get_rms_pull_df(
+                        data_in, data_out, self.input_df.index)
+                    self.show_pull_rms_map(
+                        rms, pull, self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
+                    intcube = self.cubeouts.get_new(
+                        newdata=newd.T, newlbda=lbda_sample, newvariance="None")
+                    self.show_intcube(intcube, np.sort(
+                        self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
+                if backcurrent_dir and self._working_dir is not None:
+                    os.chdir(self.currentpwd)
                 return newd.T, lbda_sample
 
             for id_ in range(newdatas.shape[0]):
 
-                newdatas[id_, :] = utils.gauss_convolve_variable_width(newdatas[id_][None, ::], sig=sig, prec=100.)
+                newdatas[id_, :] = utils.gauss_convolve_variable_width(
+                    newdatas[id_][None, ::], sig=sig, prec=100.)
             if saveplot_rmspull is not None:
-                data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
-                rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-                self.show_pull_rms_map(rms, pull,self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
-                intcube = self.cubeouts.get_new(newdata=newdatas.T, newlbda=lbda_sample, newvariance="None")
-                self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
+                data_in, data_out = self.get_data_inout(
+                    os.path.join(self.working_dir, 'out'))
+                rms, pull = self.get_rms_pull_df(
+                    data_in, data_out, self.input_df.index)
+                self.show_pull_rms_map(
+                    rms, pull, self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
+                intcube = self.cubeouts.get_new(
+                    newdata=newdatas.T, newlbda=lbda_sample, newvariance="None")
+                self.show_intcube(intcube, np.sort(
+                    self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
+            if backcurrent_dir and self._working_dir is not None:
+                os.chdir(self.currentpwd)
             return newdatas.T, lbda_sample
-        
+
         if saveplot_rmspull is not None:
-            data_in, data_out = self.get_data_inout(os.path.join(self.working_dir, 'out'))
-            rms,pull = self.get_rms_pull_df(data_in, data_out, self.input_df.index)
-            self.show_pull_rms_map(rms, pull,self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
-            intcube = self.cubeouts.get_new(newdata=np.asarray(data).T, newlbda=lbda_sample, newvariance="None")
-            self.show_intcube(intcube, np.sort(self.cubeouts.lbda), data_in, data_out, saveplot_intcube)
+            data_in, data_out = self.get_data_inout(
+                os.path.join(self.working_dir, 'out'))
+            rms, pull = self.get_rms_pull_df(
+                data_in, data_out, self.input_df.index)
+            self.show_pull_rms_map(
+                rms, pull, self.cubeouts_shape, self.cubeouts_pixbins, saveplot_rmspull)
+            intcube = self.cubeouts.get_new(newdata=np.asarray(
+                data).T, newlbda=lbda_sample, newvariance="None")
+            self.show_intcube(intcube, np.sort(self.cubeouts.lbda),
+                              data_in, data_out, saveplot_intcube)
+        if backcurrent_dir and self._working_dir is not None:
+            os.chdir(self.currentpwd)
         return np.asarray(data).T, lbda_sample
 
         ####### Miss Plots ######
-
 
     @staticmethod
     def get_data_inout(directory):
@@ -607,21 +657,24 @@ class Cigale(SEDFitter):
 
             if idx in np.array(data_in['id']):
 
-                filt_res = list((np.array(list(data_out[col_best_fit][sni])) - np.array(list(data_in[filterlist][sni])))/(np.array(list(data_in[filterlist][sni]))))
-                tot_rms = np.sqrt((1/len(filt_res)) * np.nansum(np.array(filt_res)**2))
+                filt_res = list((np.array(list(data_out[col_best_fit][sni])) - np.array(
+                    list(data_in[filterlist][sni])))/(np.array(list(data_in[filterlist][sni]))))
+                tot_rms = np.sqrt((1/len(filt_res)) *
+                                  np.nansum(np.array(filt_res)**2))
 
-                filt_pull = list((np.array(list(data_out[col_best_fit][sni])) - np.array(list(data_in[filterlist][sni])))/(np.array(list(data_in[filtererrlist][sni]))))
-                tot_pull = np.sqrt((1/len(filt_pull)) * np.nansum(np.array(filt_pull)**2))
+                filt_pull = list((np.array(list(data_out[col_best_fit][sni])) - np.array(
+                    list(data_in[filterlist][sni])))/(np.array(list(data_in[filtererrlist][sni]))))
+                tot_pull = np.sqrt((1/len(filt_pull)) *
+                                   np.nansum(np.array(filt_pull)**2))
 
                 rms_df.loc[idx] = filt_res + [tot_rms]
                 pull_df.loc[idx] = filt_pull + [tot_pull]
                 sni += 1
 
-            else :
+            else:
                 rms_df.loc[idx] = [np.nan]*len(rms_df.columns)
                 pull_df.loc[idx] = [np.nan]*len(pull_df.columns)
         return rms_df, pull_df
-
 
     @staticmethod
     def show_pull_rms_map(rms_df, pull_df, shape, pixel_bin, saveplot=None,
@@ -629,7 +682,8 @@ class Cigale(SEDFitter):
                           px_in_asrcsec=0.25, vmin=5, vmax=95, pull=True, dpi=100):
 
         import matplotlib.pyplot as plt
-        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(15, 10), dpi=dpi, sharex=not hist, sharey=not hist,constrained_layout=True)
+        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(
+            15, 10), dpi=dpi, sharex=not hist, sharey=not hist, constrained_layout=True)
 
         filterlist = rms_df.iloc[:, 0:-1].copy()
         resmin = np.nanpercentile(filterlist, vmin)
@@ -641,60 +695,75 @@ class Cigale(SEDFitter):
         pullmax = 5
         pullbound = abs(max(abs(pullmin), abs(pullmax)))
 
-
-        idx_thre  = rms_df[~np.isnan(rms_df['Total'])].index.values
+        idx_thre = rms_df[~np.isnan(rms_df['Total'])].index.values
 
         if arcsec_unit:
-            extent = [0,shape[0]*px_in_asrcsec, 0, shape[1]*px_in_asrcsec]
-            centered_extent = [-shape*px_in_asrcsec/2, shape*px_in_asrcsec/2, -shape*px_in_asrcsec/2 , shape*px_in_asrcsec/2]
+            extent = [0, shape[0]*px_in_asrcsec, 0, shape[1]*px_in_asrcsec]
+            centered_extent = [-shape*px_in_asrcsec/2, shape *
+                               px_in_asrcsec/2, -shape*px_in_asrcsec/2, shape*px_in_asrcsec/2]
             unit = 'arcsec'
-        else :
-            extent = [-0.5,shape[0]*pixel_bin-0.5, -0.5, shape[1]*pixel_bin-0.5]
+        else:
+            extent = [-0.5, shape[0]*pixel_bin -
+                      0.5, -0.5, shape[1]*pixel_bin-0.5]
             centered_extent = [-shape[0]/2, shape[0]/2, -shape[1]/2, shape[1]/2]
             unit = 'px'
-        for ax, filter in zip(axs.flat,filterlist):
-            mean_rms = "{:6.4f}".format(np.sqrt( (1/len( idx_thre)) * np.nansum(filterlist[filter].values**2) ) )
-            mean_pull = "{:6.4f}".format(np.sqrt( (1/len( idx_thre)) * np.nansum(filterpulllist[filter].values**2) ) )
+        for ax, filter in zip(axs.flat, filterlist):
+            mean_rms = "{:6.4f}".format(
+                np.sqrt((1/len(idx_thre)) * np.nansum(filterlist[filter].values**2)))
+            mean_pull = "{:6.4f}".format(
+                np.sqrt((1/len(idx_thre)) * np.nansum(filterpulllist[filter].values**2)))
             if hist:
                 data_to_plot = filterlist[filter].values
                 ax.hist(data_to_plot, bins=30, range=(resmin, resmax))
                 ax.set(title=filter+' RMS='+mean_rms, xlabel='Residuals')
 
             if pull:
-                imres=ax.imshow( np.rot90(np.reshape(pull_df[filter].values,(int(shape[0]), int(shape[1])))), vmin=-2, vmax=2, cmap='coolwarm',origin='upper',extent = extent, aspect = 1)
-                ax.set(title=filter, xlabel='x ('+unit+')', ylabel='y ( '+unit+')')
+                imres = ax.imshow(np.rot90(np.reshape(pull_df[filter].values, (int(shape[0]), int(
+                    shape[1])))), vmin=-2, vmax=2, cmap='coolwarm', origin='upper', extent=extent, aspect=1)
+                ax.set(title=filter, xlabel='x ('+unit+')',
+                       ylabel='y ( '+unit+')')
                 ax.set_xlabel('x ( '+unit+')', fontsize=15)
                 ax.set_ylabel('y ( '+unit+')', fontsize=15)
                 ax.tick_params(labelsize=15)
-                if shape[0]==shape[1]:
-                    ax.set_xticks( ax.get_yticks())
-                    
+                if shape[0] == shape[1]:
+                    ax.set_xticks(ax.get_yticks())
+
                 ax.set_title(filter, fontsize=15)
                 ax.label_outer()
                 ax.set_aspect('equal')
 
             else:
-                imres=ax.imshow( np.rot90(np.reshape(rms_df[filter].values,(int(shape[0]), int(shape[1])))), vmin=-resbound, vmax=resbound, cmap='seismic',origin='upper',extent = extent, aspect = 1)
-                ax.set(title=filter+' RMS='+mean_rms, xlabel='x ( '+unit+')', ylabel='y ( '+unit+')')
+                imres = ax.imshow(np.rot90(np.reshape(rms_df[filter].values, (int(shape[0]), int(
+                    shape[1])))), vmin=-resbound, vmax=resbound, cmap='seismic', origin='upper', extent=extent, aspect=1)
+                ax.set(title=filter+' RMS='+mean_rms,
+                       xlabel='x ( '+unit+')', ylabel='y ( '+unit+')')
                 ax.label_outer()
 
-        mean_rms = "{:6.4f}".format( np.sqrt( (1/len( idx_thre)) * np.nansum(rms_df['Total'].values**2) ) )
-        mean_pull = "{:6.4f}".format( np.sqrt( (1/len( idx_thre)) * np.nansum(pull_df['Total'].values**2) ) )
+        mean_rms = "{:6.4f}".format(
+            np.sqrt((1/len(idx_thre)) * np.nansum(rms_df['Total'].values**2)))
+        mean_pull = "{:6.4f}".format(
+            np.sqrt((1/len(idx_thre)) * np.nansum(pull_df['Total'].values**2)))
         if hist:
             data_to_plot = rms_df['Total'].values
-            axs[-1,-1].hist(data_to_plot, bins=30)
-            axs[-1,-1].set(title=r' $ \sum $ filters RMS='+mean_rms, xlabel='Spectral RMS')
+            axs[-1, -1].hist(data_to_plot, bins=30)
+            axs[-1, -1].set(title=r' $ \sum $ filters RMS=' +
+                            mean_rms, xlabel='Spectral RMS')
 
         else:
             imratio = shape[1]/shape[0]
-            imrms=axs[-1,-1].imshow(np.rot90(np.reshape(rms_df["Total"].values,(int(shape[0]), int(shape[1])))),vmin=np.nanpercentile(rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r',origin='upper',extent = extent, aspect = 1)
-            axs[-1,-1].set(title=fr' $ \sum $ filters RMS=' + mean_rms, xlabel='x ('+unit+')')
-            axs[-1,-1].set_xlabel('x ('+unit+')', fontsize=15)
-            axs[-1,-1].tick_params(labelsize=15)
-            axs[-1,-1].set_title(fr' $ \sum $ filters RMS=' + mean_rms, fontsize=15)
-            axs[-1,-1].set_aspect('equal')
-            cbar_res = fig.colorbar(imres, shrink=imratio, ax=axs[0].ravel().tolist(), extend='both', label='Pull', aspect=40)
-            cbar_rms = fig.colorbar(imrms, shrink=imratio, ax=axs[1].ravel().tolist(), extend='max', label='Spectral RMS', aspect=40)
+            imrms = axs[-1, -1].imshow(np.rot90(np.reshape(rms_df["Total"].values, (int(shape[0]), int(shape[1])))), vmin=np.nanpercentile(
+                rms_df["Total"].values, vmin), vmax=np.nanpercentile(rms_df["Total"].values, vmax),  cmap='inferno_r', origin='upper', extent=extent, aspect=1)
+            axs[-1, -1].set(title=fr' $ \sum $ filters RMS=' +
+                            mean_rms, xlabel='x ('+unit+')')
+            axs[-1, -1].set_xlabel('x ('+unit+')', fontsize=15)
+            axs[-1, -1].tick_params(labelsize=15)
+            axs[-1, -1].set_title(fr' $ \sum $ filters RMS=' +
+                                  mean_rms, fontsize=15)
+            axs[-1, -1].set_aspect('equal')
+            cbar_res = fig.colorbar(imres, shrink=imratio, ax=axs[0].ravel(
+            ).tolist(), extend='both', label='Pull', aspect=40)
+            cbar_rms = fig.colorbar(imrms, shrink=imratio, ax=axs[1].ravel(
+            ).tolist(), extend='max', label='Spectral RMS', aspect=40)
             cbar_res.set_label('Pull', fontsize=13)
             cbar_rms.set_label('Spectral RMS', fontsize=13)
             cbar_rms.ax.tick_params(labelsize=13)
@@ -704,34 +773,39 @@ class Cigale(SEDFitter):
         if saveplot is not None:
             fig.savefig(saveplot, dpi='figure', bbox_inches='tight')
 
-
     @staticmethod
-    def show_intcube( intcube, lbda_bb, data_in, data_out, saveplot=None):
+    def show_intcube(intcube, lbda_bb, data_in, data_out, saveplot=None):
 
         from hypergal.spectroscopy import utils
-        import matplotlib.pyplot as plt 
+        import matplotlib.pyplot as plt
         filterlist = data_in.colnames
 
-        del filterlist[0:2] #Remove id and redshift
-        del filterlist[1::2] #Remove *_err
-        filtererrlist = [f'{i}_err'  for i in filterlist]
-        col_best_fit = [f'best.{i}'  for i in filterlist]
-        filtererrlist = [f'{i}_err'  for i in filterlist]
-        bestfit_integrated = utils.flux_mjy_to_aa(data_out[col_best_fit].to_pandas(),lbda_bb).sum().values/len(intcube.indexes)
-        val_in_integrated = utils.flux_mjy_to_aa(data_in[filterlist].to_pandas(),lbda_bb).sum().values/len(intcube.indexes)
-        err_in_integrated = np.sqrt(np.sum(utils.flux_mjy_to_aa(data_in[filtererrlist].to_pandas(),lbda_bb).values**2, axis=0))/len(intcube.indexes)
+        del filterlist[0:2]  # Remove id and redshift
+        del filterlist[1::2]  # Remove *_err
+        filtererrlist = [f'{i}_err' for i in filterlist]
+        col_best_fit = [f'best.{i}' for i in filterlist]
+        filtererrlist = [f'{i}_err' for i in filterlist]
+        bestfit_integrated = utils.flux_mjy_to_aa(
+            data_out[col_best_fit].to_pandas(), lbda_bb).sum().values/len(intcube.indexes)
+        val_in_integrated = utils.flux_mjy_to_aa(
+            data_in[filterlist].to_pandas(), lbda_bb).sum().values/len(intcube.indexes)
+        err_in_integrated = np.sqrt(np.sum(utils.flux_mjy_to_aa(
+            data_in[filtererrlist].to_pandas(), lbda_bb).values**2, axis=0))/len(intcube.indexes)
 
-        fig = plt.figure(figsize=(12,4), dpi=150)
+        fig = plt.figure(figsize=(12, 4), dpi=150)
         gs = fig.add_gridspec(1, 3)
         axim = fig.add_subplot(gs[0, 2])
         axspec = fig.add_subplot(gs[0, 0:2])
 
-
-        axspec.plot( intcube.lbda, np.mean(intcube.data, axis=1),label="Mean spectrum")
+        axspec.plot(intcube.lbda, np.mean(
+            intcube.data, axis=1), label="Mean spectrum")
         #ax.plot(cutouts.lbda,np.mean(intcube.data, axis=0)[~ (np.mean(intcube.data, axis=0)==0)])
-        axspec.scatter(lbda_bb, bestfit_integrated, color='r',s=49, label='Photo. cigale outputs', zorder=10)
-        axspec.scatter(lbda_bb, val_in_integrated, s=49,  facecolors='none',edgecolor='b', label='Photo. PS1 inputs', zorder=11 )
-        axspec.errorbar(lbda_bb, val_in_integrated, err_in_integrated, fmt='none', color='b', zorder=12)
+        axspec.scatter(lbda_bb, bestfit_integrated, color='r',
+                       s=49, label='Photo. cigale outputs', zorder=10)
+        axspec.scatter(lbda_bb, val_in_integrated, s=49,  facecolors='none',
+                       edgecolor='b', label='Photo. PS1 inputs', zorder=11)
+        axspec.errorbar(lbda_bb, val_in_integrated,
+                        err_in_integrated, fmt='none', color='b', zorder=12)
         axspec.legend()
         axspec.set_xlabel(r'Wavelength($\AA$)')
         axspec.set_ylabel(r'Flux ($erg.s^{-1}.cm^{-2}.\AA^{-1}$)')
@@ -744,7 +818,7 @@ class Cigale(SEDFitter):
         axim.yaxis.tick_right()
         axim.yaxis.set_label_position("right")
         if saveplot is not None:
-            fig.savefig(saveplot, dpi='figure', bbox_inches='tight') 
+            fig.savefig(saveplot, dpi='figure', bbox_inches='tight')
 
     def clean_output(self):
         """
@@ -754,7 +828,8 @@ class Cigale(SEDFitter):
         then clean the directory where cigale has been run.
         """
         if self.currentpwd == self.working_dir:
-            warnings.warn("currentpwd is the same as working dir. Cannot remove it. Nothing done")
+            warnings.warn(
+                "currentpwd is the same as working dir. Cannot remove it. Nothing done")
             return
 
         os.chdir(self._currentpwd)
@@ -769,9 +844,9 @@ class Cigale(SEDFitter):
         """
         Set quantity of core to use for the multiprocessing.
         """
-        if value == 'auto':           
+        if value == 'auto':
             import multiprocessing
-            if multiprocessing.cpu_count()>2:
+            if multiprocessing.cpu_count() > 2:
                 self._nb_process = multiprocessing.cpu_count() - 2
             else:
                 self._nb_process = 1
@@ -819,8 +894,8 @@ class Cigale(SEDFitter):
     @property
     def cubeouts_shape(self):
         if self.cubeouts is not None:
-            xax,yax =np.array(list(self.cubeouts.spaxel_mapping.values())).T
-            shape = (len(np.unique(xax)), len(np.unique(yax)) )
+            xax, yax = np.array(list(self.cubeouts.spaxel_mapping.values())).T
+            shape = (len(np.unique(xax)), len(np.unique(yax)))
             return shape
         else:
             return None
@@ -828,9 +903,9 @@ class Cigale(SEDFitter):
     @property
     def cubeouts_pixbins(self):
         if self.cubeouts is not None:
-            xax,yax =np.array(list(self.cubeouts.spaxel_mapping.values())).T
-            bins  = np.unique(xax)[1] - np.unique(xax)[0]
+            xax, yax = np.array(list(self.cubeouts.spaxel_mapping.values())).T
+            bins = np.unique(xax)[1] - np.unique(xax)[0]
             return int(bins)
-        
+
         else:
             return None
