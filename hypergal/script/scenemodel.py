@@ -98,7 +98,7 @@ class DaskScene(DaskHyperGal):
                        lbda_range=[5000, 8500], nslices=6,
                        filters_fit=["ps1.g", "ps1.r", "ps1.i", "ps1.z"],
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
-                       prefit_photo=True,
+                       prefit_photo=True, use_exist_intcube=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True):
         """ """
         info = io.parse_filename(cubefile)
@@ -150,7 +150,8 @@ class DaskScene(DaskHyperGal):
                                                                 filters=filters,
                                                                 source_filter=source_filter,
                                                                 source_thres=source_thres, scale_cout=scale_cout,
-                                                                scale_sedm=scale_sedm, rmtarget=rmtarget)
+                                                                scale_sedm=scale_sedm, use_extsource=use_extsource,
+                                                                rmtarget=rmtarget)
 
         source_coutcube = source_coutcube__source_sedmcube[0]
         source_sedmcube = source_coutcube__source_sedmcube[1]
@@ -191,19 +192,24 @@ class DaskScene(DaskHyperGal):
         #   Step 1.2 Intrinsic Cube
         #
         # ---> SED fitting of the cutouts
+        if use_exist_intcube and os.path.exists(io.e3dfilename_to_hgcubes(cubefile, "intcube")):
+            from ..spectroscopy import WCSCube
+            int_cube = delayed(WCSCube.read_hdf)(
+                io.e3dfilename_to_hgcubes(cubefile, "intcube"))
 
-        saveplot_rmspull = plotbase + '_' + name + '_cigale_pullrms.png'
-        saveplot_intcube = plotbase + '_' + name + '_intcube.png'
-        int_cube = self.run_sedfitter(source_coutcube,
-                                      redshift=redshift, working_dir=working_dir,
-                                      sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
-                                      testmode=testmode,
-                                      saveplot_rmspull=saveplot_rmspull,
-                                      saveplot_intcube=saveplot_intcube)
+        else:
+            saveplot_rmspull = plotbase + '_' + name + '_cigale_pullrms.png'
+            saveplot_intcube = plotbase + '_' + name + '_intcube.png'
+            int_cube = self.run_sedfitter(source_coutcube,
+                                          redshift=redshift, working_dir=working_dir,
+                                          sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
+                                          testmode=testmode,
+                                          saveplot_rmspull=saveplot_rmspull,
+                                          saveplot_intcube=saveplot_intcube)
 
-        # ---> Storing <--- # 3
-        stored.append(int_cube.to_hdf(
-            io.e3dfilename_to_hgcubes(cubefile, "intcube")))
+            # ---> Storing <--- # 3
+            stored.append(int_cube.to_hdf(
+                io.e3dfilename_to_hgcubes(cubefile, "intcube")))
 
         # ------------ #
         #    STEP 2    #
@@ -220,7 +226,7 @@ class DaskScene(DaskHyperGal):
         saveplot_structure = plotbase + '_' + name + '_metaslice_fit_'
         bestfit_mfit = self.fit_cube(mcube_sedm, mcube_intr, radec, nslices=nslices,
                                      saveplot_structure=saveplot_structure,
-                                     mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False,
+                                     mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False, curved_bkgd=curved_bkgd,
                                      fix_params=['scale', 'rotation'], onlyvalid=True)
 
         # ---> Storing <--- # 4
@@ -362,7 +368,7 @@ class DaskScene(DaskHyperGal):
                  saveplot_structure=None,
                  mslice_param=None, initguess=None,
                  psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D",
-                 curved_bkgd=False,
+                 curved_bkgd=True,
                  jointfit=False,
                  fix_pos=False, fix_psf=False,
                  fix_params=['scale', 'rotation'], onlyvalid=False):
