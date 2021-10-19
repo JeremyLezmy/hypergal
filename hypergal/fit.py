@@ -1073,7 +1073,7 @@ class MultiSliceParameters():
     # -------- #
     def get_guess(self, lbda, psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", as_dataframe=False, squeeze=True):
         """ """
-        if self.data == None:
+        if type(self.data) == type(None):
             return {}
         if psfmodel == "Gauss2D" and self.psfmodel == "Gauss3D":
             guesses = self.get_gauss_guess(lbda)
