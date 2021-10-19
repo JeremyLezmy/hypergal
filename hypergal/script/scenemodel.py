@@ -178,8 +178,8 @@ class DaskScene(DaskHyperGal):
                                                 psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess, onlyvalid=True)
 
             # ---> Storing <--- # 2
-            stored.append(bestfit_cout.to_hdf(
-                *io.get_slicefit_datafile(cubefile, "cutout")))
+            # stored.append(bestfit_cout.to_hdf(
+            #    *io.get_slicefit_datafile(cubefile, "cutout")))
 
             # ---> Get the object for future guesses || Guesser
 
@@ -569,7 +569,8 @@ class DaskScene(DaskHyperGal):
                                                                        xy_comp=xy_comp,
                                                                        guess=guess, add_lbda=True, priors=Priors(), onlyvalid=onlyvalid)
 
-        return delayed(pandas.concat)(best_fits)
+        # return delayed(pandas.concat)(best_fits)
+        return best_fits
 
     def build_intcube(self, cubefile, radec, redshift,
                       savefile=None,
