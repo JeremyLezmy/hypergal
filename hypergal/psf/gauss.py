@@ -85,7 +85,7 @@ class Gauss3D(PSF3D, Gauss2D):
     #  Methods      #
     # ============= #
     @classmethod
-    def fit_from_values(cls, values, lbda, errors=None, **kwargs):
+    def fit_from_values(cls, values, lbda, errors=None, min_err=1e-4, **kwargs):
         """ 
 
         Parameters
@@ -110,7 +110,7 @@ class Gauss3D(PSF3D, Gauss2D):
 
         param3d = {}
         if errors is not None:
-            errors[errors < 1-4] = 1e10
+            errors[errors < min_err] = 1e10
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
         #   - fit the instance profile if it is.

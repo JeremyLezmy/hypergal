@@ -144,7 +144,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
     #  Methods      #
     # ============= #
     @classmethod
-    def fit_from_values(cls, values, lbda, errors=None, saveplot=None, **kwargs):
+    def fit_from_values(cls, values, lbda, errors=None, min_err=1e-4, saveplot=None, **kwargs):
         """ 
 
         Parameters
@@ -171,7 +171,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
         param3d = {}
         mainlbda = lbda.copy()
         if errors is not None:
-            errors[errors < 1-4] = 1e10
+            errors[errors < min_err] = 1e10
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
         #   - fit the instance profile if it is.
