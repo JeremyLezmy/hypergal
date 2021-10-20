@@ -118,22 +118,30 @@ class Gauss3D(PSF3D, Gauss2D):
             #   -> Compute weighted mean for non-chromatics parameters
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
                 value = np.asarray(values[param])
-                if errors is not None:
-                    variance = np.asarray(errors[param])**2
-                    param3d[param] = np.average(value, weights=1/variance)
+                if len(value) < 2:
+                    param3d[param] = value
                 else:
-                    param3d[param] = np.mean(value)
+                    if errors is not None:
+                        variance = np.nan_to_num(
+                            np.asarray(errors[param])**2, nan=1e10)
+                        param3d[param] = np.average(value, weights=1/variance)
+                    else:
+                        param3d[param] = np.mean(value)
 
             # Non chromatic parameters
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():  # If param is chromatic
                 # Sigma
                 if len(values[param]) < 2:
-                    param3d["sigma"] = values[param]
+                    if param == 'sigma' and (np.asarray(values[param]) > 4 or np.asarray(values[param]) < 0.1):
+                        param3d['sigma'] = 1
+                    else:
+                        param3d["sigma"] = np.asarray(values[param])
+
                     param3d["rho"] = -0.4
                 else:
                     value = np.asarray(values[param])
-                    variance = np.asarray(
-                        errors[param])**2 if errors is not None else np.ones(len(value))
+                    variance = np.nan_to_num(np.asarray(
+                        errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value))
 
                     from iminuit import cost
 

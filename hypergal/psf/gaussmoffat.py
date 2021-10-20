@@ -180,7 +180,10 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
 
                 if len(values[param]) < 2:
-                    param3d[param] = values[param]
+                    if param == 'eta' and (np.asarray(values[param]) > 100 or np.asarray(values[param]) < 1e-10):
+                        param3d[param] = 0.8
+                    else:
+                        param3d[param] = np.asarray(values[param])
 
                 else:
                     if param == 'eta':
@@ -188,13 +191,16 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                         flag = np.logical_or(value_ < 1e-10, value_ > 100)
                         value = value_[~flag].copy()
                         lbda = mainlbda[~flag].copy()
-                        variance_ = np.asarray(
-                            errors[param])**2 if errors is not None else np.ones(len(value_))
+                        variance_ = np.nan_to_num(np.asarray(
+                            errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value_))
                         variance = variance_[~flag].copy()
+                        if len(value) == 0:
+                            value = 0.8
+                            variance = 1
                     else:
                         value = np.asarray(values[param])
-                        variance = np.asarray(
-                            errors[param])**2 if errors is not None else np.ones(len(value_))
+                        variance = np.nan_to_num(np.asarray(
+                            errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value_))
                         lbda = mainlbda.copy()
 
                     def model_cst(lbda, cst):
@@ -210,7 +216,10 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():  # If param is chromatic
                 # Alpha
                 if len(values[param]) < 2:
-                    param3d["alpha"] = values[param]
+                    if param == 'alpha' and (np.asarray(values[param]) > 6 or np.asarray(values[param]) < 0.9):
+                        param3d['alpha'] = 2.5
+                    else:
+                        param3d["alpha"] = np.asarray(values[param])
                     param3d["rho"] = -0.4
 
                 else:
@@ -219,36 +228,40 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     flag = np.logical_or(value_ > 7, value_ < 0.9)
                     value = value_[~flag].copy()
                     lbda = mainlbda[~flag].copy()
-                    variance_ = np.asarray(
-                        errors[param])**2 if errors is not None else np.ones(len(value_))
+                    variance_ = np.nan_to_num(np.asarray(
+                        errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value_))
                     variance = variance_[~flag].copy()
+                    if len(value) == 0:
+                        param3d["alpha"] = 2.5
+                        param3d["rho"] = -0.4
 
-                    def model_alpha(lbda, alpharef, rho):
-                        this.update_parameters(
-                            **{"alpha": alpharef, "rho": rho})
-                        return this.get_alpha(lbda)
+                    else:
+                        def model_alpha(lbda, alpharef, rho):
+                            this.update_parameters(
+                                **{"alpha": alpharef, "rho": rho})
+                            return this.get_alpha(lbda)
 
-                    c = cost.LeastSquares(
-                        lbda, value, variance**0.5, model_alpha)
-                    c.loss = "soft_l1"
-                    m = Minuit(c, alpharef=2, rho=-0.4)
-                    migout = m.migrad()
+                        c = cost.LeastSquares(
+                            lbda, value, variance**0.5, model_alpha)
+                        c.loss = "soft_l1"
+                        m = Minuit(c, alpharef=2, rho=-0.4)
+                        migout = m.migrad()
 
-                    # def get_chromparam(arr_):
-                    #    """ function to be minimizing """
-                    #    alpha_, rho_ = arr_
-                    #    this.update_parameters(**{"alpha":alpha_, "rho":rho_})
-                    #    model = this.get_alpha(lbda) # rho has been updated already
-                    #    chi2 = np.sum( (value-model)**2/variance )
-                    #    return chi2
+                        # def get_chromparam(arr_):
+                        #    """ function to be minimizing """
+                        #    alpha_, rho_ = arr_
+                        #    this.update_parameters(**{"alpha":alpha_, "rho":rho_})
+                        #    model = this.get_alpha(lbda) # rho has been updated already
+                        #    chi2 = np.sum( (value-model)**2/variance )
+                        #    return chi2
 
-                    #fit_output= minimize( get_chromparam, np.array([2,-0.4]) )
+                        #fit_output= minimize( get_chromparam, np.array([2,-0.4]) )
 
-                    #param3d["alpha"] = fit_output.x[0]
-                    #param3d["rho"]   = fit_output.x[1]
+                        #param3d["alpha"] = fit_output.x[0]
+                        #param3d["rho"]   = fit_output.x[1]
 
-                    param3d["alpha"] = m.values[0]
-                    param3d["rho"] = m.values[1]
+                        param3d["alpha"] = m.values[0]
+                        param3d["rho"] = m.values[1]
 
         this.update_parameters(**param3d)
         if saveplot is not None:

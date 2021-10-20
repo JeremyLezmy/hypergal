@@ -186,12 +186,12 @@ class ADRFitter(ADR):
             import warnings
             warnings.warn(
                 " Only one position is given, will return the initial adr from cubefile")
-            xref, yref = self.refract(
-                self.xpos, self.ypos, self.lbda, backward=True, unit=IFU_SCALE)
+
             self._fit_airmass = self.airmass
             self._fit_parangle = self.parangle
-            self._fit_xref = xref
-            self._fit_yref = yref
+            self._fit_xref = np.asarray(self.xpos)
+            self._fit_yref = np.asarray(self.ypos)
+            self.set(lbdaref=np.asarray(self.lbda))
 
         else:
 
