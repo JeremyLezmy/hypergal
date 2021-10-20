@@ -199,7 +199,9 @@ class ADRFitter(ADR):
             datas = np.array([self.xpos, self.ypos])
 
             if self.xpos_err is not None and self.ypos_err is not None:
-                err = np.array([self.xpos_err, self.ypos_err])
+                err = np.nan_to_num(
+                    np.array([self.xpos_err, self.ypos_err]), nan=1e10)
+                err[err < 1e-4] = 1e10
             else:
                 err = np.ones((2, len(self.xpos)))
 

@@ -91,7 +91,7 @@ class Gauss3D(PSF3D, Gauss2D):
         Parameters
         ----------
         values: [dict/serie]
-            dictionary or pandas.Series containing the freepameters 
+            dictionary or pandas.Series containing the free parameters 
             (a, b | sigma)
 
         lbda: [array]
@@ -109,6 +109,8 @@ class Gauss3D(PSF3D, Gauss2D):
         this = cls(**kwargs)
 
         param3d = {}
+        if errors is not None:
+            errors[errors < 1-4] = 1e10
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
         #   - fit the instance profile if it is.
