@@ -172,6 +172,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
         mainlbda = lbda.copy()
         if errors is not None:
             backup_errors = errors.copy()
+            errors = backup_errors.copy()
             errors[errors < min_err] = 1e10
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
