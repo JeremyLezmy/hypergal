@@ -171,6 +171,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
         param3d = {}
         mainlbda = lbda.copy()
         if errors is not None:
+            backup_errors = errors.copy()
             errors[errors < min_err] = 1e10
         # Loop over the PARAMETER_NAMES and given the values, errors and lbda
         #   - get the mean values if the parameter is not chromatic
@@ -267,7 +268,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
 
         this.update_parameters(**param3d)
         if saveplot is not None:
-            this.show_chromfit(values, mainlbda, errors, saveplot)
+            this.show_chromfit(values, mainlbda, backup_errors, saveplot)
         return this
 
     def get_beta(self, lbda, b0=1.51, b1=0.22, rho=None):
