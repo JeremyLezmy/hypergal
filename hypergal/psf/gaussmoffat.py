@@ -409,12 +409,14 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
 
             elif param == 'eta':
                 ax.set_ylabel(r'$\eta (\lambda)$', fontsize=13)
-                ax.set_ylim(np.max([-1, np.min(values[param])-0.1]),
-                            np.min([8, np.max(values[param])+0.1]))
+                ax.set_ylim(np.max([-1, np.min(values[param])-0.2]),
+                            np.min([10, np.max(values[param])+0.1]))
             elif param == 'sigma':
                 ax.set_ylabel(r'$\sigma (\lambda)$', fontsize=13)
             else:
                 ax.set_ylabel(param + r' ($\lambda$)', fontsize=13)
+                ax.set_ylim(np.max([-2, np.min(values[param])-0.1]),
+                            np.min([5, np.max(values[param])+0.1]))
             ax.tick_params(axis='both', labelsize=13)
             ax.legend(fontsize=11)
 

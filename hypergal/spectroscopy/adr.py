@@ -160,7 +160,7 @@ class ADRFitter(ADR):
 
         """
 
-        return cls(xpos, ypos, lbda, xpos_err=xpos_err, ypos_err=xpos_err,
+        return cls(xpos, ypos, lbda, xpos_err=xpos_err, ypos_err=ypos_err,
                    init_adr=init_adr, **kwargs)
 
     def fit_adr(self, show=False, **kwargs):
