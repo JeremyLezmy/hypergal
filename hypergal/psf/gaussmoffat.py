@@ -391,7 +391,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                         label=fr'Chromatic Fit (power law) $\alpha(\lambda)={self.parameters["alpha"]:.2f}\left(\frac{{\lambda}}{{{self.lbdaref}}}\right)^{{{self.parameters["rho"]:.2f}}}$')
                 if errors[param] is not None:
                     ax.errorbar(lbda, values[param],
-                                errors[param], fmt='none', color='k')
+                                np.nan_to_num(np.asarray(errors[param])), fmt='none', color='k')
             elif param not in self.CHROMATIC_PARAMETERS and param in values.keys():
                 ax.scatter(lbda, values[param], color='k',
                            label='Metaslices fitted values')
@@ -399,16 +399,18 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                           label=fr'Chromatic Fit (constant) {param}={self.parameters[param]:.3f}')
                 if errors[param] is not None:
                     ax.errorbar(lbda, values[param],
-                                errors[param], fmt='none', color='k')
+                                np.nan_to_num(np.asarray(errors[param])), fmt='none', color='k')
 
             ax.set_xlabel(r'$\lambda(\AA)$', fontsize=13)
             if param == 'alpha':
                 ax.set_ylabel(r'$\alpha (\lambda)$', fontsize=13)
-                ax.set_ylim(0.5, np.min([8, np.max(values[param])]))
+                ax.set_ylim(np.max([0.5, np.min(values[param])-0.1]),
+                            np.min([7, np.max(values[param])+0.1]))
 
             elif param == 'eta':
                 ax.set_ylabel(r'$\eta (\lambda)$', fontsize=13)
-                ax.set_ylim(-1, np.min([8, np.max(values[param])]))
+                ax.set_ylim(np.max([-1, np.min(values[param])-0.1]),
+                            np.min([8, np.max(values[param])+0.1]))
             elif param == 'sigma':
                 ax.set_ylabel(r'$\sigma (\lambda)$', fontsize=13)
             else:

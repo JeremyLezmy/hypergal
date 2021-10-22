@@ -270,8 +270,8 @@ class ADRFitter(ADR):
 
         ax.scatter(self.xpos, self.ypos, cmap=colormap,
                    c=self.lbda, label='Input position')
-        ax.errorbar(self.xpos, self.ypos, self.xpos_err,
-                    self.ypos_err, fmt='none', color=colors)
+        ax.errorbar(self.xpos, self.ypos, np.nan_to_num(np.asarray(self.xpos_err)),
+                    np.nan_to_num(np.asarray(self.ypos_err)), fmt='none', color=colors)
 
         refracted = self.refract(
             self._fit_xref, self._fit_yref, self.lbda, unit=IFU_SCALE)
