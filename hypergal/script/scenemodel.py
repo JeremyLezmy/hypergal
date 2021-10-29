@@ -56,7 +56,8 @@ def ab_lines(z):
 class DaskScene(DaskHyperGal):
 
     @classmethod
-    def compute_targetcubes(cls, name, client, contains=None, verbose=False, ignore_astrom=True, manual_radec=None, manual_z=None, **kwargs):
+    def compute_targetcubes(cls, name, client, contains=None, verbose=False, ignore_astrom=True, manual_radec=None,
+                            return_cubefile=False, manual_z=None, **kwargs):
         """ """
         cubefiles, radec, redshift = io.get_target_info(
             name, contains=contains, ignore_astrom=ignore_astrom, verbose=True)
@@ -74,6 +75,8 @@ class DaskScene(DaskHyperGal):
 
         storings = [this.compute_single(cubefile_, radec, redshift, **kwargs)
                     for cubefile_ in cubefiles]
+        if return_cubefile:
+            return storings, cubefiles
         return storings
 
     @staticmethod

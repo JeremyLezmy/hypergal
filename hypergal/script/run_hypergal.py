@@ -122,10 +122,25 @@ if __name__ == '__main__':
         for (targ, contain) in zip(args.target, contains):
 
             stored = []
-            stored.append(scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift,
-                          manual_radec=args.radec, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd))
+            to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec,
+                                                                            return_cubefile=True, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd)
+            stored.append(to_stored)
+
             future = client.compute(stored)
             dask.distributed.wait(future)
+
+            info = parse_filename(cubefiles[0])
+            cubeid = info["sedmid"]
+            name = info["name"]
+            filedir = os.path.dirname(cubefiles[0])
+            plotbase = os.path.join(filedir, "hypergal",
+                                    info["name"], info["sedmid"])
+            dirplotbase = os.path.dirname(plotbase)
+            logfile = os.path.join(dirplotbase, 'logfile.yml')
+            import yaml
+            with open(logfile, 'w') as outfile:
+                yaml.dump(client.get_worker_logs(), outfile,
+                          indent=3, default_flow_style=False)
 
     else:
 
