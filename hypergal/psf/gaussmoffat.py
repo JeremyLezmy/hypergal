@@ -199,22 +199,26 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                             errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value_))
                         variance = variance_[~flag].copy()
                         if len(value) == 0:
-                            value = 0.8
-                            variance = 1
+                            value = np.asarray([0.8])
+                            variance = np.asarray([1])
                     else:
                         value = np.asarray(values[param])
                         variance = np.nan_to_num(np.asarray(
                             errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value_))
                         lbda = mainlbda.copy()
 
-                    def model_cst(lbda, cst):
-                        return np.tile(cst, len(lbda))
+                    if len(value) == 1:
+                        param3d[param] = float(value)
+                    else:
+                        def model_cst(lbda, cst):
+                            return np.tile(cst, len(lbda))
 
-                    c = cost.LeastSquares(lbda, value, variance**0.5, model_cst)
-                    c.loss = "soft_l1"
-                    m = Minuit(c, cst=np.average(value, weights=1/variance))
-                    migout = m.migrad()
-                    param3d[param] = m.values[0]
+                        c = cost.LeastSquares(
+                            lbda, value, variance**0.5, model_cst)
+                        c.loss = "soft_l1"
+                        m = Minuit(c, cst=np.average(value, weights=1/variance))
+                        migout = m.migrad()
+                        param3d[param] = m.values[0]
 
             # Non chromatic parameters
             elif param in this.CHROMATIC_PARAMETERS and param in values.keys():  # If param is chromatic
