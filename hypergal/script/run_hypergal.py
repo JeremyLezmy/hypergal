@@ -122,8 +122,8 @@ if __name__ == '__main__':
         for (targ, contain) in zip(args.target, contains):
 
             stored = []
-            to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec,
-                                                                            return_cubefile=True, rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, curved_bkgd=args.curved_bkgd)
+            to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True,
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd)
             stored.append(to_stored)
 
             future = client.compute(stored)
