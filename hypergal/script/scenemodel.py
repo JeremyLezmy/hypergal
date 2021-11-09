@@ -542,8 +542,8 @@ class DaskScene(DaskHyperGal):
         # Get the slices
         cout_filter_slices = {f_: source_coutcube.get_slice(index=filterin.index(f_), slice_object=True)
                               for f_ in filters_to_use}
-        source_sedmcube_sub = source_sedmcube.get_partial_cube(source_sedmcube.indexes, np.argwhere(
-            (source_sedmcube.lbda > 4500) & (source_sedmcube.lbda < 8800)).squeeze())
+        source_sedmcube_sub = source_sedmcube.get_partial_cube(delayed(source_sedmcube.indexes), np.argwhere(
+            (SEDM_LBDA > 4500) & (SEDM_LBDA < 8800)).squeeze())
 
         sedm_filter_slices = {f_: source_sedmcube_sub.get_slice(lbda_max=np.max(photobasics.get_filter(f_, as_dataframe=False)[0]), lbda_min=np.min(photobasics.get_filter(f_, as_dataframe=False)[0]),
                                                                 slice_object=True) for f_ in filters_to_use}
