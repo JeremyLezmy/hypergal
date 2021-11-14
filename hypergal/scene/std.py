@@ -451,13 +451,23 @@ class STD_SliceScene(PointSource, SliceScene):
 
         axp = fig.add_subplot(gs[1, :2])
         axc = fig.add_subplot(gs[1, 2])
-
-        self.show(axes=[ax, axm, axr], logscale=logscale_imshow,  cmap=cmap, vmin=vmin, vmax=vmax,
-                  fill_comp=fill_comp, index=index, cmapproj=cmapproj, add_colorbar=add_colorbar, titles=titles)
-        self.show_profile(ax=axp, logscale=logscale_profile,
-                          radius_spx=radius_spx)
-        self.show_contour(ax=axc, logscale=logscale_contour,
-                          cmap=cmap, vmin=vmin, vmax=vmax)
+        try:
+            self.show(axes=[ax, axm, axr], logscale=logscale_imshow,  cmap=cmap, vmin=vmin, vmax=vmax,
+                      fill_comp=fill_comp, index=index, cmapproj=cmapproj, add_colorbar=add_colorbar, titles=titles)
+            self.show_profile(ax=axp, logscale=logscale_profile,
+                              radius_spx=radius_spx)
+            self.show_contour(ax=axc, logscale=logscale_contour,
+                              cmap=cmap, vmin=vmin, vmax=vmax)
+        except ValueError:
+            logscale_profile = False
+            logscale_contour = False
+            logscale_imshow = False
+            self.show(axes=[ax, axm, axr], logscale=logscale_imshow,  cmap=cmap, vmin=vmin, vmax=vmax,
+                      fill_comp=fill_comp, index=index, cmapproj=cmapproj, add_colorbar=add_colorbar, titles=titles)
+            self.show_profile(ax=axp, logscale=logscale_profile,
+                              radius_spx=radius_spx)
+            self.show_contour(ax=axc, logscale=logscale_contour,
+                              cmap=cmap, vmin=vmin, vmax=vmax)
 
         import datetime
         import hypergal
