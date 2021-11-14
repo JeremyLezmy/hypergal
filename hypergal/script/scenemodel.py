@@ -94,7 +94,7 @@ class DaskScene(DaskHyperGal):
             return cube
 
     def compute_single(self, cubefile, radec, redshift,
-                       binfactor=2,
+                       hgfirst=True, binfactor=2,
                        filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                        source_filter="ps1.r", source_thres=2,
                        scale_cout=15, scale_sedm=10, rmtarget=2,
@@ -146,7 +146,7 @@ class DaskScene(DaskHyperGal):
             spxy = None
 
         calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(
-            cubefile, apply_byecr=True, radec=radec, spxy=spxy))
+            cubefile, hgfirst=hgfirst, apply_byecr=True, radec=radec, spxy=spxy))
 
         source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec, spxy=spxy,
                                                                 binfactor=binfactor,

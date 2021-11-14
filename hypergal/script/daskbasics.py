@@ -60,10 +60,10 @@ class DaskHyperGal(base.DaskCube):
     # =============== #
 
     @classmethod
-    def get_calibrated_cube(cls, cubefile, fluxcalfile=None, apply_byecr=True,
+    def get_calibrated_cube(cls, cubefile, fluxcalfile=None, hgfirst=False, apply_byecr=True,
                             store_data=False, get_filename=False, as_wcscube=True, radec=None, spxy=None, **kwargs):
         """ """
-        cube = super().get_calibrated_cube(cubefile, fluxcalfile=fluxcalfile,
+        cube = super().get_calibrated_cube(cubefile, fluxcalfile=fluxcalfile, hgfirst=hgfirst,
                                            apply_byecr=apply_byecr,
                                            get_filename=False, **kwargs)
         if not as_wcscube:
