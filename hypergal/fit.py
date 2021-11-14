@@ -364,7 +364,10 @@ class SceneFitter(object):
         migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
                              runmigrad=True)
         if savefile is not None:
-            this.scene.report_std(savefile=savefile)
+            try:
+                this.scene.report_std(savefile=savefile)
+            except ValueError:
+                pass
 
         if onlyvalid and (migradout == None or not migradout[0].is_valid):
             return None
