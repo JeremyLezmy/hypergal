@@ -196,7 +196,7 @@ class STD_SliceScene(PointSource, SliceScene):
         self.show_psf(ax=axes[2], adjust=True, flux=res,
                       edgecolor=None, vmin=-0.5, vmax=0.5, cmap="coolwarm")
 
-        if not logscale:
+        if not logscale or vmin < 0 or vmax < 0:
 
             title_dat = "Data"
             if self.has_curved_bkgd:
