@@ -16,14 +16,14 @@ class DaskHyperGal(base.DaskCube):
     @classmethod
     def get_sourcecubes(cls, cubefile, radec, spxy=None, binfactor=2,
                         filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
-                        source_filter="ps1.r", source_thres=2,
+                        source_filter="ps1.r", source_thres=2, hgfirst=False,
                         scale_cout=15, scale_sedm=10, use_extsource=True,
                         rmtarget=2):
         """ """
         #
         # Cubes
         sedm_cube = cls.get_calibrated_cube(
-            cubefile, as_wcscube=True, radec=radec, spxy=spxy, apply_byecr=True)
+            cubefile, hgfirst=hgfirst, as_wcscube=True, radec=radec, spxy=spxy, apply_byecr=True)
         cutouts = cls.get_cutout(radec=radec, binfactor=2, filters=filters)
         #
         # cout_cube->Source & cube

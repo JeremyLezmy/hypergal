@@ -152,7 +152,7 @@ class DaskScene(DaskHyperGal):
                                                                 binfactor=binfactor,
                                                                 filters=filters,
                                                                 source_filter=source_filter,
-                                                                source_thres=source_thres, scale_cout=scale_cout,
+                                                                source_thres=source_thres, hgfirst=hgfirst, scale_cout=scale_cout,
                                                                 scale_sedm=scale_sedm, use_extsource=use_extsource,
                                                                 rmtarget=rmtarget)
 
