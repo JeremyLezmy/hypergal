@@ -11,6 +11,21 @@ from ..spectroscopy import basics as spectrobasics
 from ..spectroscopy import sedfitting
 
 
+def remove_out_spaxels(cube, overwrite=False):
+
+    spx_map = cube.spaxel_mapping
+    ill_spx = np.argwhere(np.isnan(list(spx_map.values()))).T[0]
+    if len(ill_spx) > 0:
+        cube_fix = cube.get_partial_cube(
+            [i for i in cube.indexes if i not in cube.indexes[ill_spx]],
+            np.arange(len(cube.lbda)))
+        if overwrite:
+            cube_fix.writeto(cube.filename)
+        return cube_fix
+    else:
+        return cube
+
+
 class DaskHyperGal(base.DaskCube):
 
     @classmethod
@@ -63,9 +78,9 @@ class DaskHyperGal(base.DaskCube):
     def get_calibrated_cube(cls, cubefile, fluxcalfile=None, hgfirst=False, apply_byecr=True,
                             store_data=False, get_filename=False, as_wcscube=True, radec=None, spxy=None, **kwargs):
         """ """
-        cube = super().get_calibrated_cube(cubefile, fluxcalfile=fluxcalfile, hgfirst=hgfirst,
+        cube = delayed(remove_out_spaxels)(super().get_calibrated_cube(cubefile, fluxcalfile=fluxcalfile, hgfirst=hgfirst,
                                            apply_byecr=apply_byecr,
-                                           get_filename=False, **kwargs)
+                                           get_filename=False, **kwargs))
         if not as_wcscube:
             return cube
 
