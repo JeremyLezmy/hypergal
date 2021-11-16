@@ -31,7 +31,7 @@ class DaskHyperGal(base.DaskCube):
     @classmethod
     def get_sourcecubes(cls, cubefile, radec, spxy=None, binfactor=2,
                         filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
-                        source_filter="ps1.r", source_thres=2, hgfirst=False,
+                        source_filter="ps1.r", source_thres=2, hgfirst=True,
                         scale_cout=15, scale_sedm=10, use_extsource=True,
                         rmtarget=2):
         """ """
@@ -75,7 +75,7 @@ class DaskHyperGal(base.DaskCube):
     # =============== #
 
     @classmethod
-    def get_calibrated_cube(cls, cubefile, fluxcalfile=None, hgfirst=False, apply_byecr=True,
+    def get_calibrated_cube(cls, cubefile, fluxcalfile=None, hgfirst=True, apply_byecr=True,
                             store_data=False, get_filename=False, as_wcscube=True, radec=None, spxy=None, **kwargs):
         """ """
         cube = delayed(remove_out_spaxels)(super().get_calibrated_cube(cubefile, fluxcalfile=fluxcalfile, hgfirst=hgfirst,

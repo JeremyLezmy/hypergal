@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
-from pysedm.io import parse_filename
-from hypergal.script import stdscene, scenemodel
-from dask.distributed import Client
-from dask_jobqueue import SGECluster
-import dask
-import numpy as np
-import sys
 import os
+import sys
+import numpy as np
+import dask
+from dask_jobqueue import SGECluster
+from dask.distributed import Client
+from hypergal.script import scenemodel
+from pysedm.io import parse_filename
 
 
-def limit_numpy(nthreads=4):
+def limit_numpy(nthreads=1):
 
     import os
     threads = str(nthreads)
@@ -24,7 +24,9 @@ def limit_numpy(nthreads=4):
     os.environ["VECLIB_MAXIMUM_THREADS"] = threads
 
 
-limit_numpy(4)
+limit_numpy(1)
+
+print('sys.executable:', sys.executable)
 
 
 module_path = os.path.abspath(os.path.join('../../'))
@@ -115,6 +117,10 @@ if __name__ == '__main__':
 
         cluster.scale(args.workers)
         client = Client(cluster)
+        import pprint
+        pprint.pprint(client.get_versions(packages=['shapely', 'pysedm',
+                                                    'hypergal', 'ztfquery',
+                                                    'pyifu', 'iminuit']))
         if args.contains == None or len(args.contains) != len(args.target):
             contains = np.tile(None, len(args.target))
         else:
