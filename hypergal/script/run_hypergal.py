@@ -93,7 +93,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     cluster = SGECluster(name="dask-worker",  walltime="05:00:00",
-                         memory="5GB", death_timeout=120,
+                         memory="8GB", death_timeout=240,
                          project="P_ztf", resource_spec="sps=1",
                          cores=1, processes=1)
 
