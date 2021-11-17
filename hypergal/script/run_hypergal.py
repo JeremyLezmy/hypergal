@@ -26,6 +26,17 @@ def limit_numpy(nthreads=1):
 
 limit_numpy(1)
 
+
+def get_num_workers(client):
+    """
+    :param client: active dask client
+    :return: the number of workers registered to the scheduler
+    """
+    scheduler_info = client.scheduler_info()
+
+    return len(scheduler_info['workers'].keys())
+
+
 print('sys.executable:', sys.executable)
 
 
@@ -117,6 +128,17 @@ if __name__ == '__main__':
 
         cluster.scale(args.workers)
         client = Client(cluster)
+        curr_num_workers = 0
+        import time
+        start_time = time.time()
+
+        while curr_num_workers != args.workers:
+            curr_num_workers = get_num_workers(client)
+            time.sleep(1)
+
+        print(
+            f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
+
         import pprint
         pprint.pprint(client.get_versions(packages=['shapely', 'pysedm',
                                                     'hypergal', 'ztfquery',
