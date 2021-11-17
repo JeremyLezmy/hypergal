@@ -140,6 +140,12 @@ if __name__ == '__main__':
             f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
 
         import pprint
+        print('Check os.getcwd on all workers: \n')
+        pprint.pprint(client.run(os.getcwd))
+        print('Check which python is used on all workers: \n')
+        import shutil
+        pprint.pprint(client.run(lambda: shutil.which("python")))
+        print('Check main packages versions on all workers: \n')
         pprint.pprint(client.get_versions(packages=['shapely', 'pysedm',
                                                     'hypergal', 'ztfquery',
                                                     'pyifu', 'iminuit']))
