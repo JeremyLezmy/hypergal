@@ -648,7 +648,7 @@ class DaskScene(DaskHyperGal):
     def get_sourcedf(radec, cubefile, client=None):
         """ """
         cutout = DaskHyperGal.get_cutout(radec, cubefile, None, ['ps1.r'])
-        sources = cutout.extract_sources(filter_='ps1.r', thres=5,
+        sources = cutout.extract_sources(filter_='ps1.r', thres=20,
                                          savefile=None)
 
         if client is None:
@@ -704,24 +704,27 @@ class DaskScene(DaskHyperGal):
         ax.set_ylabel(r'$\alpha$ (coefficent for Host Model)', color='b')
         ax.tick_params(axis='y', colors='blue')
         ax.set_xlim(4000, None)
-        ax2 = ax.twinx()
-        hostiso = datacub.get_new(
-            newdata=datacub.data - snmod.data - bkgdmod.data)
-        hostobsonly = hostiso.get_extsource_cube(
-            df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
-        hostmodonly = hostmod.get_extsource_cube(
-            df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
-        x, y = np.transpose(hostobsonly.index_to_xy(hostobsonly.indexes))
 
-        ax2.plot(hostmodonly.lbda, np.nanmean(hostmodonly.data.T, axis=0)*1e15,
-                 c='forestgreen', lw=2, linestyle=(0, (3, 1, 1, 1)), label='Host Model')
-        ax2.plot(hostobsonly.lbda, np.nanmean(hostobsonly.data.T,
-                 axis=0)*1e15, label='Host Data', color='g')
-        ax2.fill_between(hostobsonly.lbda, (np.nanmean(hostobsonly.data.T, axis=0) - (np.nanmean(hostobsonly.variance.T, axis=0)/len(hostobsonly.lbda))**0.5)
-                         * 1e15, (np.nanmean(hostobsonly.data.T, axis=0) + (np.nanmean(hostobsonly.variance.T, axis=0)/len(hostobsonly.lbda))**0.5)*1e15, color='g', alpha=0.3)
-        ax2.set_ylabel(
-            r' Host Model ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)', color='g')
-        ax2.tick_params(axis='y', colors='green')
+        if len(df) > 0:
+
+            ax2 = ax.twinx()
+            hostiso = datacub.get_new(
+                newdata=datacub.data - snmod.data - bkgdmod.data)
+            hostobsonly = hostiso.get_extsource_cube(
+                df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+            hostmodonly = hostmod.get_extsource_cube(
+                df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+            x, y = np.transpose(hostobsonly.index_to_xy(hostobsonly.indexes))
+
+            ax2.plot(hostmodonly.lbda, np.nanmean(hostmodonly.data.T, axis=0)*1e15,
+                     c='forestgreen', lw=2, linestyle=(0, (3, 1, 1, 1)), label='Host Model')
+            ax2.plot(hostobsonly.lbda, np.nanmean(hostobsonly.data.T,
+                                                  axis=0)*1e15, label='Host Data', color='g')
+            ax2.fill_between(hostobsonly.lbda, (np.nanmean(hostobsonly.data.T, axis=0) - (np.nanmean(hostobsonly.variance.T, axis=0)/len(hostobsonly.lbda))**0.5)
+                             * 1e15, (np.nanmean(hostobsonly.data.T, axis=0) + (np.nanmean(hostobsonly.variance.T, axis=0)/len(hostobsonly.lbda))**0.5)*1e15, color='g', alpha=0.3)
+            ax2.set_ylabel(
+                r' Host Model ( Femto-erg Flux Unit) ($ferg.cm^{-2}.s^{-1}.\AA^{-1}$)', color='g')
+            ax2.tick_params(axis='y', colors='green')
 
         ax3 = ax.twinx()
         bkdat = fullparam.xs('background', level=1)['values'].values
@@ -970,20 +973,21 @@ class DaskScene(DaskHyperGal):
         sigma = 1
         x = np.linspace(mu - 5*sigma, mu + 5*sigma, 100)
 
-        hostmodonly = hostmod.get_extsource_cube(
-            df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
-        hostobsonly = hostiso.get_extsource_cube(
-            df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
-        x, y = np.transpose(hostobsonly.index_to_xy(hostobsonly.indexes))
+        if len(df) > 0:
+            hostmodonly = hostmod.get_extsource_cube(
+                df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+            hostobsonly = hostiso.get_extsource_cube(
+                df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
+            x, y = np.transpose(hostobsonly.index_to_xy(hostobsonly.indexes))
 
-        flagin = (hostobsonly.lbda > 4000) & (hostobsonly.lbda < 9300)
+            flagin = (hostobsonly.lbda > 4000) & (hostobsonly.lbda < 9300)
 
-        axhostisospec.plot(hostmodonly.lbda[flagin], np.nanmean(
-            hostmodonly.data[flagin].T, axis=0), c='r', label='Host Model')
-        axhostisospec.plot(hostobsonly.lbda[flagin], np.nanmean(
-            hostobsonly.data[flagin].T, axis=0), label='Obs. Host isolated')
-        axhostisospec.fill_between(hostobsonly.lbda[flagin], np.nanmean(hostobsonly.data[flagin].T, axis=0) - (np.nanmean(hostobsonly.variance[flagin].T, axis=0)/len(hostobsonly.lbda[flagin]))**0.5,
-                                   np.nanmean(hostobsonly.data[flagin].T, axis=0) + (np.nanmean(hostobsonly.variance[flagin].T, axis=0)/len(hostobsonly.lbda[flagin]))**0.5, alpha=0.5)
+            axhostisospec.plot(hostmodonly.lbda[flagin], np.nanmean(
+                hostmodonly.data[flagin].T, axis=0), c='r', label='Host Model')
+            axhostisospec.plot(hostobsonly.lbda[flagin], np.nanmean(
+                hostobsonly.data[flagin].T, axis=0), label='Obs. Host isolated')
+            axhostisospec.fill_between(hostobsonly.lbda[flagin], np.nanmean(hostobsonly.data[flagin].T, axis=0) - (np.nanmean(hostobsonly.variance[flagin].T, axis=0)/len(hostobsonly.lbda[flagin]))**0.5,
+                                       np.nanmean(hostobsonly.data[flagin].T, axis=0) + (np.nanmean(hostobsonly.variance[flagin].T, axis=0)/len(hostobsonly.lbda[flagin]))**0.5, alpha=0.5)
 
         vmin = np.nanpercentile(hostiso.get_slice(
             lbda_min=mainlbdarange[0], lbda_max=mainlbdarange[1]), 0.5)
@@ -993,47 +997,49 @@ class DaskScene(DaskHyperGal):
         hostiso._display_im_(
             axim=axhostiso, lbdalim=mainlbdarange, vmin=vmin, vmax=vmax)
         axhostiso.set_aspect('equal')
-        axhostiso.scatter(x, y, c='k', marker='D', s=4)
-        prop = dict(loc="center", color="0.5", fontsize="medium")
-        axhostiso.set_title('Host isolated : Data - SNmodel - BKGmodel', **prop)
-        axhostisospec.set_xlabel(r'Wavelength($\AA$)')
-        axhostisospec.set_ylabel(r'Flux ($erg.s^{-1}.cm^{-2}.\AA^{-1}$)')
+        if len(df) > 0:
+            axhostiso.scatter(x, y, c='k', marker='D', s=4)
+            prop = dict(loc="center", color="0.5", fontsize="medium")
+            axhostiso.set_title(
+                'Host isolated : Data - SNmodel - BKGmodel', **prop)
+            axhostisospec.set_xlabel(r'Wavelength($\AA$)')
+            axhostisospec.set_ylabel(r'Flux ($erg.s^{-1}.cm^{-2}.\AA^{-1}$)')
 
-        xemlines_gal = em_lines(redshift)
-        idx = [(np.abs(hostobsonly.lbda[flagin]-xl)).argmin()
-               for xl in xemlines_gal]
-        yemlines_gal = np.nanmean(hostobsonly.data[flagin].T, axis=0)[idx]
+            xemlines_gal = em_lines(redshift)
+            idx = [(np.abs(hostobsonly.lbda[flagin]-xl)).argmin()
+                   for xl in xemlines_gal]
+            yemlines_gal = np.nanmean(hostobsonly.data[flagin].T, axis=0)[idx]
 
-        xo3lines_gal = o3_lines(redshift)
-        idx = [(np.abs(hostobsonly.lbda[flagin]-xl)).argmin()
-               for xl in xo3lines_gal]
-        yo3lines_gal = np.nanmean(hostobsonly.data[flagin].T, axis=0)[idx]
-        xo3lines_gal = xo3lines_gal[yo3lines_gal.argmax()]
-        yo3lines_gal = np.max(yo3lines_gal)
+            xo3lines_gal = o3_lines(redshift)
+            idx = [(np.abs(hostobsonly.lbda[flagin]-xl)).argmin()
+                   for xl in xo3lines_gal]
+            yo3lines_gal = np.nanmean(hostobsonly.data[flagin].T, axis=0)[idx]
+            xo3lines_gal = xo3lines_gal[yo3lines_gal.argmax()]
+            yo3lines_gal = np.max(yo3lines_gal)
 
-        xablines_gal = ab_lines(redshift)
-        idx = [(np.abs(hostobsonly.lbda[flagin]-xl)).argmin()
-               for xl in xablines_gal]
-        yablines_gal = np.nanmean(hostobsonly.data[flagin].T, axis=0)[idx]
+            xablines_gal = ab_lines(redshift)
+            idx = [(np.abs(hostobsonly.lbda[flagin]-xl)).argmin()
+                   for xl in xablines_gal]
+            yablines_gal = np.nanmean(hostobsonly.data[flagin].T, axis=0)[idx]
 
-        axhostisospec.vlines(em_lines(redshift), ymin=yemlines_gal + 0.1*np.median(np.nanmean(hostmodonly.data[flagin].T, axis=0)), ymax=yemlines_gal + 0.15*np.median(
-            np.nanmean(hostmodonly.data[flagin].T, axis=0)), color='k', alpha=0.5, ls='--', label='EM/AB lines' + '\n' + f'Input z={np.round(redshift,4)}')
-        axhostisospec.vlines(ab_lines(redshift), ymin=yablines_gal - 0.1*np.median(np.nanmean(
-            hostmodonly.data[flagin].T, axis=0)), ymax=yablines_gal - 0.15*np.median(np.nanmean(hostmodonly.data[flagin].T, axis=0)), color='k', alpha=0.5, ls='--')
-        axhostisospec.vlines(xo3lines_gal, ymin=yo3lines_gal + 0.1*np.median(np.nanmean(hostmodonly.data[flagin].T, axis=0)), ymax=yo3lines_gal + 0.15*np.median(
-            np.nanmean(hostmodonly.data[flagin].T, axis=0)), color='k', alpha=0.5, ls='--')
-        for l in range(len(all_em_names)):
-            axhostisospec.text(em_lines(redshift)[l], yemlines_gal[l] + 0.17*np.median(np.nanmean(
-                hostmodonly.data[flagin].T, axis=0)), all_em_names[l], ha='center', va='center')
+            axhostisospec.vlines(em_lines(redshift), ymin=yemlines_gal + 0.1*np.median(np.nanmean(hostmodonly.data[flagin].T, axis=0)), ymax=yemlines_gal + 0.15*np.median(
+                np.nanmean(hostmodonly.data[flagin].T, axis=0)), color='k', alpha=0.5, ls='--', label='EM/AB lines' + '\n' + f'Input z={np.round(redshift,4)}')
+            axhostisospec.vlines(ab_lines(redshift), ymin=yablines_gal - 0.1*np.median(np.nanmean(
+                hostmodonly.data[flagin].T, axis=0)), ymax=yablines_gal - 0.15*np.median(np.nanmean(hostmodonly.data[flagin].T, axis=0)), color='k', alpha=0.5, ls='--')
+            axhostisospec.vlines(xo3lines_gal, ymin=yo3lines_gal + 0.1*np.median(np.nanmean(hostmodonly.data[flagin].T, axis=0)), ymax=yo3lines_gal + 0.15*np.median(
+                np.nanmean(hostmodonly.data[flagin].T, axis=0)), color='k', alpha=0.5, ls='--')
+            for l in range(len(all_em_names)):
+                axhostisospec.text(em_lines(redshift)[l], yemlines_gal[l] + 0.17*np.median(np.nanmean(
+                    hostmodonly.data[flagin].T, axis=0)), all_em_names[l], ha='center', va='center')
 
-        axhostisospec.text(xo3lines_gal, yo3lines_gal + 0.17*np.median(np.nanmean(
-            hostmodonly.data[flagin].T, axis=0)), r'$O[III]$', ha='center', va='center')
+            axhostisospec.text(xo3lines_gal, yo3lines_gal + 0.17*np.median(np.nanmean(
+                hostmodonly.data[flagin].T, axis=0)), r'$O[III]$', ha='center', va='center')
 
-        for l in range(len(all_ab_names)):
-            axhostisospec.text(ab_lines(redshift)[l], yablines_gal[l] - 0.17*np.median(np.nanmean(
-                hostmodonly.data[flagin].T, axis=0)), all_ab_names[l], ha='center', va='center')
-        axhostisospec.legend()
-        axhostiso.set_axis_off()
+            for l in range(len(all_ab_names)):
+                axhostisospec.text(ab_lines(redshift)[l], yablines_gal[l] - 0.17*np.median(np.nanmean(
+                    hostmodonly.data[flagin].T, axis=0)), all_ab_names[l], ha='center', va='center')
+            axhostisospec.legend()
+            axhostiso.set_axis_off()
 
         rms_cub = snmod.get_new(newdata=fullres.data / fullmod.data)
         rms_subcub = rms_cub.get_partial_cube(rms_cub.indexes, np.argwhere(

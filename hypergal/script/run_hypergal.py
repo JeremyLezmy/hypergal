@@ -101,6 +101,9 @@ if __name__ == '__main__':
     parser.add_argument("--curved_bkgd", type=str2bool, nargs='?', const=True, default=True,
                         help="Use curved background model if True, flat if False. Default is True.")
 
+    parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=True,
+                        help="Push to slack?")
+
     args = parser.parse_args()
 
     cluster = SGECluster(name="dask-worker",  walltime="05:00:00",
@@ -178,6 +181,15 @@ if __name__ == '__main__':
                 with open(logfile, 'w') as outfile:
                     yaml.dump(client.get_worker_logs(), outfile,
                               indent=3, default_flow_style=False)
+                if args.push_to_slack:
+                    filepath = plotbase + '_' + name + '_global_report.png'
+                    mf = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
+                    if os.path.exists(filepath):
+                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf}"
+                    else:
+                        m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
+                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
+                    os.system(command)
                 if n_ < len(cubefiles)-1:
                     client.restart()
 

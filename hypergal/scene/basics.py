@@ -411,7 +411,7 @@ class SliceScene(_BaseScene_):
             norm = 1
             bkgd = 0
 
-        if type(bkgd) is str:
+        if type(bkgd) is str and which == "comp":
             bkgd = np.percentile(data[data == data], float(bkgd))
 
         data -= bkgd
