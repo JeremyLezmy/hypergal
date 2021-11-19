@@ -160,21 +160,26 @@ if __name__ == '__main__':
                                                                             rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd)
             stored.append(to_stored)
 
-            future = client.compute(stored)
-            dask.distributed.wait(future)
+            for (n_, cubefile) in enumerate(cubefiles):
+                future = client.compute(stored[n_])
+                dask.distributed.wait(future)
 
-            info = parse_filename(cubefiles[0])
-            cubeid = info["sedmid"]
-            name = info["name"]
-            filedir = os.path.dirname(cubefiles[0])
-            plotbase = os.path.join(filedir, "hypergal",
-                                    info["name"], info["sedmid"])
-            dirplotbase = os.path.dirname(plotbase)
-            logfile = os.path.join(dirplotbase, 'logfile.yml')
-            import yaml
-            with open(logfile, 'w') as outfile:
-                yaml.dump(client.get_worker_logs(), outfile,
-                          indent=3, default_flow_style=False)
+                info = parse_filename(cubefile)
+                cubeid = info["sedmid"]
+                name = info["name"]
+                filedir = os.path.dirname(cubefile)
+                plotbase = os.path.join(filedir, "hypergal",
+                                        info["name"], info["sedmid"])
+                dirplotbase = os.path.dirname(plotbase)
+                logfile = os.path.join(dirplotbase, 'logfile.yml')
+                import yaml
+                if os.path.exists(logfile):
+                    os.remove(logfile)
+                with open(logfile, 'w') as outfile:
+                    yaml.dump(client.get_worker_logs(), outfile,
+                              indent=3, default_flow_style=False)
+                if n_ < len(cubefiles)-1:
+                    client.restart()
 
     else:
 
