@@ -104,6 +104,9 @@ class SEDFitter():
         self._filters = filt
         idx = df.loc[np.logical_and.reduce(
             [df[i].values / df[i + '_err'].values > self.snr for i in filt])].index
+        if len(idx) == 0 and self.snr > 1:
+            idx = df.loc[np.logical_and.reduce(
+                [df[i].values / df[i + '_err'].values > self.snr-1 for i in filt])].index
         df_threshold = df.loc[idx].copy()
         self.set_input_sedfitter(df_threshold)
 
