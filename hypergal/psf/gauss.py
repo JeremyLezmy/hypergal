@@ -137,7 +137,7 @@ class Gauss3D(PSF3D, Gauss2D):
                     if param == 'sigma' and (np.asarray(values[param]) > 4 or np.asarray(values[param]) < 0.1):
                         param3d['sigma'] = 1
                     else:
-                        param3d["sigma"] = np.asarray(values[param])
+                        param3d["sigma"] = float(np.asarray(values[param]))
 
                     param3d["rho"] = -0.4
                 else:

@@ -187,7 +187,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     if param == 'eta' and (np.asarray(values[param]) > 100 or np.asarray(values[param]) < 1e-10):
                         param3d[param] = 0.8
                     else:
-                        param3d[param] = np.asarray(values[param])
+                        param3d[param] = float(np.asarray(values[param]))
 
                 else:
                     if param == 'eta':
@@ -227,7 +227,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     if param == 'alpha' and (np.asarray(values[param]) > 6 or np.asarray(values[param]) < 0.9):
                         param3d['alpha'] = 2.5
                     else:
-                        param3d["alpha"] = np.asarray(values[param])
+                        param3d["alpha"] = float(np.asarray(values[param]))
                     param3d["rho"] = -0.4
 
                 else:
