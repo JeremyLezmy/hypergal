@@ -918,7 +918,7 @@ class DaskScene(DaskHyperGal):
                       6000), marker='x', color='r', s=32, zorder=10, label='Target')
         if len(df) > 0:
             for n_ in range(len(df)):
-                if abs(hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0]) < (22, 22):
+                if np.logical_and(*abs(hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0]) < (22, 22)):
                     axdat.scatter(*hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[
                         :, None].T, 0), 0)[0], marker='x', color='k', s=32, zorder=10, label='Host')
         axdat.legend(
@@ -930,7 +930,7 @@ class DaskScene(DaskHyperGal):
                       ADRFitter.fitted_yref, 6000), marker='x', color='r', s=32, zorder=10)
         if len(df) > 0:
             for n_ in range(len(df)):
-                if abs(hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0]) < (22, 22):
+                if np.logical_and(*abs(hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0]) < (22, 22)):
                     axmod.scatter(*hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array(
                         [df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0], marker='x', color='k', s=32, zorder=10)
 
