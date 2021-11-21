@@ -68,6 +68,10 @@ if __name__ == '__main__':
 
     parser.add_argument('-w', "--workers", type=int, default=10,
                         help="Scale the cluster to N workers/target. Default is 10.")
+
+    parser.add_argument("--min_workers", type=int, default=8,
+                        help="Scale the cluster to N workers/target. Default is 10.")
+
     parser.add_argument('-f', "--filename", default=None, type=str,
                         help="File to use with list of cube format (ex e3d_crr_b_ifu20210222_09_18_45_ZTF21aamokak.fits)")
 
@@ -106,9 +110,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cluster = SGECluster(name="dask-worker",  walltime="05:00:00",
+    cluster = SGECluster(name="dask-worker",  walltime="10:00:00",
                          memory="8GB", death_timeout=240,
-                         project="P_ztf", resource_spec="sps=1",
+                         project="P_ztf", resource_spec="sps=1", local_directory='$TMPDIR',
                          cores=1, processes=1)
 
     if args.filename is not None:
@@ -135,7 +139,7 @@ if __name__ == '__main__':
         import time
         start_time = time.time()
 
-        while curr_num_workers != args.workers:
+        while curr_num_workers < np.min(args.workers, args.min_workers):
             curr_num_workers = get_num_workers(client)
             time.sleep(1)
 
@@ -192,7 +196,12 @@ if __name__ == '__main__':
                     os.system(command)
                 if n_ < len(cubefiles)-1:
                     client.restart()
-
+                    curr_num_workers = 0
+                    while curr_num_workers < np.min(args.workers, args.min_workers):
+                        curr_num_workers = get_num_workers(client)
+                        time.sleep(1)
+                    print(
+                        f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
     else:
 
         raise ValueError(
