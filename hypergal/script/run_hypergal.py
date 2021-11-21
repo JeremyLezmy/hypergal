@@ -139,7 +139,7 @@ if __name__ == '__main__':
         import time
         start_time = time.time()
 
-        while curr_num_workers < np.min(args.workers, args.min_workers):
+        while curr_num_workers < np.min([args.workers, args.min_workers]):
             curr_num_workers = get_num_workers(client)
             time.sleep(1)
 
