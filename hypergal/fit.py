@@ -1133,6 +1133,8 @@ class MultiSliceParameters():
 
                 err_ = np.nan_to_num(np.asarray(
                     self.errors[k]), nan=1e10)
+                if k == "ampl":
+                    err_[err_ < 1e-5] = 1e10
                 flag = err_ > 0
                 err = err_[flag]
                 val = self.values[k][flag]
@@ -1170,6 +1172,8 @@ class MultiSliceParameters():
             for k in ["ampl_ps", "background"]:
                 err_ = np.nan_to_num(np.asarray(
                     self.errors[k]), nan=1e10)
+                if k == "ampl_ps":
+                    err_[err_ < 1e-3] = 1e10
                 flag = err_ > 0
                 err = err_[flag]
                 val = self.values[k][flag]

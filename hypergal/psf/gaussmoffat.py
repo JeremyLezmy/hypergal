@@ -242,6 +242,10 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     if len(value) == 0:
                         param3d["alpha"] = 2.5
                         param3d["rho"] = -0.4
+                    elif len(value) == 1:
+                        param3d["alpha"] = float(
+                            value * (np.atleast_1d(lbda)/this.lbdaref)**0.4)
+                        param3d["rho"] = -0.4
 
                     else:
                         def model_alpha(lbda, alpharef, rho):
