@@ -1130,10 +1130,13 @@ class MultiSliceParameters():
             guess["sigma"] = self.psf3d.get_sigma(lbda_)[0]
             # -- Base Parameters
             for k in ["ampl", "background"]:
-                err = self.errors[k][(self.errors[k] != 0)
-                                     & (self.errors[k] != np.NaN)]
-                val = self.values[k][(self.errors[k] != 0)
-                                     & (self.errors[k] != np.NaN)]
+
+                err_ = np.nan_to_num(np.asarray(
+                    self.errors[k]), nan=1e10)
+                flag = err_ > 0
+                err = err_[flag]
+                val = self.values[k][flag]
+
                 guess[k] = np.average(val, weights=1/err**2)
 
             guesses.append(guess)
@@ -1165,12 +1168,13 @@ class MultiSliceParameters():
                 self.values["eta_ps"], weights=1/self.errors["eta_ps"]**2)
             # -- Base Parameters
             for k in ["ampl_ps", "background"]:
-                err = self.errors[k][(self.errors[k] != 0)
-                                     & (self.errors[k] != np.NaN)]
-                val = self.values[k][(self.errors[k] != 0)
-                                     & (self.errors[k] != np.NaN)]
-                guess[k] = np.average(val, weights=1/err**2)
+                err_ = np.nan_to_num(np.asarray(
+                    self.errors[k]), nan=1e10)
+                flag = err_ > 0
+                err = err_[flag]
+                val = self.values[k][flag]
 
+                guess[k] = np.average(val, weights=1/err**2)
             guesses.append(guess)
 
         return guesses
