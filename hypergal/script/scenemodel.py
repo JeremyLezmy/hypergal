@@ -916,16 +916,23 @@ class DaskScene(DaskHyperGal):
                               lbdalim=mainlbdarange, cmap=cmap, rasterized=False)
         axdat.scatter(*ADRFitter.refract(ADRFitter.fitted_xref, ADRFitter.fitted_yref,
                       6000), marker='x', color='r', s=32, zorder=10, label='Target')
-        axdat.scatter(*hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[0], df.y[0]])[
-                      :, None].T, 0), 0)[0], marker='x', color='k', s=32, zorder=10, label='Host')
-        axdat.legend(loc='lower left')
+        if len(df) > 0:
+            for n_ in range(len(df)):
+                if abs(hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0]) < (22, 22):
+                    axdat.scatter(*hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[
+                        :, None].T, 0), 0)[0], marker='x', color='k', s=32, zorder=10, label='Host')
+        axdat.legend(
+            *[*zip(*{l: h for h, l in zip(*axdat.get_legend_handles_labels())}.items())][::-1], loc='lower left')
 
         modelcube._display_im_(axim=axmod, vmin=vmin, vmax=vmax,
                                lbdalim=mainlbdarange, cmap=cmap, rasterized=False)
         axmod.scatter(*ADRFitter.refract(ADRFitter.fitted_xref,
                       ADRFitter.fitted_yref, 6000), marker='x', color='r', s=32, zorder=10)
-        axmod.scatter(*hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array(
-            [df.x[0], df.y[0]])[:, None].T, 0), 0)[0], marker='x', color='k', s=32, zorder=10)
+        if len(df) > 0:
+            for n_ in range(len(df)):
+                if abs(hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array([df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0]) < (22, 22):
+                    axmod.scatter(*hostiso.wcs.all_world2pix(coutcube.wcs.all_pix2world(np.array(
+                        [df.x[n_], df.y[n_]])[:, None].T, 0), 0)[0], marker='x', color='k', s=32, zorder=10)
 
         slicepull.show(ax=axpull, show_colorbar=False, vmin=-6,
                        vmax=6, cmap=cmapres, rasterized=False)  # PULL
