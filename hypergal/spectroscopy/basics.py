@@ -64,6 +64,11 @@ class WCSCube(Cube, WCSHolder):
 
         try:
             wcsdict = astrometry.get_wcs_dict(cube.filename, radec, spxy)
+            astrom = astrometry.Astrometry(cube.filename)
+            if np.logical_or(*abs(astrom.get_target_coordinate()) > (20, 20)):
+                warnings.warn(
+                    f'Astrometry out of the field of view in {cube.filename} at (x,y) = {astrom.get_target_coordinate()}, build of the astrometry assuming radec={radec} at (x,y)=(0,0)')
+                wcsdict = astrometry.get_wcs_dict(cube.filename, radec, (0, 0))
         except OSError:
             warnings.warn(
                 f'No Astrometry file for {cube.filename} , build of the astrometry assuming radec={radec} at (x,y)=(0,0)')
@@ -235,7 +240,7 @@ class WCSCube(Cube, WCSHolder):
 
         return sedmtools.remove_target_spx(self, target_pos, radius=radius, store=store, **kwargs)
 
-    def get_extsource_cube(self, sourcedf, wcsin, wcsout=None, sourcescale=5,
+    def get_extsource_cube(self, sourcedf, wcsin, radec=None, wcsout=None, sourcescale=5,
                            boundingrect=False, slice_id=None):
         """ 
         Return a partial cube by removing spaxels outisde a given source delimitation.
@@ -269,23 +274,45 @@ class WCSCube(Cube, WCSHolder):
         if len(sourcedf) == 0:
             return self
 
-        from shapely.geometry import Polygon
+        from shapely.geometry import Polygon, Point
         if wcsout is None:
             wcsout = self.wcs
 
         e_out = get_source_ellipses(sourcedf, wcs=wcsin,  wcsout=wcsout, system="out",
                                     sourcescale=sourcescale)
+
+        if radec is not None:
+            radius = 8
+            target_pos = self.radec_to_xy(*radec).flatten()
+            p = Point(*target_pos)
+            circle = p.buffer(radius)
+
         if boundingrect:
             [xmin, ymin], [xmax, ymax] = np.percentile(
                 np.concatenate([e_.xy for e_ in e_out]), [0, 100], axis=0)
+
+            if radec is not None:
+                xmin_target, ymin_target = target_pos - radius
+                xmax_target, ymax_target = target_pos + radius
+
+                xmin, ymin = np.min([xmin, xmin_target]), np.min(
+                    [ymin, ymin_target])
+                xmax, ymax = np.max([xmax, xmax_target]), np.max(
+                    [ymax, ymax_target])
+
             polys = [
                 Polygon([[xmin, ymin], [xmin, ymax], [xmax, ymax], [xmax, ymin]])]
+            spaxels = np.unique(np.concatenate(
+                [self.get_spaxels_within_polygon(poly_) for poly_ in polys]))
 
         else:
             polys = [Polygon(e_.xy) for e_ in e_out]
 
-        spaxels = np.unique(np.concatenate(
-            [self.get_spaxels_within_polygon(poly_) for poly_ in polys]))
+            spaxels = np.unique(np.concatenate(
+                [self.get_spaxels_within_polygon(poly_) for poly_ in polys]))
+
+            spaxels = np.unique(np.concatenate(
+                [spaxels, self.get_spaxels_within_polygon(circle)]))
 
         if len(spaxels) < 5:
             return self
