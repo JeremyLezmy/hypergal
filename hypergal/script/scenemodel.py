@@ -4,7 +4,7 @@ from .daskbasics import DaskHyperGal
 from pysedm.sedm import SEDM_LBDA
 from ztfquery.sedm import SEDMLOCAL_BASESOURCE
 from shapely.geometry import Point
-import shapely
+#import shapely
 from ..photometry import basics as photobasics
 from ..spectroscopy import adr as spectroadr
 import pandas

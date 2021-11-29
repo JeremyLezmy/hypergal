@@ -4,7 +4,7 @@ from .basics import BackgroundCurved, PointSource, SliceScene
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
-import shapely
+#import shapely
 from shapely.geometry import Point
 from ..spectroscopy import adr as spectroadr
 import pandas
