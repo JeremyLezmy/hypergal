@@ -310,9 +310,9 @@ class WCSCube(Cube, WCSHolder):
 
             spaxels = np.unique(np.concatenate(
                 [self.get_spaxels_within_polygon(poly_) for poly_ in polys]))
-
-            spaxels = np.unique(np.concatenate(
-                [spaxels, self.get_spaxels_within_polygon(circle)]))
+            if radec is not None:
+                spaxels = np.unique(np.concatenate(
+                    [spaxels, self.get_spaxels_within_polygon(circle)]))
 
         if len(spaxels) < 5:
             return self
