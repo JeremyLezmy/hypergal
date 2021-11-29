@@ -50,10 +50,10 @@ class DaskHyperGal(base.DaskCube):
         wcsin = cout_cube.wcs
 
         if use_extsource:
-            source_coutcube = cout_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=radec,
+            source_coutcube = cout_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=None,
                                                            sourcescale=scale_cout, boundingrect=True)
 
-            source_sedmcube = sedm_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=radec,
+            source_sedmcube = sedm_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=None,
                                                            sourcescale=scale_sedm, boundingrect=False)
         else:
             source_coutcube = cout_cube.copy()
