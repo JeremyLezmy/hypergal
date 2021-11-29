@@ -64,11 +64,11 @@ class WCSCube(Cube, WCSHolder):
 
         try:
             wcsdict = astrometry.get_wcs_dict(cube.filename, radec, spxy)
-            #astrom = astrometry.Astrometry(cube.filename)
-            # if np.logical_or(*abs(astrom.get_target_coordinate()) > (20, 20)):
-            #    warnings.warn(
-            #        f'Astrometry out of the field of view in {cube.filename} at (x,y) = {astrom.get_target_coordinate()}, build of the astrometry assuming radec={radec} at (x,y)=(0,0)')
-            #    wcsdict = astrometry.get_wcs_dict(cube.filename, radec, (0, 0))
+            astrom = astrometry.Astrometry(cube.filename)
+            if np.logical_or(*abs(astrom.get_target_coordinate()) > (20, 20)):
+                warnings.warn(
+                    f'Astrometry out of the field of view in {cube.filename} at (x,y) = {astrom.get_target_coordinate()}, build of the astrometry assuming radec={radec} at (x,y)=(0,0)')
+                wcsdict = astrometry.get_wcs_dict(cube.filename, radec, (0, 0))
         except OSError:
             warnings.warn(
                 f'No Astrometry file for {cube.filename} , build of the astrometry assuming radec={radec} at (x,y)=(0,0)')
