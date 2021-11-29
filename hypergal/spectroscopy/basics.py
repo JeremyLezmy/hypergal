@@ -240,7 +240,7 @@ class WCSCube(Cube, WCSHolder):
 
         return sedmtools.remove_target_spx(self, target_pos, radius=radius, store=store, **kwargs)
 
-    def get_extsource_cube(self, sourcedf, wcsin, radec=None, wcsout=None, sourcescale=5,
+    def get_extsource_cube(self, sourcedf, wcsin, radec=None, wcsout=None, sourcescale=5, radius=6,
                            boundingrect=False, slice_id=None):
         """ 
         Return a partial cube by removing spaxels outisde a given source delimitation.
@@ -282,7 +282,7 @@ class WCSCube(Cube, WCSHolder):
                                     sourcescale=sourcescale)
 
         if radec is not None:
-            radius = 8
+
             target_pos = self.radec_to_xy(*radec).flatten()
             p = Point(*target_pos)
             circle = p.buffer(radius)
