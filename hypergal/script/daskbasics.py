@@ -10,6 +10,10 @@ from ..photometry import panstarrs
 from ..spectroscopy import basics as spectrobasics
 from ..spectroscopy import sedfitting
 
+SEDM_SCALE = 0.558
+PS_SCALE = 0.25
+DEFAULT_SCALE_RATIO = SEDM_SCALE/PS_SCALE
+
 
 def remove_out_spaxels(cube, overwrite=False):
 
@@ -33,7 +37,7 @@ class DaskHyperGal(base.DaskCube):
                         filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                         source_filter="ps1.r", source_thres=2, hgfirst=True,
                         scale_cout=15, scale_sedm=10, use_extsource=True,
-                        rmtarget=2):
+                        rmtarget=2, target_radius=8):
         """ """
         #
         # Cubes
@@ -51,10 +55,10 @@ class DaskHyperGal(base.DaskCube):
 
         if use_extsource:
             source_coutcube = cout_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=radec,
-                                                           sourcescale=scale_cout, boundingrect=True)
+                                                           sourcescale=scale_cout, radius=target_radius*DEFAULT_SCALE_RATIO, boundingrect=True)
 
             source_sedmcube = sedm_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=radec,
-                                                           sourcescale=scale_sedm, boundingrect=False)
+                                                           sourcescale=scale_sedm, radius=target_radius, boundingrect=False)
         else:
             source_coutcube = cout_cube.copy()
             source_sedmcube = sedm_cube.copy()
