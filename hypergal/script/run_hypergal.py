@@ -179,10 +179,11 @@ if __name__ == '__main__':
                     import pysnid
                     targetspec = cubefile.replace(
                         ".fits", ".txt").replace("e3d", "hgspec_target")
-                    snidfile = targetspec.replace(
-                        'spec', 'snid_bestspec').replace('.txt', '.png')
-                    snidres = pysnid.run_snid(targetspec)
-                    snidres.show(models=[1, 2, 3, 4, 5], savefile=snidfile)
+                    if os.path.exists(targetspec):
+                        snidfile = targetspec.replace(
+                            'spec', 'snid_bestspec').replace('.txt', '.png')
+                        snidres = pysnid.run_snid(targetspec)
+                        snidres.show(models=[1, 2, 3, 4, 5], savefile=snidfile)
                 except ImportError:
                     import warnings
                     warnings.warn(
