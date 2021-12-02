@@ -167,6 +167,9 @@ if __name__ == '__main__':
                                                                             rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd)
             stored.append(to_stored)
 
+            if len(cubefiles) == 0 and args.push_to_slack:
+                m = f"'HyperGal report: No e3d cubefile for {targ}!'"
+                command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
             for (n_, cubefile) in enumerate(cubefiles):
                 future = client.compute(stored[n_])
                 dask.distributed.wait(future)
@@ -189,7 +192,13 @@ if __name__ == '__main__':
                     filepath = plotbase + '_' + name + '_global_report.png'
                     mf = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
                     if os.path.exists(filepath):
-                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf}"
+
+                        targetspec = cubefile.replace(
+                            ".fits", ".txt").replace("e3d", "hgspec_target")
+                        compspec = plotbase + '_' + name + '_all_comp_fit.png'
+                        hostspec = cubefile.replace(
+                            ".fits", ".txt").replace("e3d", "hgspec_host")
+                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec}"
                     else:
                         m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
                         command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
