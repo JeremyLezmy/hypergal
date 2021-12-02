@@ -63,7 +63,7 @@ class DaskScene(DaskHyperGal):
             name, contains=contains, ignore_astrom=ignore_astrom, verbose=True)
         if len(cubefiles) == 0:
             if return_cubefile:
-                return None, None
+                return None, []
             return None
         this = cls(client=client)
         if manual_z != None:
