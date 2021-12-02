@@ -97,7 +97,7 @@ def get_target_info(name, contains=None, ignore_astrom=True, verbose=False, clie
     except OSError:
         warnings.warn(
             f"The target {name} doesn't exist in Fritz!")
-        return None, None, None
+        return [], None, None
     radec = fsource.get_coordinates()
     redshift = fsource.get_redshift(False)
 
