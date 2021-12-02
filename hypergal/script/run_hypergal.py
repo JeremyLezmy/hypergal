@@ -175,6 +175,24 @@ if __name__ == '__main__':
                 future = client.compute(stored[n_])
                 dask.distributed.wait(future)
 
+                try:
+                    import pysnid
+                    targetspec = cubefile.replace(
+                        ".fits", ".txt").replace("e3d", "hgspec_target")
+                    snidfile = targetspec.replace(
+                        'spec', 'snid_bestspec').replace('.txt', '.png')
+                    snidres = pysnid.run_snid(targetspec)
+                    snidres.show(models=[1, 2, 3, 4, 5], savefile=snidfile)
+                except ImportError:
+                    import warnings
+                    warnings.warn(
+                        'pysnid is not installed. You can clone it from https://github.com/MickaelRigault/pysnid.git')
+                    snidfile = None
+                except FileNotFoundError:
+                    import warnings
+                    warnings.warn(
+                        "SNID didn't find any template to match the datas.")
+                    snidfile = None
                 info = parse_filename(cubefile)
                 cubeid = info["sedmid"]
                 name = info["name"]
@@ -199,7 +217,11 @@ if __name__ == '__main__':
                         compspec = plotbase + '_' + name + '_all_comp_fit.png'
                         hostspec = cubefile.replace(
                             ".fits", ".txt").replace("e3d", "hgspec_host")
-                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec}"
+
+                        if snidfile is None:
+                            command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec}"
+                        else:
+                            command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --snid {snidfile}"
                     else:
                         m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
                         command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
