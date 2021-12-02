@@ -92,8 +92,12 @@ def get_slicefit_datafile(filename, which=None):
 def get_target_info(name, contains=None, ignore_astrom=True, verbose=False, client=None):
     """ """
     from ztfquery import sedm, fritz
-
-    fsource = fritz.FritzSource.from_name(name)
+    try:
+        fsource = fritz.FritzSource.from_name(name)
+    except OSError:
+        warnings.warn(
+            f"The target {name} doesn't exist in Fritz!")
+        return None, None, None
     radec = fsource.get_coordinates()
     redshift = fsource.get_redshift(False)
 
