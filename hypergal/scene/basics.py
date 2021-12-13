@@ -981,7 +981,8 @@ class CubeScene(SliceScene):
 class FullSliceScene(SliceScene):
 
     def __init__(self, slice_in, slice_comp, xy_in=None, xy_comp=None, load_overlay=True,
-                 psfgal=None, adapt_flux=True, pointsource=None, curved_bkgd=False, **kwargs):
+                 psfgal=None, adapt_flux=True, pointsource=None, curved_bkgd=False,
+                 host_only=False, sn_only=False, **kwargs):
 
         _ = super().__init__(slice_in=slice_in, slice_comp=slice_comp, xy_in=xy_in, xy_comp=xy_comp, load_overlay=load_overlay,
                              psf=psfgal, adapt_flux=adapt_flux, **kwargs)
@@ -995,8 +996,19 @@ class FullSliceScene(SliceScene):
 
         self._has_curved_bkgd = curved_bkgd
 
+        if host_only and len(np.concatenate(np.argwhere(slice_in.data > 0))) > 20:
+            self._has_host_only = True
+            self._has_sn_only = False
+        elif sn_only or len(np.concatenate(np.argwhere(slice_in.data > 0))) < 20:
+            self._has_sn_only = True
+            self._has_host_only = False
+        else:
+            self._has_host_only = False
+            self._has_sn_only = False
+
     @classmethod
-    def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psfgal=None, pointsource=None, curved_bkgd=False, **kwargs):
+    def from_slices(cls, slice_in, slice_comp, xy_in=None, xy_comp=None, psfgal=None, pointsource=None, curved_bkgd=False,
+                    host_only=False, sn_only=False, **kwargs):
         """ 
         Take a 2D (slice) as an input data + geometry, and adapt it to an output data + geometry.
         Many transformations might be done to simulate the output scene, such as psf convolution, 
@@ -1026,7 +1038,8 @@ class FullSliceScene(SliceScene):
 
         """
         return cls(slice_in, slice_comp,
-                   xy_in=xy_in, xy_comp=xy_comp, psfgal=psfgal, pointsource=pointsource, curved_bkgd=curved_bkgd,
+                   xy_in=xy_in, xy_comp=xy_comp, psfgal=psfgal, pointsource=pointsource,
+                   host_only=host_only, sn_only=sn_only, curved_bkgd=curved_bkgd,
                    **kwargs)
 
     def get_model(self, ampl=None, background=None,
@@ -1046,11 +1059,15 @@ class FullSliceScene(SliceScene):
         -------
         Array
         """
-        if ampl is None:
+        if ampl is None and not self.has_sn_only:
             ampl = self.baseparams["ampl"]
+        elif self.has_sn_only:
+            ampl = 0
 
-        if ampl_ps is None:
+        if ampl_ps is None and not self.has_host_only:
             ampl_ps = self.baseparams["ampl_ps"]
+        elif self.has_host_only:
+            ampl_ps = 0
 
         if background is None and not self.has_curved_bkgd:
             background = self.baseparams["background"]
@@ -1081,8 +1098,12 @@ class FullSliceScene(SliceScene):
         # Change position of the comp grid if needed
         #   - if the overlayparam are the same as already know, no update made.
         if overlayparam is not None and len(overlayparam) > 0:
+            if self.has_sn_only:
+                reset_overlay = False
+            else:
+                reset_overlay = True
             self.overlay.change_comp(
-                **{k: v for k, v in overlayparam.items() if v is not None})
+                **{k: v for k, v in overlayparam.items() if v is not None}, reset_overlay=reset_overlay)
 
         # 2.
         # Change values of flux and variances of _in by convolving the image
@@ -1119,9 +1140,9 @@ class FullSliceScene(SliceScene):
         geometrical parameters (scale, xy_in etc) 
         and psf parameters (shape and ellipticity)       
         """
-        ampl = 1
+        ampl = 1 if not self.has_sn_only else 0
         bkgd = 0
-        ampl_ps = 1
+        ampl_ps = 1 if not self.has_host_only else 0
         base_guess = {**{k: None for k in self.BASE_PARAMETERS},
                       **{"ampl": ampl, "background": bkgd, "ampl_ps": ampl_ps}
                       }
@@ -1138,7 +1159,8 @@ class FullSliceScene(SliceScene):
 
         model_comp = self.get_model()
         bkgd = np.median(self.flux_comp)-np.median(model_comp)
-        ampl = np.sum(self.flux_comp)/np.sum(model_comp)
+        ampl = np.sum(self.flux_comp) / \
+            np.sum(model_comp) if not self.has_sn_only else 0
 
         from shapely.geometry import Point
         x, y = geom_guess['xoff'], geom_guess['yoff']
@@ -1146,7 +1168,7 @@ class FullSliceScene(SliceScene):
         circle = p.buffer(3)
         idx = self.slice_comp.get_spaxels_within_polygon(circle)
         ampl_ps = np.nansum(self.flux_comp[[self.slice_comp.indexes[i] in np.array(
-            idx) for i in range(len(self.slice_comp.indexes))]])
+            idx) for i in range(len(self.slice_comp.indexes))]]) if not self.has_host_only else 0
         #ampl_ps = np.nanmax(self.slice_comp.get_subslice([i for i in self.slice_comp.indexes if i in idx]).data)*10
 
         return {**guess_step1, **{"ampl": ampl, "background": bkgd, "ampl_ps": ampl_ps}}
@@ -1229,6 +1251,16 @@ class FullSliceScene(SliceScene):
     def has_curved_bkgd(self):
         """ All parameters names """
         return self._has_curved_bkgd
+
+    @property
+    def has_sn_only(self):
+        """ All parameters names """
+        return self._has_sn_only
+
+    @property
+    def has_host_only(self):
+        """ All parameters names """
+        return self._has_host_only
 
     @property
     def slice_comp_xy(self):

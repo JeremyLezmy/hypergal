@@ -109,7 +109,7 @@ class DaskHyperGal(base.DaskCube):
 
     @staticmethod
     def run_sedfitter(cube_cutout, redshift, working_dir, sedfitter="cigale", ncores=1, lbda=None,
-                      saveplot_rmspull=None, saveplot_intcube=None, **kwargs):
+                      saveplot_rmspull=None, saveplot_intcube=None, sn_only=False, **kwargs):
         """ """
         if lbda is None:
             from pysedm.sedm import SEDM_LBDA
@@ -122,7 +122,7 @@ class DaskHyperGal(base.DaskCube):
                                                                    tmp_inputpath=tmp_inputpath,
                                                                    initiate=True,
                                                                    working_dir=working_dir,
-                                                                   ncores=ncores, **kwargs)
+                                                                   ncores=ncores, sn_only=False, **kwargs)
         else:
             raise NotImplementedError(
                 f"Only the cigale sed fitted has been implemented. {sedfitter} given")

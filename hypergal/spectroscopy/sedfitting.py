@@ -102,11 +102,18 @@ class SEDFitter():
         self.set_clean_df(df)
         filt = [ele for ele in lst if ('err' not in ele)]
         self._filters = filt
-        idx = df.loc[np.logical_and.reduce(
-            [df[i].values / df[i + '_err'].values > self.snr for i in filt])].index
-        if len(idx) == 0 and self.snr > 1:
+
+        try:
             idx = df.loc[np.logical_and.reduce(
-                [df[i].values / df[i + '_err'].values > self.snr-1 for i in filt])].index
+                [df[i].values / df[i + '_err'].values > self.snr for i in filt])].index
+        except ZeroDivisionError:
+            self._idx_used = None
+            return
+
+        if len(idx) < 20:
+            self._idx_used = None
+            return
+
         df_threshold = df.loc[idx].copy()
         self.set_input_sedfitter(df_threshold)
 
@@ -228,19 +235,47 @@ class SEDFitter():
             return None
         return self._filters
 
+    @property
+    def has_object(self):
+        """
+        Indices of the object which passed the SNR selection
+        """
+        if self.idx_used is None or len(self.idx_used) < 20:
+            return False
+        else:
+            return True
+
 
 class Cigale(SEDFitter):
 
     FITTER_NAME = "cigale"
 
     def __init__(self, dataframe, redshift, snr=None, setup=True, tmp_inputpath=None,
-                 initiate=True, ncores="auto", working_dir=None, testmode=False, cubeouts=None):
+                 initiate=True, ncores="auto", working_dir=None, testmode=False, sn_only=False, cubeouts=None):
         """ """
         _ = super().__init__(dataframe, redshift, snr=snr,
                              setup=setup, tmp_inputpath=tmp_inputpath)
-        if initiate:
-            self.initiate_cigale(working_dir=working_dir,
-                                 cores=ncores, testmode=testmode)
+
+        if sn_only:
+            self._idx_used = None
+
+        if self.has_object:
+            if initiate:
+                self.initiate_cigale(working_dir=working_dir,
+                                     cores=ncores, testmode=testmode)
+
+        else:
+            self._currentpwd = os.getcwd()  # is absolute already
+            if working_dir is not None:
+                working_dir = os.path.abspath(working_dir)  # make it absolute
+                if not os.path.isdir(working_dir):
+                    os.makedirs(working_dir, exist_ok=True)
+                os.chdir(working_dir)
+            else:
+                working_dir = self._currentpwd
+
+            self._working_dir = working_dir
+
         self._cubeouts = cubeouts
     # ============= #
     #  Methods      #
@@ -249,7 +284,7 @@ class Cigale(SEDFitter):
     @classmethod
     def from_cube_cutouts(cls, cubeouts, redshift, snr=3, in_unit="aa",
                           tmp_inputpath=None,
-                          initiate=True, ncores="auto", working_dir=None, **kwargs):
+                          initiate=True, ncores="auto", working_dir=None, sn_only=False, **kwargs):
         """  Initiate Cigale from cube of cutouts.
 
         Parameters
@@ -323,7 +358,8 @@ class Cigale(SEDFitter):
 
         return cls(dataframe=df, redshift=redshift, snr=snr,
                    tmp_inputpath=tmp_inputpath,
-                   initiate=initiate, ncores=ncores, working_dir=working_dir, cubeouts=cubeouts, **kwargs)
+                   initiate=initiate, ncores=ncores, working_dir=working_dir,
+                   sn_only=sn_only, cubeouts=cubeouts, **kwargs)
 
     def initiate_cigale(self, sed_modules='default', cores='auto', working_dir=None, testmode=False):
         """  Initiate Cigale (not launch yet)
@@ -405,6 +441,8 @@ class Cigale(SEDFitter):
         Results will be stored in self._working_dir, and a directory 'out/' will be created.
         """
 
+        if not self.has_object:
+            return os.path.abspath(self.working_dir)
         utils.command_cigale('run')
 
         #### Should be Removed or at least reworked #####
@@ -523,6 +561,8 @@ class Cigale(SEDFitter):
             from pysedm.sedm import SEDM_LBDA
             lbda_sample = SEDM_LBDA
 
+        if not self.has_object:
+            return np.repeat(self.cubeouts.data[0][np.newaxis]*0, len(lbda_sample), axis=0), lbda_sample
         # find files
         if bestmodel_dir is None:
             bestmodel_dir = os.path.join(self._path_result, self._out_dir)

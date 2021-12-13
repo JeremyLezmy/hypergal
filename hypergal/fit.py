@@ -153,7 +153,7 @@ class Priors(object):
 # ===================== #
 
 class SceneFitter(object):
-    def __init__(self, scene, fix_params=["scale", "rotation"], priors=None, debug=False):
+    def __init__(self, scene, fix_params=["scale", "rotation"], priors=None, debug=False, kind=None):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. 
 
@@ -178,7 +178,15 @@ class SceneFitter(object):
         if scene is not None:
             self.set_scene(scene)
 
+        if hasattr(self.scene, "has_host_only") and self.scene.has_host_only:
+            fix_params.extend(['a_ps', 'b_ps', 'alpha_ps', 'eta_ps', 'ampl_ps'])
+            fix_params = list(np.unique(fix_params))
+        elif hasattr(self.scene, "has_sn_only") and self.scene.has_sn_only:
+            fix_params.extend(['a', 'b', 'sigma', 'ampl'])
+            fix_params = list(np.unique(fix_params))
         self.set_fixed_params(fix_params)
+
+        self._kind = kind
 
         if priors is None:
             priors = Priors()
@@ -191,7 +199,8 @@ class SceneFitter(object):
     @classmethod
     def from_slices(cls, slice_in, slice_comp, psf, whichscene="HostSlice", pointsource=None,
                     xy_in=None, xy_comp=None,
-                    fix_params=["scale", "rotation"], debug=False, priors=None, curved_bkgd=False, **kwargs):
+                    fix_params=["scale", "rotation"], debug=False, priors=None, curved_bkgd=False,
+                    host_only=False, sn_only=False, kind=None, **kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
 
@@ -230,15 +239,17 @@ class SceneFitter(object):
             from .scene import host
             scene = host.SceneSlice.from_slices(slice_in, slice_comp,
                                                 xy_in=xy_in, xy_comp=xy_comp,
-                                                psfgal=psf, pointsource=pointsource, curved_bkgd=curved_bkgd, **kwargs)
+                                                psfgal=psf, pointsource=pointsource,
+                                                host_only=host_only, sn_only=sn_only,
+                                                curved_bkgd=curved_bkgd, **kwargs)
         else:
             raise NotImplementedError(
                 "Only HostSlice and SceneSlice scene have been implemented.")
 
-        return cls.from_scene(scene, fix_params=fix_params, debug=debug, priors=priors)
+        return cls.from_scene(scene, fix_params=fix_params, debug=debug, kind=kind, priors=priors)
 
     @classmethod
-    def from_scene(cls, scene, fix_params=["scale", "rotation"], debug=False, priors=None, **kwargs):
+    def from_scene(cls, scene, fix_params=["scale", "rotation"], debug=False, priors=None, kind=None, **kwargs):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. 
 
@@ -260,7 +271,7 @@ class SceneFitter(object):
             If True, will print steps informations  during the fit.\n
             Default is None.
         """
-        return cls(scene, fix_params=fix_params, debug=debug, priors=priors, **kwargs)
+        return cls(scene, fix_params=fix_params, debug=debug, priors=priors, kind=kind, **kwargs)
 
     # ============== #
     # Class Method   #
@@ -272,7 +283,9 @@ class SceneFitter(object):
                               guess=None, limit=None, error=None, use_priors=True,
                               savefile=None, plotkwargs={},
                               result_as_dataframe=True,
-                              add_lbda=True, add_coefs=True, priors=None, onlyvalid=False):
+                              add_lbda=True, add_coefs=True, priors=None,
+                              host_only=False, sn_only=False, kind=None,
+                              onlyvalid=False):
         """ 
         Main Scene Fitter of a given slice/cube in an IFU. Instantiate from slice datas instead of SceneObject/HostObject.
         Directly fit the scene after the instantiation.
@@ -331,7 +344,8 @@ class SceneFitter(object):
         this = cls.from_slices(slice_in, slice_comp,  psf=psf,
                                whichscene=whichscene, pointsource=pointsource,
                                xy_in=xy_in, xy_comp=xy_comp,
-                               fix_params=fix_params, debug=debug, priors=priors, curved_bkgd=curved_bkgd)
+                               fix_params=fix_params, debug=debug, priors=priors,
+                               host_only=host_only, sn_only=sn_only, kind=kind, curved_bkgd=curved_bkgd)
 
         migradout = this.fit(guess=guess, limit=limit, error=error, use_priors=use_priors,
                              runmigrad=True)
@@ -716,6 +730,38 @@ class SceneFitter(object):
             errors["bkgd_comp"] = np.NaN
             values["bkgd_in"] = self.scene.bkgd_in
             errors["bkgd_in"] = np.NaN
+
+        if hasattr(self.scene, "has_host_only") and self.scene.has_host_only:
+
+            if self._kind == 'slices':
+                values["ampl_ps"] = 0
+                errors["ampl_ps"] = 1e-1
+            elif self._kind == 'metaslices':
+                values["ampl_ps"] = 0
+                errors["ampl_ps"] = 1e-1
+                values["a_ps"] = 0
+                errors["a_ps"] = 1e-1
+                values["b_ps"] = 0
+                errors["b_ps"] = 1e-1
+                values["alpha_ps"] = 0
+                errors["alpha_ps"] = 1e-1
+                values["eta_ps"] = 0
+                errors["eta_ps"] = 1e-1
+
+        if hasattr(self.scene, "has_sn_only") and self.scene.has_sn_only:
+
+            if self._kind == 'slices':
+                values["ampl"] = 0
+                errors["ampl"] = 1e-1
+            elif self._kind == 'metaslices':
+                values["ampl"] = 0
+                errors["ampl"] = 1e-1
+                values["a"] = 0
+                errors["a"] = 1e-1
+                values["b"] = 0
+                errors["b"] = 1e-1
+                values["sigma"] = 0
+                errors["sigma"] = 1e-1
 
         if as_dataframe:
             df = pandas.DataFrame({"values": values, "errors": errors})

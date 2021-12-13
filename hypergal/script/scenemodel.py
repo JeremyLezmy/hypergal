@@ -106,7 +106,8 @@ class DaskScene(DaskHyperGal):
                        filters_fit=["ps1.g", "ps1.r", "ps1.i", "ps1.z"],
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, use_extsource=True,
-                       split=True, curved_bkgd=True, build_astro=True):
+                       split=True, curved_bkgd=True, build_astro=True,
+                       host_only=False, sn_only=False):
         """ """
         info = io.parse_filename(cubefile)
         cubeid = info["sedmid"]
@@ -176,13 +177,13 @@ class DaskScene(DaskHyperGal):
         #
         # ---> fit position and PSF parameters from the cutouts
 
-        if prefit_photo:
+        if prefit_photo and not sn_only:
 
             saveplot_structure = plotbase + '_' + name + '_cout_fit_'
             bestfit_cout = self.fit_cout_slices(source_coutcube, source_sedmcube, radec,
                                                 saveplot_structure=saveplot_structure,
                                                 filterin=filters, filters_to_use=filters_fit,
-                                                psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess, onlyvalid=True)
+                                                psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, guess=initguess, host_only=host_only, kind='metaslices', onlyvalid=True)
 
             # ---> Storing <--- # 2
             # stored.append(bestfit_cout.to_hdf(
@@ -212,7 +213,7 @@ class DaskScene(DaskHyperGal):
                                           sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
                                           testmode=testmode,
                                           saveplot_rmspull=saveplot_rmspull,
-                                          saveplot_intcube=saveplot_intcube)
+                                          saveplot_intcube=saveplot_intcube, sn_only=sn_only)
 
             # ---> Storing <--- # 3
             stored.append(int_cube.to_hdf(
@@ -234,7 +235,7 @@ class DaskScene(DaskHyperGal):
         bestfit_mfit = self.fit_cube(mcube_sedm, mcube_intr, radec, nslices=nslices,
                                      saveplot_structure=saveplot_structure,
                                      mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False, curved_bkgd=curved_bkgd,
-                                     fix_params=['scale', 'rotation'], onlyvalid=True)
+                                     fix_params=['scale', 'rotation'], host_only=host_only, sn_only=sn_only, kind='metaslices', onlyvalid=True)
 
         # ---> Storing <--- # 4
         stored.append(bestfit_mfit.to_hdf(
@@ -261,7 +262,8 @@ class DaskScene(DaskHyperGal):
                                            saveplot_structure=None,  # plotbase+"full_fit_",
                                            fix_params=['scale', 'rotation',
                                                        "xoff", "yoff",
-                                                       "a", "b", "sigma", 'a_ps', 'b_ps', 'alpha_ps', 'eta_ps'])
+                                                       "a", "b", "sigma", 'a_ps', 'b_ps', 'alpha_ps', 'eta_ps'],
+                                           host_only=host_only, sn_only=sn_only, kind='slices')
         # ---> Storing <--- # 5
         stored.append(bestfit_completfit.to_hdf(
             *io.get_slicefit_datafile(cubefile, "full")))
@@ -378,7 +380,7 @@ class DaskScene(DaskHyperGal):
                  curved_bkgd=True,
                  jointfit=False,
                  fix_pos=False, fix_psf=False,
-                 fix_params=['scale', 'rotation'], onlyvalid=False):
+                 fix_params=['scale', 'rotation'], host_only=False, sn_only=False, kind=None, onlyvalid=False):
         """ """
         if jointfit:
             raise NotImplementedError(
@@ -444,7 +446,9 @@ class DaskScene(DaskHyperGal):
                                                                        xy_comp=xy_comp,
                                                                        guess=guess,
                                                                        fix_params=fix_params,
-                                                                       add_lbda=True, priors=Priors(), onlyvalid=onlyvalid)
+                                                                       add_lbda=True, priors=Priors(),
+                                                                       host_only=host_only, sn_only=sn_only,
+                                                                       kind=kind, onlyvalid=onlyvalid)
 
         # ------------------------ #
         # Returns the new bestfit  #
@@ -540,7 +544,8 @@ class DaskScene(DaskHyperGal):
                         filterin=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                         filters_to_use=["ps1.r", "ps1.i", "ps1.z"],
                         saveplot_structure=None,
-                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", guess=None, onlyvalid=False):
+                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D",
+                        host_only=False, guess=None, kind=None, onlyvalid=False):
         """ """
         #
         # Get the slices
@@ -580,7 +585,9 @@ class DaskScene(DaskHyperGal):
                                                                        pointsource=ps,
                                                                        xy_in=xy_in,
                                                                        xy_comp=xy_comp,
-                                                                       guess=guess, add_lbda=True, priors=Priors(), onlyvalid=onlyvalid)
+                                                                       guess=guess, add_lbda=True, priors=Priors(),
+                                                                       host_only=host_only,
+                                                                       kind=kind, onlyvalid=onlyvalid)
 
         # return delayed(pandas.concat)(best_fits)
         return best_fits
