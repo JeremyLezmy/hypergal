@@ -333,13 +333,14 @@ class DaskScene(DaskHyperGal):
 
     @staticmethod
     def build_cubes(cube_int, cube_sedm, radec, mslice_meta, mslice_final,
-                    psfmodel='Gauss2D', pointsourcemodel="GaussMoffat2D", scenemodel="SceneSlice", curved_bkgd=False, nslices=len(SEDM_LBDA), split=False):
+                    psfmodel='Gauss2D', pointsourcemodel="GaussMoffat2D", scenemodel="SceneSlice", curved_bkgd=False, nslices=len(SEDM_LBDA), split=False, sn_only=False, host_only=False):
         """ """
         xy_in = cube_int.radec_to_xy(*radec).flatten()
         cubebuilder = delayed(CubeModelBuilder)(cube_in=cube_int, cube_comp=cube_sedm,
                                                 mslice_meta=mslice_meta, mslice_final=mslice_final,
                                                 xy_in=xy_in, pointsourcemodel=pointsourcemodel,
-                                                scenemodel=scenemodel, curved_bkgd=curved_bkgd)
+                                                scenemodel=scenemodel,
+                                                sn_only=sn_only, host_only=host_only, curved_bkgd=curved_bkgd)
         if split:
             hm = []
             psm = []

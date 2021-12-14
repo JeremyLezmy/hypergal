@@ -122,7 +122,7 @@ class DaskHyperGal(base.DaskCube):
                                                                    tmp_inputpath=tmp_inputpath,
                                                                    initiate=True,
                                                                    working_dir=working_dir,
-                                                                   ncores=ncores, sn_only=False, **kwargs)
+                                                                   ncores=ncores, sn_only=sn_only, **kwargs)
         else:
             raise NotImplementedError(
                 f"Only the cigale sed fitted has been implemented. {sedfitter} given")

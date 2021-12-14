@@ -739,13 +739,13 @@ class SceneFitter(object):
             elif self._kind == 'metaslices':
                 values["ampl_ps"] = 0
                 errors["ampl_ps"] = 1e-1
-                values["a_ps"] = 0
+                values["a_ps"] = 1
                 errors["a_ps"] = 1e-1
                 values["b_ps"] = 0
                 errors["b_ps"] = 1e-1
-                values["alpha_ps"] = 0
+                values["alpha_ps"] = 1
                 errors["alpha_ps"] = 1e-1
-                values["eta_ps"] = 0
+                values["eta_ps"] = 1
                 errors["eta_ps"] = 1e-1
 
         if hasattr(self.scene, "has_sn_only") and self.scene.has_sn_only:
@@ -756,11 +756,11 @@ class SceneFitter(object):
             elif self._kind == 'metaslices':
                 values["ampl"] = 0
                 errors["ampl"] = 1e-1
-                values["a"] = 0
+                values["a"] = 1
                 errors["a"] = 1e-1
                 values["b"] = 0
                 errors["b"] = 1e-1
-                values["sigma"] = 0
+                values["sigma"] = 1
                 errors["sigma"] = 1e-1
 
         if as_dataframe:

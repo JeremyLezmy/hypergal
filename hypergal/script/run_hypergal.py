@@ -81,6 +81,12 @@ if __name__ == '__main__':
     parser.add_argument("--ignore_astrom", type=str2bool, nargs='?', const=True, default=True,
                         help="If True, still process if astrometry isn't available. In that case, --radec and --xy are mandatory.")
 
+    parser.add_argument("--host_only", type=str2bool, nargs='?', const=True, default=False,
+                        help="If True, set the SN component to zero.")
+
+    parser.add_argument("--sn_only", type=str2bool, nargs='?', const=True, default=False,
+                        help="If True, set the Host component to zero.")
+
     parser.add_argument("--contains", nargs='*', type=none_or_str,
                         help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
 
@@ -164,7 +170,7 @@ if __name__ == '__main__':
 
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=args.sn_only, host_only=args.host_only)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:

@@ -422,6 +422,8 @@ class SliceScene(_BaseScene_):
             if norm == 0:
                 norm = np.percentile(data[data == data], float('99.9')) if np.percentile(
                     data[data == data], float('99.9')) > 0 else np.max(data)  # fix in case only few pixels has been fitted by the sedfitter
+            if norm == 0:
+                norm = 1
 
         data /= norm
         if slice_.has_variance():
@@ -996,10 +998,10 @@ class FullSliceScene(SliceScene):
 
         self._has_curved_bkgd = curved_bkgd
 
-        if host_only and len(np.concatenate(np.argwhere(slice_in.data > 0))) > 20:
+        if host_only and len(np.argwhere(slice_in.data > 0)) > 20:
             self._has_host_only = True
             self._has_sn_only = False
-        elif sn_only or len(np.concatenate(np.argwhere(slice_in.data > 0))) < 20:
+        elif sn_only or len(np.argwhere(slice_in.data > 0)) < 20:
             self._has_sn_only = True
             self._has_host_only = False
         else:
