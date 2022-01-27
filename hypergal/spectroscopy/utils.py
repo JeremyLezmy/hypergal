@@ -36,21 +36,21 @@ def command_cigale(command, file_path=None):
         Default is None.
     '''
 
-    configfile=''
+    configfile = ''
     if file_path != None:
         configfile += file_path
-    configfile += 'pcigale.ini' #The configfile MUST have this name.
+    configfile += 'pcigale.ini'  # The configfile MUST have this name.
 
     if sys.version_info[:2] < (3, 6):
         raise Exception(f"Python {sys.version_info[0]}.{sys.version_info[1]} is"
-        f" unsupported. Please upgrade to Python 3.6 or later.")
+                        f" unsupported. Please upgrade to Python 3.6 or later.")
 
     # We set the sub processes start method to spawn because it solves
     # deadlocks when a library cannot handle being used on two sides of a
     # forked process. This happens on modern Macs with the Accelerate library
     # for instance. On Linux we should be pretty safe with a fork, which allows
     # to start processes much more rapidly.
-    
+
     if sys.platform.startswith('linux'):
         mp.set_start_method('fork', force=True)
     else:
@@ -67,7 +67,7 @@ def command_cigale(command, file_path=None):
     elif command == 'run':
 
         if file_path != None:
-            #pcigale run command requires the data and config files to be in the
+            # pcigale run command requires the data and config files to be in the
             # directory where the command is called.
             # We move these files before the run, then move them and results back.
             actual_path = os.getcwd()+'/'
@@ -80,11 +80,12 @@ def command_cigale(command, file_path=None):
             if os.path.exists(file_path+'out/'):
                 name = file_path+datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + '_out/'
                 os.rename(file_path+'out/', name)
-                print(f"The out/ directory already exists, the old one was renamed to {name}")
+                print(
+                    f"The out/ directory already exists, the old one was renamed to {name}")
             files = ['pcigale.ini', 'pcigale.ini.spec', 'test.mag', 'out/']
             move_files(actual_path, file_path, files)
 
-    else :
+    else:
         print(f'Command \'{command}\' was not recognized. Available commands are'
               f' \'init\', \'genconf\', \'check\' and \'run\'')
 
@@ -112,14 +113,13 @@ def move_files(old_path, new_path, files, verbose=False):
     new_location = [new_path+l for l in files]
 
     try:
-        _ = [os.rename(l, nl) for l, nl in zip(old_location,new_location)]
+        _ = [os.rename(l, nl) for l, nl in zip(old_location, new_location)]
     except OSError:
-        _ = [shutil.move(l, nl) for l, nl in zip(old_location,new_location)]
+        _ = [shutil.move(l, nl) for l, nl in zip(old_location, new_location)]
     if verbose:
         print(old_location)
         print("moved to")
         print(new_location)
-
 
 
 def update_config(d, u):
@@ -133,7 +133,7 @@ def update_config(d, u):
 
     u: dict
         Dict used to update
-    
+
     Returns
     -------
     Dictionary
@@ -148,6 +148,8 @@ def update_config(d, u):
 # ============== #
 #  Convertsion   #
 # ============== #
+
+
 def flux_aa_to_hz(flux, wavelength):
     """
     Convert flux in __/Angstrom to __/Hertz
@@ -156,15 +158,16 @@ def flux_aa_to_hz(flux, wavelength):
     ----------
     flux : float, array
         Flux to convert
-    
+
     wavelength : float
         (effective) wavelength at which the flux correspond to.
-    
+
     Returns
     -------
     Float, Array
     """
     return flux * (wavelength**2 / constants.c.to("AA/s").value)
+
 
 def flux_hz_to_aa(flux, wavelength):
     """ Convert flux in __/Hertz to __/Angstrom
@@ -173,16 +176,17 @@ def flux_hz_to_aa(flux, wavelength):
     ----------
     flux : float, array
         Flux to convert
-    
+
     wavelength : float
         (effective) wavelength at which the flux correspond to.
-    
+
     Returns
     -------
     Float, Array
     """
-   
+
     return flux / (wavelength**2 / constants.c.to("AA/s").value)
+
 
 def flux_aa_to_mjy(flux, wavelength):
     """ Convert flux in __/Angstrom to mJy
@@ -191,32 +195,34 @@ def flux_aa_to_mjy(flux, wavelength):
     ----------
     flux : float, array
         Flux to convert
-    
+
     wavelength : float
         (effective) wavelength at which the flux correspond to.
-    
+
     Returns
     -------
     Float, Array
     """
-    return flux_hz_to_mjy( flux_aa_to_hz(flux, wavelength) )
+    return flux_hz_to_mjy(flux_aa_to_hz(flux, wavelength))
+
 
 def flux_mjy_to_aa(flux, wavelength):
-     """ Convert flux in  mJy to __/Angstrom
+    """ Convert flux in  mJy to __/Angstrom
 
-     Parameters
-     ----------
-     flux : float, array
-         Flux to convert
-    
-     wavelength : float
-     (effective) wavelength at which the flux correspond to.
-    
-     Returns
-     -------
-     Float, Array
-     """
-     return flux_mjy_to_hz( flux_hz_to_aa(flux, wavelength) )
+    Parameters
+    ----------
+    flux : float, array
+        Flux to convert
+
+    wavelength : float
+    (effective) wavelength at which the flux correspond to.
+
+    Returns
+    -------
+    Float, Array
+    """
+    return flux_mjy_to_hz(flux_hz_to_aa(flux, wavelength))
+
 
 def flux_hz_to_mjy(flux):
     """
@@ -226,13 +232,14 @@ def flux_hz_to_mjy(flux):
     ----------
     flux : float, array
          flux to convert
-  
+
     Return
     ---------
     Float, Array
     """
-   
+
     return flux*10**26
+
 
 def flux_mjy_to_hz(flux):
     """
@@ -242,15 +249,16 @@ def flux_mjy_to_hz(flux):
     ----------
     flux : float, array
         Flux to convert
-  
+
     Returns
     -------
     Float, Array
     """
-   
+
     return flux*10**-26
 
-def spectra_to_3dcube( spectra, lbda, spx_map, spx_vert=None, **kwargs):
+
+def spectra_to_3dcube(spectra, lbda, spx_map, spx_vert=None, **kwargs):
     """ Build 3d cube with pyifu method.
 
     Parameters
@@ -271,17 +279,16 @@ def spectra_to_3dcube( spectra, lbda, spx_map, spx_vert=None, **kwargs):
     -------
     pyifu.Cube
     """
-    
-    if len(spec)!=len(spx_map):
+
+    if len(spec) != len(spx_map):
         raise ValueError("Shapes of spec and spaxel_mapping do not match.")
-          
+
     return pyifu.spectroscopy.get_cube(data=spectra.T, lbda=lbda,
-                                        spaxel_mapping=spx_map,
-                                        spaxel_vertices=spx_vert, **kwargs)
+                                       spaxel_mapping=spx_map,
+                                       spaxel_vertices=spx_vert, **kwargs)
 
 
 def gauss_convolve_variable_width(a, sig, prec=10.):
-
     '''
     approximate convolution with a kernel that varies along the spectral
         direction, by stretching the data by the inverse of the kernel's
@@ -346,10 +353,21 @@ def gauss_convolve_variable_width(a, sig, prec=10.):
     return a_f
 
 
-def sedm_lsf(lbda, a=23.585, b=-5.394, slice_unit=True):
+# def sedm_lsf(lbda, a=23.585, b=-5.394, slice_unit=True):
+#    """ """
+#    if slice_unit:
+#        from pysedm.sedm import SEDM_LBDA
+#        return (a*lbda/6000+b)/(SEDM_LBDA[1]-SEDM_LBDA[0])
+#    else:
+#        return (a*lbda/6000+b)
+
+def sedm_lsf(lbda, a0=19.100, a=24.629, b=8.202, slice_unit=True):
     """ """
+    from pysedm.sedm import SEDM_LBDA
+    lbda = np.atleast_1d(lbda)
+    coeffs = np.array([a0, a, b])
+    nx = 2*lbda/SEDM_LBDA[-1] - 1
     if slice_unit:
-        from pysedm.sedm import SEDM_LBDA
-        return (a*lbda/6000+b)/(SEDM_LBDA[1]-SEDM_LBDA[0])
+        return np.polynomial.legendre.legval(nx, coeffs)/(SEDM_LBDA[1]-SEDM_LBDA[0])
     else:
-        return (a*lbda/6000+b)
+        return np.polynomial.legendre.legval(nx, coeffs)
