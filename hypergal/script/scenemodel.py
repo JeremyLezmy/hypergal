@@ -1106,10 +1106,11 @@ class DaskScene(DaskHyperGal):
             ax=axsnreszoom, pad=.05, extend='both', fraction=fraction)
 
         axsnprof.plot(radiusrav, profil*ampl_ps*norm_comp /
-                      np.max(sndat), label="Gaussian + Moffat model", c='r')
-        axsnprof.scatter(rsn, sndat/np.max(sndat), c='k', label="Datas", s=16)
-        axsnprof.errorbar(rsn, sndat/np.max(sndat), snerr /
-                          np.max(sndat), fmt='none', c='k')
+                      np.max(profil*ampl_ps*norm_comp), label="Gaussian + Moffat model", c='r')
+        axsnprof.scatter(rsn, sndat/np.max(profil*ampl_ps *
+                         norm_comp), c='k', label="Datas", s=16)
+        axsnprof.errorbar(rsn, sndat/np.max(profil*ampl_ps*norm_comp), snerr /
+                          np.max(profil*ampl_ps*norm_comp), fmt='none', c='k')
 
         axsnprof.set_xlim(np.min(rsn)-0.1, 8)
         axsnprof.set_ylim(-0.5, 1.5)
@@ -1117,7 +1118,7 @@ class DaskScene(DaskHyperGal):
         axsnprof.set_ylabel(' Flux (normalized) ')
         axsnprof.set_title(
             fr'SN profile with Gaussian + Moffat model (from Metaslice at {np.round(mslice.lbda,0)} $\AA$)', **prop)
-        axsnprof.vlines(radiusrav[np.where(abs(profil*ampl_ps*norm_comp/np.max(sndat) - 0.5) == np.min(abs(profil*ampl_ps*norm_comp/np.max(sndat) - 0.5)))[0]], -0.5, 1.5, ls='--', color='b', alpha=0.5,
+        axsnprof.vlines(radiusrav[np.where(abs(profil*ampl_ps*norm_comp/np.max(profil*ampl_ps*norm_comp) - 0.5) == np.min(abs(profil*ampl_ps*norm_comp/np.max(profil*ampl_ps*norm_comp) - 0.5)))[0]], -0.5, 1.5, ls='--', color='b', alpha=0.5,
                         label=fr'fitted FWHM={np.round(radiusrav[np.where(abs(profil*ampl_ps*norm_comp/np.max(sndat) -0.5) == np.min(abs(profil*ampl_ps*norm_comp/np.max(sndat) - 0.5)))[0]][0]*2*0.558,2)} " (1spx = 0.558")')
         axsnprof.legend()
 
