@@ -107,7 +107,7 @@ class DaskScene(DaskHyperGal):
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True,
-                       host_only=False, sn_only=False):
+                       host_only=False, sn_only=False, suffix_plot=None):
         """ """
         info = io.parse_filename(cubefile)
         cubeid = info["sedmid"]
@@ -119,6 +119,9 @@ class DaskScene(DaskHyperGal):
         # PLOTS
         plotbase = os.path.join(filedir, "hypergal",
                                 info["name"], info["sedmid"])
+        if suffix_plot is not None:
+            plotbase = os.path.join(filedir, "hypergal",
+                                    info["name"], suffix_plot + info["sedmid"])
         dirplotbase = os.path.dirname(plotbase)
 
         #dirspec = os.path.join( SEDMLOCAL_BASESOURCE, "hypergal_output", "target_spec", name)
