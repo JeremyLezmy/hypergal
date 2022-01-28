@@ -575,8 +575,8 @@ class DaskScene(DaskHyperGal):
             else:
                 savefile = None
 
-            mpoly = delayed(sedm_filter_slices[f_].get_spaxel_polygon)(
-                format='multipolygon')
+            # mpoly = delayed(sedm_filter_slices[f_].get_spaxel_polygon)(
+            #    format='multipolygon')
             gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha': 2.5, 'eta': 1})
             ps = delayed(PointSource)(gm, mpoly)
             best_fits[f_] = delayed(SceneFitter.fit_slices_projection)(cout_filter_slices[f_],
