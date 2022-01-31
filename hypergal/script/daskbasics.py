@@ -9,6 +9,7 @@ from dask import delayed
 from ..photometry import panstarrs
 from ..spectroscopy import basics as spectrobasics
 from ..spectroscopy import sedfitting
+from .. import __version__ as hgvs
 
 SEDM_SCALE = 0.558
 PS_SCALE = 0.25
@@ -87,6 +88,9 @@ class DaskHyperGal(base.DaskCube):
                                            get_filename=False, **kwargs))
         if not as_wcscube:
             return cube
+
+        header = {**dict(cube.header), **dict({'Hypergal_version': f'{hgvs}'})}
+        cube.set_header(header)
 
         if get_filename and not store_data:
             warnings.warn(
