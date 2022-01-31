@@ -89,8 +89,9 @@ class DaskHyperGal(base.DaskCube):
         if not as_wcscube:
             return cube
 
-        header = {**dict(cube.header), **dict({'Hypergal_version': f'{hgvs}'})}
-        cube.set_header(header)
+        #header = {**dict(cube.header), **dict({'Hypergal_version': f'{hgvs}'})}
+        # cube.set_header(header)
+        cube.header.update(dict({'HYPERGAL': f'{hgvs}'}))
 
         if get_filename and not store_data:
             warnings.warn(
