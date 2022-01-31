@@ -85,9 +85,12 @@ class WCSCube(Cube, WCSHolder):
                 "P60PRID", "P60PRNM", "P60PRPI", "REQ_ID", "OBJ_ID",
                 "ENDAIR", "ENDDOME", "END_RA", "END_DEC", "END_PA", "BIASSUB", "BIASSUB2",
                 "CCDBKGD", "ORIGIN", "FLAT3D", "FLATSRC", "ATMCORR", "ATMSRC", "ATMSCALE", "IFLXCORR",
-                "IFLXREF", "CCDIFLX"]
+                "IFLXREF", "CCDIFLX", "HYPERGAL", "FLUXCAL"]
         nheader = {k: cube.header[k] for k in keys if k in cube.header}
         cube.set_header(fits.Header({**nheader, **wcsdict}))
+        from .. import __version__ as hgvs
+        header = {**dict(cube.header), **dict({'HYPERGAL': f'{hgvs}'})}
+        cube.set_header(header)
 
         this = cls.from_data(data=cube.data,
                              variance=cube.variance,
