@@ -230,7 +230,35 @@ if __name__ == '__main__':
                         else:
                             command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --snid {snidfile}"
                     else:
-                        m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
+
+                        if os.path.exists(logfile):
+                            with open(logfile, 'r') as fp:
+                                read_data = yaml.load(
+                                    fp, Loader=yaml.FullLoader)
+                            if read_data is None:
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
+
+                            elif 'ConnectionResetError' in str(list(read_data.values())) or 'max_connections' in str(list(read_data.values())) or 'Worker stream died' in str(list(read_data.values())) or 'failed during get data' in str(list(read_data.values())) or 'Stream is closed' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: Dask workers died, try to run again.'"
+                            elif 'hypergal.spectroscopy.sedfitting.Cigale' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: SEDFitting failed.'"
+                            elif 'All objects passed were None' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: Hypergal did not converge.'"
+                            elif 'apply_byecr' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: byecr failed.'"
+                            elif 'calibrate_cube' in str(list(read_data.values())) or 'get_fluxcal_file' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: Calibration failed.'"
+                            elif 'CutOut.from_radec' in str(list(read_data.values())) or 'CutOut.from_sedmfile' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: PS1 cutouts request failed.'"
+                            elif 'Memory use is high but worker has no data to store to disk' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: Memory use is high but worker has no data to store to disk, try to run again.'"
+                            elif 'most likely due to a circular import' in str(list(read_data.values())):
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process: Circular importation error with shapely, try to run again.'"
+
+                            else:
+                                m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
+                        else:
+                            m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
                         command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
                     os.system(command)
                 if n_ < len(cubefiles)-1:
