@@ -113,6 +113,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=True,
                         help="Push to slack?")
+    parser.add_argument('--channel', type=str,
+                        default='C02N2U9L88L', help='Slack channel to push')
 
     args = parser.parse_args()
 
@@ -217,6 +219,7 @@ if __name__ == '__main__':
                 if args.push_to_slack:
                     filepath = plotbase + '_' + name + '_global_report.png'
                     mf = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
+                    ch = args.channel
                     if os.path.exists(filepath):
 
                         targetspec = cubefile.replace(
@@ -226,9 +229,9 @@ if __name__ == '__main__':
                             ".fits", ".txt").replace("e3d", "hgspec_host")
 
                         if snidfile is None:
-                            command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec}"
+                            command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --channel {ch}"
                         else:
-                            command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --snid {snidfile}"
+                            command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --snid {snidfile} --channel {ch}"
                     else:
 
                         if os.path.exists(logfile):
@@ -259,7 +262,7 @@ if __name__ == '__main__':
                                 m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
                         else:
                             m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
-                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
+                        command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m} --channel {ch}"
                     os.system(command)
                 if n_ < len(cubefiles)-1:
                     client.restart()
