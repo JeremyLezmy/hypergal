@@ -111,6 +111,9 @@ if __name__ == '__main__':
     parser.add_argument("--curved_bkgd", type=str2bool, nargs='?', const=True, default=True,
                         help="Use curved background model if True, flat if False. Default is True.")
 
+    parser.add_argument("--use_exist_intcube", type=str2bool, nargs='?', const=True, default=True,
+                        help="Use existing intrinsic cube if it exists.")
+
     parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=True,
                         help="Push to slack?")
     parser.add_argument('--channel', type=str,
@@ -172,7 +175,7 @@ if __name__ == '__main__':
 
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=args.sn_only, host_only=args.host_only)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=args.sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:
