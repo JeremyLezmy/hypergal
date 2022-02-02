@@ -733,10 +733,10 @@ class DaskScene(DaskHyperGal):
                 df, wcsin=coutcube.wcs, wcsout=hostiso.wcs, sourcescale=5, )
             x, y = np.transpose(hostobsonly.index_to_xy(hostobsonly.indexes))
 
-            ax2.plot(hostmodonly.lbda, np.nanmean(hostmodonly.data.T, axis=0)*1e15,
-                     c='forestgreen', lw=2, linestyle=(0, (3, 1, 1, 1)), label='Host Model')
+            # ax2.plot(hostmodonly.lbda, np.nanmean(hostmodonly.data.T, axis=0)*1e15,
+            #         c='forestgreen', lw=2, linestyle=(0, (3, 1, 1, 1)), label='Host Model')
             ax2.plot(hostobsonly.lbda, np.nanmean(hostobsonly.data.T,
-                                                  axis=0)*1e15, label='Host Data', color='g')
+                                                  axis=0)*1e15, label='Host Isolated', color='g')
             ax2.fill_between(hostobsonly.lbda, (np.nanmean(hostobsonly.data.T, axis=0) - (np.nanmean(hostobsonly.variance.T, axis=0)/len(hostobsonly.lbda))**0.5)
                              * 1e15, (np.nanmean(hostobsonly.data.T, axis=0) + (np.nanmean(hostobsonly.variance.T, axis=0)/len(hostobsonly.lbda))**0.5)*1e15, color='g', alpha=0.3)
             ax2.set_ylabel(
@@ -769,7 +769,7 @@ class DaskScene(DaskHyperGal):
             'errors'].values*speccoef/header['EXPTIME']
         speclbda = fullparam.xs('lbda', level=1)['values'].values
 
-        ax4.plot(speclbda, specval*1e15, color='k', label=f'SN Spectra')
+        ax4.plot(speclbda, specval*1e15, color='k', label=f'SN Spectrum')
         ax4.fill_between(speclbda, specval*1e15 + (specerr)*1e15,
                          specval*1e15 - (specerr)*1e15, color='k', alpha=0.3)
         ax4.set_ylabel(
@@ -781,7 +781,7 @@ class DaskScene(DaskHyperGal):
         ax4.set_ylim(None, np.max(specval*1e15))
         fig.legend(loc="upper right", bbox_to_anchor=(
             1, 1), bbox_transform=ax.transAxes)
-        fig.suptitle(f'Fitted Host model coefficient (blue), mean Host observed/modeled spectra (green/dashed green), Target spectra (black) and Sky component (red)' +
+        fig.suptitle(f'Fitted Host model coefficient (blue), mean Host isolated spectra (green), Target spectrum (black) and Sky component (red)' +
                      '\n' + f'{header["NAME"]} ({header["OBSDATE"]}, ID: {header["OBSTIME"].rsplit(".")[0].replace(":","-")})', fontsize=11, fontweight="bold")
         if saveplot is not None:
             fig.savefig(saveplot)
@@ -1006,10 +1006,10 @@ class DaskScene(DaskHyperGal):
 
             flagin = (hostobsonly.lbda > 4000) & (hostobsonly.lbda < 9300)
 
-            axhostisospec.plot(hostmodonly.lbda[flagin], np.nanmean(
-                hostmodonly.data[flagin].T, axis=0), c='r', label='Host Model')
+            # axhostisospec.plot(hostmodonly.lbda[flagin], np.nanmean(
+            #    hostmodonly.data[flagin].T, axis=0), c='r', label='Host Model')
             axhostisospec.plot(hostobsonly.lbda[flagin], np.nanmean(
-                hostobsonly.data[flagin].T, axis=0), label='Obs. Host isolated')
+                hostobsonly.data[flagin].T, axis=0), label='Host isolated')
             axhostisospec.fill_between(hostobsonly.lbda[flagin], np.nanmean(hostobsonly.data[flagin].T, axis=0) - (np.nanmean(hostobsonly.variance[flagin].T, axis=0)/len(hostobsonly.lbda[flagin]))**0.5,
                                        np.nanmean(hostobsonly.data[flagin].T, axis=0) + (np.nanmean(hostobsonly.variance[flagin].T, axis=0)/len(hostobsonly.lbda[flagin]))**0.5, alpha=0.5)
 
