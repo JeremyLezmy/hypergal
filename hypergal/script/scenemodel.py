@@ -69,7 +69,7 @@ class DaskScene(DaskHyperGal):
         if manual_z != None:
             redshift = manual_z
         elif redshift == None:
-            redshift = 0.01
+            redshift = 0.07
 
         if manual_radec != None:
             radec = radec
