@@ -177,7 +177,8 @@ if __name__ == '__main__':
 
             if len(cubefiles) == 0 and args.push_to_slack:
                 m = f"'HyperGal report: No e3d cubefile for {targ}!'"
-                command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m}"
+                ch = args.channel
+                command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m} --channel {ch}"
                 os.system(command)
             for (n_, cubefile) in enumerate(cubefiles):
                 future = client.compute(stored[n_])
