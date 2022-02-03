@@ -56,11 +56,11 @@ def ab_lines(z):
 class DaskScene(DaskHyperGal):
 
     @classmethod
-    def compute_targetcubes(cls, name, client, contains=None, verbose=False, ignore_astrom=True, manual_radec=None,
+    def compute_targetcubes(cls, name, client, contains=None, date_range=None, verbose=False, ignore_astrom=True, manual_radec=None,
                             return_cubefile=False, manual_z=None, **kwargs):
         """ """
         cubefiles, radec, redshift = io.get_target_info(
-            name, contains=contains, ignore_astrom=ignore_astrom, verbose=True)
+            name, contains=contains, date_range=date_range, ignore_astrom=ignore_astrom, verbose=True)
         if len(cubefiles) == 0:
             if return_cubefile:
                 return None, []

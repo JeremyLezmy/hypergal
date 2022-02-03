@@ -90,6 +90,9 @@ if __name__ == '__main__':
     parser.add_argument("--contains", nargs='*', type=none_or_str,
                         help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
 
+    parser.add_argument("--date_range", type=none_or_str, nargs=2, default=None,
+                        help="Date range for whatdata request.")
+
     parser.add_argument("--radec", type=float, nargs=2, default=None,
                         help="If no Astrometry, you have to give the radec information. Default is None.")
 
@@ -174,7 +177,7 @@ if __name__ == '__main__':
         for (targ, contain) in zip(args.target, contains):
 
             stored = []
-            to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True,
+            to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
                                                                             rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=args.sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube)
             stored.append(to_stored)
 

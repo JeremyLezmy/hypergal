@@ -89,7 +89,7 @@ def get_slicefit_datafile(filename, which=None):
 # ============ #
 
 
-def get_target_info(name, contains=None, ignore_astrom=True, verbose=False, client=None):
+def get_target_info(name, contains=None, date_range=None, ignore_astrom=True, verbose=False, client=None):
     """ """
     from ztfquery import sedm, fritz
     try:
@@ -106,7 +106,7 @@ def get_target_info(name, contains=None, ignore_astrom=True, verbose=False, clie
 
     squery = sedm.SEDMQuery()
     squery.update_pharosio()
-    df = squery.get_whatdata(targets=name)
+    df = squery.get_whatdata(targets=name, date_range=date_range)
     cubefiles = sedm.download_from_whatdata(
         df, 'cube', contains=contains, client=client, return_filename=True)
     astrmfiles = sedm.download_from_whatdata(
