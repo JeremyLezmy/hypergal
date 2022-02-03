@@ -272,8 +272,8 @@ class DaskScene(DaskHyperGal):
             *io.get_slicefit_datafile(cubefile, "full")))
 
         target_specfile = io.e3dfilename_to_hgspec(cubefile, 'target')
-        stored.append(self.get_target_spec(bestfit_completfit, delayed(
-            fits.getheader)(cubefile), savefile=target_specfile))
+        stored.append(self.get_target_spec(bestfit_completfit,
+                      calcube.header, savefile=target_specfile))
 
         # ---> Get the object for future guesses || Guesser
         full_ms_param = delayed(MultiSliceParameters)(bestfit_completfit, psfmodel=psfmodel.replace("2D", "3D"), pointsourcemodel='GaussMoffat3D',
