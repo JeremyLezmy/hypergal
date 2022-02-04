@@ -279,7 +279,7 @@ if __name__ == '__main__':
                 if n_ < len(cubefiles)-1:
                     client.restart()
                     curr_num_workers = 0
-                    while curr_num_workers < np.min(args.workers, args.min_workers):
+                    while curr_num_workers < np.min([args.workers, args.min_workers]):
                         curr_num_workers = get_num_workers(client)
                         time.sleep(1)
                     print(
