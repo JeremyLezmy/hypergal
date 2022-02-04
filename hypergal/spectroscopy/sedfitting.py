@@ -110,7 +110,7 @@ class SEDFitter():
             self._idx_used = None
             return
 
-        if len(idx) < 20:
+        if len(idx) < 75:
             self._idx_used = None
             return
 

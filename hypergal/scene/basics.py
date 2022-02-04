@@ -998,10 +998,10 @@ class FullSliceScene(SliceScene):
 
         self._has_curved_bkgd = curved_bkgd
 
-        if host_only and len(np.argwhere(slice_in.data > 0)) > 20:
+        if host_only and len(np.argwhere(slice_in.data > 0)) > 75:
             self._has_host_only = True
             self._has_sn_only = False
-        elif sn_only or len(np.argwhere(slice_in.data > 0)) < 20:
+        elif sn_only or len(np.argwhere(slice_in.data > 0)) < 75:
             self._has_sn_only = True
             self._has_host_only = False
         else:
