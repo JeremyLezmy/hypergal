@@ -276,8 +276,7 @@ class WCSCube(Cube, WCSHolder):
         """
         if len(sourcedf) == 0:
             return self
-        if sn_only:
-            radius = 15
+
         from shapely.geometry import Polygon, Point
         if wcsout is None:
             wcsout = self.wcs
