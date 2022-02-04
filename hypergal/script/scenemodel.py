@@ -162,7 +162,7 @@ class DaskScene(DaskHyperGal):
                                                                 source_filter=source_filter,
                                                                 source_thres=source_thres, hgfirst=hgfirst, scale_cout=scale_cout,
                                                                 scale_sedm=scale_sedm, use_extsource=use_extsource,
-                                                                rmtarget=rmtarget)
+                                                                rmtarget=rmtarget, sn_only=sn_only)
 
         source_coutcube = source_coutcube__source_sedmcube[0]
         source_sedmcube = source_coutcube__source_sedmcube[1]

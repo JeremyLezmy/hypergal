@@ -244,7 +244,7 @@ class WCSCube(Cube, WCSHolder):
         return sedmtools.remove_target_spx(self, target_pos, radius=radius, store=store, **kwargs)
 
     def get_extsource_cube(self, sourcedf, wcsin, radec=None, wcsout=None, sourcescale=5, radius=6,
-                           boundingrect=False, slice_id=None):
+                           boundingrect=False, sn_only=False, slice_id=None):
         """ 
         Return a partial cube by removing spaxels outisde a given source delimitation.
 
@@ -276,7 +276,8 @@ class WCSCube(Cube, WCSHolder):
         """
         if len(sourcedf) == 0:
             return self
-
+        if sn_only:
+            radius = 15
         from shapely.geometry import Polygon, Point
         if wcsout is None:
             wcsout = self.wcs
@@ -316,6 +317,8 @@ class WCSCube(Cube, WCSHolder):
             if radec is not None:
                 spaxels = np.unique(np.concatenate(
                     [spaxels, self.get_spaxels_within_polygon(circle)]))
+                if sn_only:
+                    spaxels = np.unique(self.get_spaxels_within_polygon(circle))
 
         if len(spaxels) < 5:
             return self

@@ -226,6 +226,8 @@ if __name__ == '__main__':
                 if args.push_to_slack:
                     filepath = plotbase + '_' + name + '_global_report.png'
                     mf = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
+                    if args.sn_only:
+                        mf = f"'HyperGal report (As SN only): {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
                     ch = args.channel
                     if os.path.exists(filepath):
 
