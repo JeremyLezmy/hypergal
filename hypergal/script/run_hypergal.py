@@ -187,7 +187,7 @@ if __name__ == '__main__':
         for (targ, contain) in zip(args.target, contains):
 
             sn_only = args.sn_only
-            _, _, radec = ioh.get_target_info(targ, contains=contain)
+            _, radec, _ = ioh.get_target_info(targ, contains=contain)
             cutouts = photometry.PS1CutOuts.from_radec(*radec)
             cutcube = cutouts.to_cube(binfactor=2)
             sources = cutouts.extract_sources(filter_="ps1.i", thres=3,
