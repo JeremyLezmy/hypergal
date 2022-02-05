@@ -8,10 +8,10 @@ import numpy as np
 import dask
 from dask_jobqueue import SGECluster
 from dask.distributed import Client
-from . import scenemodel
+from hypergal.script import scenemodel
 from pysedm.io import parse_filename
-from .. import io as ioh
-from .. import photometry
+from hypergal import io as ioh
+from hypergal import photometry
 
 SEDM_SCALE = 0.558
 PS_SCALE = 0.25
