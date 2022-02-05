@@ -80,7 +80,7 @@ class DaskScene(DaskHyperGal):
         storings = [this.compute_single(cubefile_, radec, redshift, **kwargs)
                     for cubefile_ in cubefiles]
         if return_cubefile:
-            return storings, cubefiles, radec
+            return storings, cubefiles
         return storings
 
     @staticmethod
