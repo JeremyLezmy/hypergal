@@ -8,8 +8,16 @@ import numpy as np
 import dask
 from dask_jobqueue import SGECluster
 from dask.distributed import Client
-from hypergal.script import scenemodel
+from . import scenemodel
 from pysedm.io import parse_filename
+from .. import io as ioh
+from .. import photometry
+
+SEDM_SCALE = 0.558
+PS_SCALE = 0.25
+DEFAULT_SCALE_RATIO = SEDM_SCALE/PS_SCALE
+FWHM = 2.5  # arcsec
+target_radius = (3*2.5/SEDM_SCALE)/2
 
 
 def limit_numpy(nthreads=1):
@@ -104,6 +112,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--lbdarange", type=float, nargs=2, default=[
                         5000, 8500], help="Wavelength range to consider for the fit process. Default is [5000, 8500] AA")
+    parser.add_argument("--max_ratio", type=int, default=0.8,
+                        help="Max ratio between host size and median PSF size for considering host component.")
 
     parser.add_argument("--nslices", type=int, default=6,
                         help="Number of metaslices to consider for the fit process. Default is 6.")
@@ -176,9 +186,33 @@ if __name__ == '__main__':
             contains = args.contains
         for (targ, contain) in zip(args.target, contains):
 
+            sn_only = args.sn_only
+            _, _, radec = ioh.get_target_info(targ, contains=contain)
+            cutouts = photometry.PS1CutOuts.from_radec(*radec)
+            cutcube = cutouts.to_cube(binfactor=2)
+            sources = cutouts.extract_sources(filter_="ps1.i", thres=3,
+                                              savefile=None)
+
+            if not args.host_only or not args.sn_only:
+                if len(sources) == 0:
+                    sn_only = True
+                else:
+                    source = sources[np.sqrt((sources.x-cutouts.radec_to_xy(*radec)[0])**2+(sources.y-cutouts.radec_to_xy(*radec)[1])**2) == np.min(
+                        np.sqrt((sources.x-cutouts.radec_to_xy(*radec)[0])**2+(sources.y-cutouts.radec_to_xy(*radec)[1])**2))]
+                    wcsin = cutcube.wcs
+                    extcubesource = cutcube.get_extsource_cube(
+                        source, wcsin=wcsin, radec=radec, sourcescale=3, radius=0, boundingrect=False, sn_only=False)
+                    extcubesn = cutcube.get_extsource_cube(
+                        source, wcsin=wcsin, radec=radec, sourcescale=3, radius=target_radius*DEFAULT_SCALE_RATIO, boundingrect=False, sn_only=True)
+                    ratio = 1 - abs(len(np.intersect1d(extcubesource.indexes, extcubesn.indexes)) - len(
+                        extcubesource.indexes))/len(extcubesource.indexes)
+                    if ratio > args.max_ratio:
+                        sn_only = True
+                    else:
+                        sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=args.sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:
@@ -226,7 +260,7 @@ if __name__ == '__main__':
                 if args.push_to_slack:
                     filepath = plotbase + '_' + name + '_global_report.png'
                     mf = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
-                    if args.sn_only:
+                    if sn_only:
                         mf = f"'HyperGal report (As SN only): {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
                     ch = args.channel
                     if os.path.exists(filepath):
@@ -285,6 +319,7 @@ if __name__ == '__main__':
                 #        time.sleep(1)
                 #    print(
                 #        f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
+
     else:
 
         raise ValueError(

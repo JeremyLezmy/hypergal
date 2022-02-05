@@ -284,7 +284,7 @@ class WCSCube(Cube, WCSHolder):
         e_out = get_source_ellipses(sourcedf, wcs=wcsin,  wcsout=wcsout, system="out",
                                     sourcescale=sourcescale)
 
-        if radec is not None:
+        if radec is not None and radius > 0:
 
             target_pos = self.radec_to_xy(*radec).flatten()
             p = Point(*target_pos)
@@ -294,7 +294,7 @@ class WCSCube(Cube, WCSHolder):
             [xmin, ymin], [xmax, ymax] = np.percentile(
                 np.concatenate([e_.xy for e_ in e_out]), [0, 100], axis=0)
 
-            if radec is not None:
+            if radec is not None and radius > 0:
                 xmin_target, ymin_target = target_pos - radius
                 xmax_target, ymax_target = target_pos + radius
 
@@ -313,7 +313,7 @@ class WCSCube(Cube, WCSHolder):
 
             spaxels = np.unique(np.concatenate(
                 [self.get_spaxels_within_polygon(poly_) for poly_ in polys]))
-            if radec is not None:
+            if radec is not None and radius > 0:
                 spaxels = np.unique(np.concatenate(
                     [spaxels, self.get_spaxels_within_polygon(circle)]))
                 if sn_only:
