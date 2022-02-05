@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--lbdarange", type=float, nargs=2, default=[
                         5000, 8500], help="Wavelength range to consider for the fit process. Default is [5000, 8500] AA")
-    parser.add_argument("--max_ratio", type=int, default=0.8,
+    parser.add_argument("--max_ratio", type=float, default=0.8,
                         help="Max ratio between host size and median PSF size for considering host component.")
 
     parser.add_argument("--nslices", type=int, default=6,
