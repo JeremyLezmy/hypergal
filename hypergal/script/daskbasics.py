@@ -38,7 +38,7 @@ class DaskHyperGal(base.DaskCube):
                         filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                         source_filter="ps1.r", source_thres=2, hgfirst=True,
                         scale_cout=15, scale_sedm=10, use_extsource=True,
-                        rmtarget=2, target_radius=8, sn_only=False):
+                        rmtarget=2, target_radius=10, sn_only=False):
         """ """
         #
         # Cubes
@@ -54,7 +54,7 @@ class DaskHyperGal(base.DaskCube):
         # get sources cube
         wcsin = cout_cube.wcs
         if sn_only:
-            target_radius = 10
+            target_radius = 12
         if use_extsource:
             source_coutcube = cout_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=radec,
                                                            sourcescale=scale_cout, radius=target_radius*DEFAULT_SCALE_RATIO, boundingrect=True, sn_only=sn_only)
