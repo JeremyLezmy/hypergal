@@ -124,8 +124,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cluster = SGECluster(name="dask-worker",  walltime="10:00:00",
-                         memory="8GB", death_timeout=240,
+    cluster = SGECluster(name="dask-worker",  walltime="12:00:00",
+                         memory="10GB", death_timeout=240,
                          project="P_ztf", resource_spec="sps=1", local_directory='$TMPDIR',
                          cores=1, processes=1)
 
@@ -276,14 +276,15 @@ if __name__ == '__main__':
                             m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
                         command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m} --channel {ch}"
                     os.system(command)
-                if n_ < len(cubefiles)-1:
-                    client.restart()
-                    curr_num_workers = 0
-                    while curr_num_workers < np.min([args.workers, args.min_workers]):
-                        curr_num_workers = get_num_workers(client)
-                        time.sleep(1)
-                    print(
-                        f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
+                # if n_ < len(cubefiles)-1:
+                #    client.restart()
+                #    curr_num_workers = 0
+                #    start_time = time.time()
+                #    while curr_num_workers < np.min([args.workers, args.min_workers]):
+                #        curr_num_workers = get_num_workers(client)
+                #        time.sleep(1)
+                #    print(
+                #        f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
     else:
 
         raise ValueError(
