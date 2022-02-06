@@ -105,7 +105,7 @@ class DaskScene(DaskHyperGal):
                        lbda_range=[5000, 8500], nslices=6,
                        filters_fit=["ps1.g", "ps1.r", "ps1.i", "ps1.z"],
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
-                       prefit_photo=True, use_exist_intcube=True, use_extsource=True,
+                       prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True,
                        host_only=False, sn_only=False, suffix_plot=None):
         """ """
@@ -115,6 +115,12 @@ class DaskScene(DaskHyperGal):
         filedir = os.path.dirname(cubefile)
         # SED
         working_dir = os.path.join(os.path.dirname(cubefile), f"tmp_{cubeid}")
+        if not use_exist_intcube and overwrite_workdir and not sn_only and os.path.isdir(working_dir):
+            import shutil
+            try:
+                shutil.rmtree(working_dir)
+            except OSError as e:
+                print("Error: %s : %s" % (working_dir, e.strerror))
 
         # PLOTS
         plotbase = os.path.join(filedir, "hypergal",

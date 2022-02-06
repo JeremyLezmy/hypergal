@@ -95,6 +95,9 @@ if __name__ == '__main__':
     parser.add_argument("--sn_only", type=str2bool, nargs='?', const=True, default=False,
                         help="If True, set the Host component to zero.")
 
+    parser.add_argument("--ovwr_wd", type=str2bool, nargs='?', const=True, default=True,
+                        help="If True, overwrite temporary folder where SEDfitter outputs are stored.")
+
     parser.add_argument("--contains", nargs='*', type=none_or_str,
                         help=" If one target name is given, you can give another information as date YYYYMMDD or ID hh_mm_ss.")
 
@@ -217,7 +220,7 @@ if __name__ == '__main__':
                         sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:
