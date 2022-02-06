@@ -186,6 +186,11 @@ if __name__ == '__main__':
             contains = args.contains
         for (targ, contain) in zip(args.target, contains):
 
+            if targ.endswith('.fits'):
+                info = parse_filename(targ)
+                contain = info["sedmid"]
+                targ = info["name"]
+
             sn_only = args.sn_only
             _, radec, _ = ioh.get_target_info(targ, contains=contain)
             cutouts = photometry.PS1CutOuts.from_radec(*radec)
@@ -193,7 +198,7 @@ if __name__ == '__main__':
             sources = cutouts.extract_sources(filter_="ps1.i", thres=3,
                                               savefile=None)
 
-            if not args.host_only or not args.sn_only:
+            if not args.host_only and not args.sn_only:
                 if len(sources) == 0:
                     sn_only = True
                 else:
