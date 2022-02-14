@@ -165,7 +165,7 @@ class DaskSTD():
             single = cls.compute_single(cubefile, lbda_range=lbda_range, nslices=nslices,
                                         psfmodel=psfmodel, curved_bkgd=curved_bkgd,
                                         fix_params=fix_params, use_subslice=use_subslice, onlyvalid=onlyvalid,
-                                        save_metaplot=save_metaplot, save_result=save_result, return_result=return_result, returnspec=returnspec)
+                                        save_metaplot=save_metaplot, save_result=save_result, return_result=return_result, returnspec=returnspec, compute_calib=compute_calib)
 
             if returnspec:
                 stored.append(single)

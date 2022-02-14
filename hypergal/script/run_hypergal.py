@@ -244,7 +244,8 @@ if __name__ == '__main__':
                         snidfile = targetspec.replace(
                             'spec', 'snid_bestspec').replace('.txt', '.png')
                         snidres = pysnid.run_snid(targetspec)
-                        snidres.show(models=[1, 2, 3, 4, 5], savefile=snidfile)
+                        if snidres is not None:
+                            snidres.show(savefile=snidfile)
                 except ImportError:
                     import warnings
                     warnings.warn(
