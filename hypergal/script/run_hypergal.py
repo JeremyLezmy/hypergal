@@ -236,26 +236,27 @@ if __name__ == '__main__':
                 future = client.compute(stored[n_])
                 dask.distributed.wait(future)
 
-                try:
-                    import pysnid
-                    targetspec = cubefile.replace(
-                        ".fits", ".txt").replace("e3d", "hgspec_target")
-                    if os.path.exists(targetspec):
-                        snidfile = targetspec.replace(
-                            'spec', 'snid_bestspec').replace('.txt', '.png')
-                        snidres = pysnid.run_snid(targetspec)
-                        if snidres is not None:
-                            snidres.show(savefile=snidfile)
-                except ImportError:
-                    import warnings
-                    warnings.warn(
-                        'pysnid is not installed. You can clone it from https://github.com/MickaelRigault/pysnid.git')
-                    snidfile = None
-                except FileNotFoundError:
-                    import warnings
-                    warnings.warn(
-                        "SNID didn't find any template to match the datas.")
-                    snidfile = None
+                if not args.host_only:
+                    try:
+                        import pysnid
+                        targetspec = cubefile.replace(
+                            ".fits", ".txt").replace("e3d", "hgspec_target")
+                        if os.path.exists(targetspec):
+                            snidfile = targetspec.replace(
+                                'spec', 'snid_bestspec').replace('.txt', '.png')
+                            snidres = pysnid.run_snid(targetspec)
+                            if snidres is not None:
+                                snidres.show(savefile=snidfile)
+                    except ImportError:
+                        import warnings
+                        warnings.warn(
+                            'pysnid is not installed. You can clone it from https://github.com/MickaelRigault/pysnid.git')
+                        snidfile = None
+                    except FileNotFoundError:
+                        import warnings
+                        warnings.warn(
+                            "SNID didn't find any template to match the datas.")
+                        snidfile = None
                 info = parse_filename(cubefile)
                 cubeid = info["sedmid"]
                 name = info["name"]
@@ -275,6 +276,8 @@ if __name__ == '__main__':
                     mf = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
                     if sn_only:
                         mf = f"'HyperGal report (As SN only): {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
+                    elif args.host_only:
+                        mf = f"'HyperGal report (As Host only): {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
                     ch = args.channel
                     if os.path.exists(filepath):
 
