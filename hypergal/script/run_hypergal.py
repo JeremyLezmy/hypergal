@@ -287,7 +287,7 @@ if __name__ == '__main__':
                         hostspec = cubefile.replace(
                             ".fits", ".txt").replace("e3d", "hgspec_host")
 
-                        if snidfile is None:
+                        if args.host_only or snidfile is None:
                             command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --channel {ch}"
                         else:
                             command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --snid {snidfile} --channel {ch}"
