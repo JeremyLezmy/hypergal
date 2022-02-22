@@ -118,6 +118,9 @@ if __name__ == '__main__':
 
     parser.add_argument("--lbdarange", type=float, nargs=2, default=[
                         5000, 8500], help="Wavelength range to consider for the fit process. Default is [5000, 8500] AA")
+    parser.add_argument("--size", type=int, default=180,
+                        help="PS1 images size in pixel (0.25 arcsec/pix).")
+
     parser.add_argument("--max_ratio", type=float, default=0.9,
                         help="Max ratio between host size and median PSF size for considering host component.")
 
@@ -225,7 +228,7 @@ if __name__ == '__main__':
                         sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, cubefiles_=path, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:

@@ -38,13 +38,14 @@ class DaskHyperGal(base.DaskCube):
                         filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                         source_filter="ps1.r", source_thres=2, hgfirst=True,
                         scale_cout=15, scale_sedm=10, use_extsource=True,
-                        rmtarget=2, target_radius=10, sn_only=False):
+                        rmtarget=2, target_radius=10, sn_only=False, size=180):
         """ """
         #
         # Cubes
         sedm_cube = cls.get_calibrated_cube(
             cubefile, hgfirst=hgfirst, as_wcscube=True, radec=radec, spxy=spxy, apply_byecr=True)
-        cutouts = cls.get_cutout(radec=radec, binfactor=2, filters=filters)
+        cutouts = cls.get_cutout(
+            radec=radec, binfactor=2, filters=filters, size=size)
         #
         # cout_cube->Source & cube
         sources = cutouts.extract_sources(filter_=source_filter, thres=source_thres,
@@ -103,13 +104,13 @@ class DaskHyperGal(base.DaskCube):
                                                           get_filename=get_filename)
 
     @staticmethod
-    def get_cutout(radec=None, cubefile=None, client_dl=None, filters=None, **kwargs):
+    def get_cutout(radec=None, cubefile=None, client_dl=None, filters=None, size=180, **kwargs):
         """ """
         prop_cutout = dict(filters=filters, client=client_dl)
         if cubefile is not None:
-            return delayed(panstarrs.PS1CutOuts.from_sedmfile)(cubefile, **prop_cutout)
+            return delayed(panstarrs.PS1CutOuts.from_sedmfile)(cubefile, size=size, **prop_cutout)
         if radec is not None:
-            return delayed(panstarrs.PS1CutOuts.from_radec)(*radec, **prop_cutout)
+            return delayed(panstarrs.PS1CutOuts.from_radec)(*radec, size=size, **prop_cutout)
 
         raise ValueError("cubefile or radec must be given. Both are None")
 
