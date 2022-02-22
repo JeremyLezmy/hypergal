@@ -269,6 +269,9 @@ if __name__ == '__main__':
                 filedir = os.path.dirname(cubefile)
                 plotbase = os.path.join(filedir, "hypergal",
                                         info["name"], info["sedmid"])
+                if args.suffix_plot is not None:
+                    plotbase = os.path.join(filedir, "hypergal",
+                                            info["name"], args.suffix_plot + info["sedmid"])
                 dirplotbase = os.path.dirname(plotbase)
                 logfile = os.path.join(dirplotbase, 'logfile.yml')
                 import yaml

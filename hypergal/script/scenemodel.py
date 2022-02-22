@@ -75,7 +75,7 @@ class DaskScene(DaskHyperGal):
             redshift = 0.07
 
         if manual_radec != None:
-            radec = radec
+            radec = manual_radec
         elif radec == None:
             raise ValueError(
                 'No available radec from datas, you must manually set it to rebuild astrometry')
