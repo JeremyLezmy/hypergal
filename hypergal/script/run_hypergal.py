@@ -113,6 +113,9 @@ if __name__ == '__main__':
     parser.add_argument("--xy", type=float, nargs=2, default=None,
                         help=" You can manually set the xy position of the target in the SEDM IFU. Mandatory if no astrometry available. Default is None.")
 
+    parser.add_argument("--suffix_plot", default=None, type=str,
+                        help="Add suffix for plot filename")
+
     parser.add_argument("--lbdarange", type=float, nargs=2, default=[
                         5000, 8500], help="Wavelength range to consider for the fit process. Default is [5000, 8500] AA")
     parser.add_argument("--max_ratio", type=float, default=0.9,
@@ -222,7 +225,7 @@ if __name__ == '__main__':
                         sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, cubefiles_=path, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:

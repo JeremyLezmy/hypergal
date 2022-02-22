@@ -117,7 +117,12 @@ class DaskScene(DaskHyperGal):
         name = info["name"]
         filedir = os.path.dirname(cubefile)
         # SED
-        working_dir = os.path.join(os.path.dirname(cubefile), f"tmp_{cubeid}")
+        if suffix_plot is not None:
+            working_dir = os.path.join(os.path.dirname(
+                cubefile), f"tmp_{cubeid}" + '_' + suffix_plot)
+        else:
+            working_dir = os.path.join(
+                os.path.dirname(cubefile), f"tmp_{cubeid}")
         if not use_exist_intcube and overwrite_workdir and not sn_only and os.path.isdir(working_dir):
             import shutil
             try:
