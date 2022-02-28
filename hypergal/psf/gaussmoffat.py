@@ -184,7 +184,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
 
                 if len(values[param]) < 2:
-                    if param == 'eta' and (np.asarray(values[param]) > 100 or np.asarray(values[param]) < 1e-2):
+                    if param == 'eta' and (np.asarray(values[param]) > 100 or np.asarray(values[param]) < 1e-3):
                         param3d[param] = 0.75
                     else:
                         param3d[param] = float(np.asarray(values[param]))
@@ -192,7 +192,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                 else:
                     if param == 'eta':
                         value_ = np.asarray(values[param])
-                        flag = np.logical_or(value_ < 1e-2, value_ > 100)
+                        flag = np.logical_or(value_ < 1e-3, value_ > 100)
                         value = value_[~flag].copy()
                         lbda = mainlbda[~flag].copy()
                         variance_ = np.nan_to_num(np.asarray(
