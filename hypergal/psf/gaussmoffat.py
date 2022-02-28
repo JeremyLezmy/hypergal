@@ -229,7 +229,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     else:
                         #param3d["alpha"] = float(np.asarray(values[param]))
                         param3d["alpha"] = float(
-                            value * (np.atleast_1d(mainlbda)/this.lbdaref)**0.2)
+                            np.asarray(values[param]) * (np.atleast_1d(mainlbda)/this.lbdaref)**0.2)
                     param3d["rho"] = -0.2
 
                 else:
