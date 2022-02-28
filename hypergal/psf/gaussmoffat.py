@@ -184,22 +184,22 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
             if param not in this.CHROMATIC_PARAMETERS and param in values.keys():
 
                 if len(values[param]) < 2:
-                    if param == 'eta' and (np.asarray(values[param]) > 100 or np.asarray(values[param]) < 1e-10):
-                        param3d[param] = 0.8
+                    if param == 'eta' and (np.asarray(values[param]) > 5 or np.asarray(values[param]) < 1e-2):
+                        param3d[param] = 0.75
                     else:
                         param3d[param] = float(np.asarray(values[param]))
 
                 else:
                     if param == 'eta':
                         value_ = np.asarray(values[param])
-                        flag = np.logical_or(value_ < 1e-10, value_ > 100)
+                        flag = np.logical_or(value_ < 1e-2, value_ > 5)
                         value = value_[~flag].copy()
                         lbda = mainlbda[~flag].copy()
                         variance_ = np.nan_to_num(np.asarray(
                             errors[param])**2, nan=1e10) if errors is not None else np.ones(len(value_))
                         variance = variance_[~flag].copy()
                         if len(value) == 0:
-                            value = np.asarray([0.8])
+                            value = np.asarray([0.75])
                             variance = np.asarray([1])
                     else:
                         value = np.asarray(values[param])
@@ -227,8 +227,10 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     if param == 'alpha' and (np.asarray(values[param]) > 6 or np.asarray(values[param]) < 0.9):
                         param3d['alpha'] = 2.5
                     else:
-                        param3d["alpha"] = float(np.asarray(values[param]))
-                    param3d["rho"] = -0.4
+                        #param3d["alpha"] = float(np.asarray(values[param]))
+                        param3d["alpha"] = float(
+                            value * (np.atleast_1d(mainlbda)/this.lbdaref)**0.2)
+                    param3d["rho"] = -0.2
 
                 else:
                     value_ = np.asarray(values[param])
@@ -241,11 +243,11 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                     variance = variance_[~flag].copy()
                     if len(value) == 0:
                         param3d["alpha"] = 2.5
-                        param3d["rho"] = -0.4
+                        param3d["rho"] = -0.2
                     elif len(value) == 1:
                         param3d["alpha"] = float(
-                            value * (np.atleast_1d(lbda)/this.lbdaref)**0.4)
-                        param3d["rho"] = -0.4
+                            value * (np.atleast_1d(lbda)/this.lbdaref)**0.2)
+                        param3d["rho"] = -0.2
 
                     else:
                         def model_alpha(lbda, alpharef, rho):
@@ -256,7 +258,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
                         c = cost.LeastSquares(
                             lbda, value, variance**0.5, model_alpha)
                         c.loss = "soft_l1"
-                        m = Minuit(c, alpharef=2, rho=-0.4)
+                        m = Minuit(c, alpharef=2, rho=-0.2)
                         migout = m.migrad()
 
                         # def get_chromparam(arr_):
@@ -367,7 +369,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
             try:
                 rho = self._profile_params['rho']
             except KeyError:
-                rho = -0.4
+                rho = -0.2
 
         return alpharef * (np.atleast_1d(lbda)/self.lbdaref)**rho
 
@@ -378,7 +380,7 @@ class GaussMoffat3D(PSF3D, GaussMoffat2D):
         --------
         Elliptical parameters ("a" and "b") and the shape parameter (sigma)
         """
-        return {**super().guess_parameters(), **{"rho": -0.4}}
+        return {**super().guess_parameters(), **{"rho": -0.2}}
 
     def show_chromfit(self, values, lbda, errors=None, saveplot=None):
 
