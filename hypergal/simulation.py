@@ -262,6 +262,8 @@ class SimulationHypergal():
         if apply_savgol:
             from scipy.signal import savgol_filter
             specampl = savgol_filter(specampl, windows, degree)
+            specampl[specampl < 0] = np.array(
+                self.model_spectra.T[1]*self.pure_host.header['EXPTIME'])[specampl < 0]
             self._savgol_applied = True
 
         sn_mod = self.psf3d.get_model(
