@@ -138,6 +138,10 @@ if __name__ == '__main__':
 
     parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=True,
                         help="Push to slack?")
+
+    parser.add_argument("--force_fullscene", type=str2bool, nargs='?', const=True, default=False,
+                        help="Force full scene fit (Host + SN + Background) whatever the contrast")
+
     parser.add_argument('--channel', type=str,
                         default='C02N2U9L88L', help='Slack channel to push')
 
@@ -209,7 +213,7 @@ if __name__ == '__main__':
             sources = cutouts.extract_sources(filter_="ps1.i", thres=3,
                                               savefile=None)
 
-            if not args.host_only and not args.sn_only:
+            if not args.host_only and not args.sn_only and not args.force_fullscene:
                 if len(sources) == 0:
                     sn_only = True
                 else:

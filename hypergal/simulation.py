@@ -176,7 +176,7 @@ class SimulationHypergal():
                     {'SIMU_DEC': list(radec.squeeze())[1]})
         return np.array([x, y])
 
-    def get_adr(self):
+    def get_adr(self, lbdaref=6000):
         """ """
         x0 = self.metafithost.xs('xoff', level=1)['values'].values
         x0err = self.metafithost.xs('xoff', level=1)['errors'].values
@@ -185,7 +185,7 @@ class SimulationHypergal():
         lbda = self.metafithost.xs('lbda', level=1)['values'].values
 
         ADRFitter = spectroadr.ADRFitter(xpos=x0, ypos=y0, xpos_err=x0err, ypos_err=y0err,
-                                         lbda=lbda, init_adr=spectroadr.ADR.from_header(self.pure_host.header), lbdaref=6000)
+                                         lbda=lbda, init_adr=spectroadr.ADR.from_header(self.pure_host.header), lbdaref=lbdaref)
 
         ADRFitter.fit_adr()
         self._adr = ADRFitter
