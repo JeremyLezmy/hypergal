@@ -1,0 +1,10 @@
+/sps/ztf/data/sedm/redux/20211203/e3d_crr_b_ifu20211203_04_31_16_ZTF19abzwtiu.fits
+/sps/ztf/data/sedm/redux/20211216/e3d_crr_b_ifu20211216_08_44_25_ZTF18abwkzuc.fits
+/sps/ztf/data/sedm/redux/20211218/e3d_crr_b_ifu20211218_11_36_05_ZTF20aafrjqw.fits
+/sps/ztf/data/sedm/redux/20211219/e3d_crr_b_ifu20211219_12_50_26_ZTF18acnbgrb.fits
+/sps/ztf/data/sedm/redux/20211219/e3d_crr_b_ifu20211219_06_28_18_ZTF20aamuqwn.fits
+/sps/ztf/data/sedm/redux/20211219/e3d_crr_b_ifu20211219_08_39_47_ZTF20aciuakv.fits
+/sps/ztf/data/sedm/redux/20211220/e3d_crr_b_ifu20211220_09_32_28_ZTF19accdehb.fits
+/sps/ztf/data/sedm/redux/20220128/e3d_crr_b_ifu20220128_05_47_36_ZTF20aarcpql.fits
+/sps/ztf/data/sedm/redux/20220129/e3d_crr_b_ifu20220129_08_00_51_ZTF20aamdsjv.fits
+/sps/ztf/data/sedm/redux/20220130/e3d_crr_b_ifu20220130_06_43_04_ZTF20aamsjws.fits

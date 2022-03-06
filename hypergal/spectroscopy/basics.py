@@ -86,7 +86,11 @@ class WCSCube(Cube, WCSHolder):
                 "ENDAIR", "ENDDOME", "END_RA", "END_DEC", "END_PA", "BIASSUB", "BIASSUB2",
                 "CCDBKGD", "ORIGIN", "FLAT3D", "FLATSRC", "ATMCORR", "ATMSRC", "ATMSCALE", "IFLXCORR",
                 "IFLXREF", "CCDIFLX", "HYPERGAL", "FLUXCAL"]
-        nheader = {k: cube.header[k] for k in keys if k in cube.header}
+
+        if "SIMU_SN" in cube.header.keys():
+            nheader = {k: cube.header[k] for k in cube.header.keys()}
+        else:
+            nheader = {k: cube.header[k] for k in keys if k in cube.header}
         cube.set_header(fits.Header({**nheader, **wcsdict}))
         from .. import __version__ as hgvs
         header = {**dict(cube.header), **dict({'HYPERGAL': f'{hgvs}'})}
