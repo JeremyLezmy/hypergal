@@ -17,6 +17,42 @@ from .photometry import basics as photobasics
 from matplotlib import pyplot as plt
 
 
+def load_simulation_parameters(**kwargs):
+    """ """
+    import os
+    from . import _PACKAGE_ROOT
+
+    file_ = os.path.join(
+        _PACKAGE_ROOT, f"data/simulation/simulation_inputs.csv")
+    if not os.path.isfile(file_):
+        raise IOError(f"not such file {file_}")
+    return pd.read_csv(file_, index_col=0, **kwargs)
+
+
+def get_spectra(basename, spec_type, **kwargs):
+    """ """
+    import os
+    from . import _PACKAGE_ROOT
+
+    file_ = os.path.join(
+        _PACKAGE_ROOT, f"data/simulation/{spec_type}/{basename}")
+    if not os.path.isfile(file_):
+        raise IOError(f"not such file {file_}")
+    return np.loadtxt(file_)
+
+
+def get_host_list(**kwargs):
+    """ """
+    import os
+    from . import _PACKAGE_ROOT
+
+    file_ = os.path.join(
+        _PACKAGE_ROOT, f"data/simulation/Pure_Host_simulation.txt")
+    if not os.path.isfile(file_):
+        raise IOError(f"not such file {file_}")
+    return np.loadtxt(file_, dtype='str')
+
+
 class SimulationHypergal():
 
     IFU_SCALE = 0.558
