@@ -84,7 +84,8 @@ if __name__ == "__main__":
           packages=packages,
           scripts=["hypergal/scripts/FullProcess.py",
                    "hypergal/script/run_hypergal.py", "hypergal/script/run_hypergal.sh"],
-          package_data={'hypergal': ['config/cigale.json', 'data/filters/*']},
+          package_data={'hypergal': [
+              'config/cigale.json', 'data/filters/*', 'data/simulation/*']},
           include_package_data=True,
           classifiers=[
               'Intended Audience :: Science/Research',
