@@ -34,6 +34,7 @@ def get_spectra(basename, spec_type, **kwargs):
     import os
     from . import _PACKAGE_ROOT
 
+    fold = spec_type + '_spectra'
     file_ = os.path.join(
         _PACKAGE_ROOT, f"data/simulation/{spec_type}/{basename}")
     if not os.path.isfile(file_):
