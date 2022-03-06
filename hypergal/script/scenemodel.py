@@ -678,8 +678,8 @@ class DaskScene(DaskHyperGal):
     @staticmethod
     def get_sourcedf(radec, cubefile, client=None):
         """ """
-        cutout = DaskHyperGal.get_cutout(radec, cubefile, None, ['ps1.r'])
-        sources = cutout.extract_sources(filter_='ps1.r', thres=20,
+        cutout = DaskHyperGal.get_cutout(radec, None, None, ['ps1.i'], size=140)
+        sources = cutout.extract_sources(filter_='ps1.i', thres=20,
                                          savefile=None)
 
         if client is None:
