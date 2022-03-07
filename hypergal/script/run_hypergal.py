@@ -142,6 +142,9 @@ if __name__ == '__main__':
     parser.add_argument("--force_fullscene", type=str2bool, nargs='?', const=True, default=False,
                         help="Force full scene fit (Host + SN + Background) whatever the contrast")
 
+    parser.add_argument("--apply_byecr", type=str2bool, nargs='?', const=True, default=False,
+                        help="Apply byecr? Default is True.")
+
     parser.add_argument('--channel', type=str,
                         default='C02N2U9L88L', help='Slack channel to push')
 
@@ -232,7 +235,7 @@ if __name__ == '__main__':
                         sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, cubefiles_=path, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size, apply_byecr=args.apply_byecr)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:

@@ -38,12 +38,12 @@ class DaskHyperGal(base.DaskCube):
                         filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                         source_filter="ps1.r", source_thres=2, hgfirst=True,
                         scale_cout=15, scale_sedm=10, use_extsource=True,
-                        rmtarget=2, target_radius=10, sn_only=False, size=180):
+                        rmtarget=2, target_radius=10, apply_byecr=True, sn_only=False, size=180):
         """ """
         #
         # Cubes
         sedm_cube = cls.get_calibrated_cube(
-            cubefile, hgfirst=hgfirst, as_wcscube=True, radec=radec, spxy=spxy, apply_byecr=True)
+            cubefile, hgfirst=hgfirst, as_wcscube=True, radec=radec, spxy=spxy, apply_byecr=apply_byecr)
         cutouts = cls.get_cutout(
             radec=radec, binfactor=2, filters=filters, size=size)
         #

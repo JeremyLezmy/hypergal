@@ -110,7 +110,7 @@ class DaskScene(DaskHyperGal):
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True,
-                       host_only=False, sn_only=False, suffix_plot=None, size=180):
+                       host_only=False, sn_only=False, apply_byecr=True, suffix_plot=None, size=180):
         """ """
         info = io.parse_filename(cubefile)
         cubeid = info["sedmid"]
@@ -168,7 +168,7 @@ class DaskScene(DaskHyperGal):
             spxy = None
 
         calcube = delayed(self.remove_out_spaxels)(self.get_calibrated_cube(
-            cubefile, hgfirst=hgfirst, apply_byecr=True, radec=radec, spxy=spxy))
+            cubefile, hgfirst=hgfirst, apply_byecr=apply_byecr, radec=radec, spxy=spxy))
 
         source_coutcube__source_sedmcube = self.get_sourcecubes(cubefile, radec, spxy=spxy,
                                                                 binfactor=binfactor,

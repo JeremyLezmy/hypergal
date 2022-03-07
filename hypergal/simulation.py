@@ -62,7 +62,7 @@ class SimulationHypergal():
         """ """
 
         pure_host = scenemodel.DaskScene.remove_out_spaxels(
-            pysedm.get_sedmcube(purehost_filename))
+            pysedm.get_sedmcube(purehost_filename, apply_byecr=True))
         model_spectra = np.loadtxt(modelspectra_filename)
         if np.shape(model_spectra)[0] == 214:
             model_spectra = self.fix_spectra(model_spectra)
