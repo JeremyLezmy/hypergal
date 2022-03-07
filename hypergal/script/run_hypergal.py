@@ -142,6 +142,9 @@ if __name__ == '__main__':
     parser.add_argument("--force_fullscene", type=str2bool, nargs='?', const=True, default=False,
                         help="Force full scene fit (Host + SN + Background) whatever the contrast")
 
+    parser.add_argument("--is_simu", type=str2bool, nargs='?', const=True, default=False,
+                        help="Is simulation?")
+
     parser.add_argument("--apply_byecr", type=str2bool, nargs='?', const=True, default=False,
                         help="Apply byecr? Default is True.")
 
@@ -281,6 +284,9 @@ if __name__ == '__main__':
                                             info["name"], args.suffix_plot + info["sedmid"])
                 dirplotbase = os.path.dirname(plotbase)
                 logfile = os.path.join(dirplotbase, 'logfile.yml')
+                if args.is_simu:
+                    logfile = os.path.join(
+                        dirplotbase, 'logfile_'+os.path.basename(cubefile.rsplit('.')[0])+'.yml')
                 import yaml
                 if os.path.exists(logfile):
                     os.remove(logfile)
@@ -294,6 +300,9 @@ if __name__ == '__main__':
                         mf = f"'HyperGal report (As SN only): {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
                     elif args.host_only:
                         mf = f"'HyperGal report (As Host only): {info['name']} {info['sedmid'][-8::]} | ({info['date']})'"
+                    if args.is_simu and args.suffix_plot is not None:
+                        mf = mf.replace(
+                            'HyperGal report', f'HyperGal report for {args.suffix_plot}')
                     ch = args.channel
                     if os.path.exists(filepath):
 
@@ -340,6 +349,9 @@ if __name__ == '__main__':
                                 m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
                         except:
                             m = f"'HyperGal report: {info['name']} {info['sedmid'][-8::]} | ({info['date']}) failed to process.'"
+                        if args.is_simu and args.suffix_plot is not None:
+                            m = m.replace(
+                                'HyperGal report', f'HyperGal report for {args.suffix_plot}')
                         command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -m {m} --channel {ch}"
                     os.system(command)
                 # if n_ < len(cubefiles)-1:
