@@ -442,14 +442,14 @@ class SimulationHypergal():
         fig, (ax, ax2) = plt.subplots(1, 2, figsize=(10, 5))
         flag = (self.pure_host.lbda > lbdamin) & (self.pure_host.lbda < lbdamax)
         vmin_sim = np.percentile(
-            np.mean(self.simulated_cube.data[flag], axis=0), float(vmin))
+            np.nanmean(self.simulated_cube.data[flag], axis=0), float(vmin))
         vmax_sim = np.percentile(
-            np.mean(self.simulated_cube.data[flag], axis=0), float(vmax))
+            np.nanmean(self.simulated_cube.data[flag], axis=0), float(vmax))
 
         vmin = np.percentile(
-            np.mean(self.pure_host.data[flag], axis=0), float(vmin))
+            np.nanmean(self.pure_host.data[flag], axis=0), float(vmin))
         vmax = np.percentile(
-            np.mean(self.pure_host.data[flag], axis=0), float(vmax))
+            np.nanmean(self.pure_host.data[flag], axis=0), float(vmax))
 
         self.simulated_cube._display_im_(
             axim=ax, lbdalim=[lbdamin, lbdamax], vmin=vmin_sim, vmax=vmax_sim)
