@@ -140,7 +140,7 @@ class SimulationHypergal():
         self._hostcoord = host_pos
         self._wcscube = wcscube
 
-    def get_random_sn_position(self, sn_distance_from_host, set_header=True):
+    def get_random_sn_position(self, sn_distance_from_host, max_radius=12, set_header=True):
         """ """
 
         self.set_sn_distance_from_host(sn_distance_from_host)
@@ -149,7 +149,8 @@ class SimulationHypergal():
         x = self.hostcoord[0] + r * np.cos(theta)
         y = self.hostcoord[1] + r * np.sin(theta)
         host_fromcenter = np.sqrt(np.sum(self.hostcoord**2))
-        circle_lim = Point(0, 0).buffer(host_fromcenter+1)
+        max_dist = np.max([host_fromcenter+1, max_radius])
+        circle_lim = Point(0, 0).buffer(max_dist)
 
         n = 0
         while not circle_lim.contains(Point(x, y)):
