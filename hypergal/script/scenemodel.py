@@ -318,16 +318,16 @@ class DaskScene(DaskHyperGal):
 
             host_specfile = io.e3dfilename_to_hgspec(cubefile, 'host')
 
-            stored.append(self.get_host_spec(self.get_sourcedf(radec, cubefile), source_coutcube,
+            stored.append(self.get_host_spec(self.get_sourcedf(radec, cubefile, size), source_coutcube,
                           snmodel, bkgdmodel, calcube, sourcescale=5, savefile=host_specfile))
 
             saveplot_coeff = plotbase + '_' + name + '_all_comp_fit.png'
             stored.append(self.show_host_ampl(bestfit_completfit, delayed(fits.getheader)(cubefile), calcube,
-                          snmodel, bkgdmodel, hostmodel, self.get_sourcedf(radec, cubefile), source_coutcube, saveplot_coeff))
+                          snmodel, bkgdmodel, hostmodel, self.get_sourcedf(radec, cubefile, size), source_coutcube, saveplot_coeff))
 
             saveplot_report = plotbase + '_' + name + '_global_report.png'
             stored.append(self.global_report(calcube, hostmodel, snmodel, bkgdmodel, source_coutcube, self.get_sourcedf(
-                radec, cubefile), bestfit_completfit, bestfit_mfit, radec, redshift, cubefile, lbda_range, nslices, saveplot=saveplot_report))
+                radec, cubefile, size), bestfit_completfit, bestfit_mfit, radec, redshift, cubefile, lbda_range, nslices, saveplot=saveplot_report))
 
             return stored
 
@@ -676,17 +676,17 @@ class DaskScene(DaskHyperGal):
                                     psfmodel=psfmodel)
 
     @staticmethod
-    def get_sourcedf(radec, cubefile, client=None):
+    def get_sourcedf(radec, cubefile, size=180, client=None):
         """ """
 
         if 'e3dsimu' in cubefile:
             cutout = DaskHyperGal.get_cutout(
-                radec, None, None, ['ps1.i'], size=100)
+                radec, None, None, ['ps1.i'], size=size)
             sources = cutout.extract_sources(filter_='ps1.i', thres=40,
                                              savefile=None)
         else:
             cutout = DaskHyperGal.get_cutout(
-                radec, None, None, ['ps1.i'], size=140)
+                radec, None, None, ['ps1.i'], size=size)
             sources = cutout.extract_sources(filter_='ps1.i', thres=20,
                                              savefile=None)
 
