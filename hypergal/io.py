@@ -38,7 +38,7 @@ def e3dfilename_to_cubeint(filename, suffix=''):
 def e3dfilename_to_hgcubes(filename, which, suffix=''):
     """ """
     if which in ["int", "intrinsic", "intcube", "cubeint"]:
-        return e3dfilename_to_cubeint(filename)
+        return e3dfilename_to_cubeint(filename, suffix=suffix)
 
     if which == "fitted":
         return filename.replace(".fits", ".h5").replace("e3d", "hgfitted"+suffix)
