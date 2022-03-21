@@ -262,10 +262,10 @@ if __name__ == '__main__':
                     try:
                         import pysnid
                         targetspec = cubefile.replace(
-                            ".fits", ".txt").replace("e3d", "hgspec_target")
+                            ".fits", ".txt").replace("e3d", "hgspec_target"+args.suffix_savedata)
                         if os.path.exists(targetspec):
                             snidfile = targetspec.replace(
-                                'spec', 'snid_bestspec').replace('.txt', '.png')
+                                'spec', 'snid_bestspec'+args.suffix_savedata).replace('.txt', '.png')
                             snidres = pysnid.run_snid(targetspec)
                             if snidres is not None:
                                 snidres.show(savefile=snidfile)
@@ -289,10 +289,11 @@ if __name__ == '__main__':
                     plotbase = os.path.join(filedir, "hypergal",
                                             info["name"], args.suffix_plot + info["sedmid"])
                 dirplotbase = os.path.dirname(plotbase)
-                logfile = os.path.join(dirplotbase, 'logfile.yml')
+                logfile = os.path.join(
+                    dirplotbase, args.suffix_savedata+'logfile.yml')
                 if args.is_simu:
                     logfile = os.path.join(
-                        dirplotbase, 'logfile_'+os.path.basename(cubefile.rsplit('.')[0])+'.yml')
+                        dirplotbase, args.suffix_savedata + 'logfile_'+os.path.basename(cubefile.rsplit('.')[0])+'.yml')
                 import yaml
                 if os.path.exists(logfile):
                     os.remove(logfile)
