@@ -110,7 +110,7 @@ class DaskScene(DaskHyperGal):
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True,
-                       host_only=False, sn_only=False, apply_byecr=True, suffix_plot=None, size=180):
+                       host_only=False, sn_only=False, apply_byecr=True, suffix_plot=None, suffix_savedata='', size=180):
         """ """
         info = io.parse_filename(cubefile)
         cubeid = info["sedmid"]
@@ -183,11 +183,12 @@ class DaskScene(DaskHyperGal):
 
         # ---> Storing <--- # 0
         stored.append(source_sedmcube.to_hdf(
-            io.e3dfilename_to_hgcubes(cubefile, "fitted")))
+            io.e3dfilename_to_hgcubes(cubefile, "fitted", suffix=suffix_savedata)))
         stored.append(source_coutcube.to_hdf(
-            io.e3dfilename_to_hgcubes(cubefile, "cutout")))
+            io.e3dfilename_to_hgcubes(cubefile, "cutout", suffix=suffix_savedata)))
         # ---> Storing <--- # 1
-        stored.append(calcube.to_hdf(io.e3dfilename_to_wcscalcube(cubefile)))
+        stored.append(calcube.to_hdf(
+            io.e3dfilename_to_wcscalcube(cubefile, suffix=suffix_savedata)))
 
         #
         #   Step 1.1 Cutouts
@@ -234,7 +235,7 @@ class DaskScene(DaskHyperGal):
 
             # ---> Storing <--- # 3
             stored.append(int_cube.to_hdf(
-                io.e3dfilename_to_hgcubes(cubefile, "intcube")))
+                io.e3dfilename_to_hgcubes(cubefile, "intcube", suffix=suffix_savedata)))
 
         # ------------ #
         #    STEP 2    #
@@ -256,7 +257,7 @@ class DaskScene(DaskHyperGal):
 
         # ---> Storing <--- # 4
         stored.append(bestfit_mfit.to_hdf(
-            *io.get_slicefit_datafile(cubefile, "meta")))
+            *io.get_slicefit_datafile(cubefile, "meta", suffix=suffix_savedata)))
 
         #badfit=bestfit_mfit[ np.logical_or(bestfit_mfit.xs('errors', axis=1)==0 , bestfit_mfit.xs('errors', axis=1)<1e-10)]
         #bestfit_mfit = bestfit_mfit.drop(np.unique(badfit.index.codes[0].values()))
@@ -283,9 +284,10 @@ class DaskScene(DaskHyperGal):
                                            host_only=host_only, sn_only=sn_only, kind='slices')
         # ---> Storing <--- # 5
         stored.append(bestfit_completfit.to_hdf(
-            *io.get_slicefit_datafile(cubefile, "full")))
+            *io.get_slicefit_datafile(cubefile, "full", suffix=suffix_savedata)))
 
-        target_specfile = io.e3dfilename_to_hgspec(cubefile, 'target')
+        target_specfile = io.e3dfilename_to_hgspec(
+            cubefile, 'target', suffix=suffix_savedata)
         stored.append(self.get_target_spec(bestfit_completfit,
                       calcube.header, savefile=target_specfile))
 
@@ -308,15 +310,16 @@ class DaskScene(DaskHyperGal):
             bkgdmodel = host_sn_bkgd[2]
 
             stored.append(hostmodel.to_hdf(
-                io.e3dfilename_to_hgcubes(cubefile, "hostmodel")))
+                io.e3dfilename_to_hgcubes(cubefile, "hostmodel", suffix=suffix_savedata)))
 
             stored.append(snmodel.to_hdf(
-                io.e3dfilename_to_hgcubes(cubefile, "snmodel")))
+                io.e3dfilename_to_hgcubes(cubefile, "snmodel", suffix=suffix_savedata)))
 
             stored.append(bkgdmodel.to_hdf(
-                io.e3dfilename_to_hgcubes(cubefile, "bkgdmodel")))
+                io.e3dfilename_to_hgcubes(cubefile, "bkgdmodel", suffix=suffix_savedata)))
 
-            host_specfile = io.e3dfilename_to_hgspec(cubefile, 'host')
+            host_specfile = io.e3dfilename_to_hgspec(
+                cubefile, 'host', suffix=suffix_savedata)
 
             stored.append(self.get_host_spec(self.get_sourcedf(radec, cubefile, size), source_coutcube,
                           snmodel, bkgdmodel, calcube, sourcescale=5, savefile=host_specfile))
@@ -338,10 +341,10 @@ class DaskScene(DaskHyperGal):
         cuberes = cubemodel_cuberes[1]
         # ---> Storing <--- # 6
         stored.append(cubemodel.to_hdf(
-            io.e3dfilename_to_hgcubes(cubefile, "model")))
+            io.e3dfilename_to_hgcubes(cubefile, "model", suffix=suffix_savedata)))
         # ---> Storing <--- # 7
         stored.append(cuberes.to_hdf(
-            io.e3dfilename_to_hgcubes(cubefile, "res")))
+            io.e3dfilename_to_hgcubes(cubefile, "res", suffix=suffix_savedata)))
 
         return stored
     #

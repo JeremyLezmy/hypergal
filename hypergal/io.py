@@ -9,78 +9,78 @@ from pysedm.io import parse_filename
 # ============ #
 
 
-def e3dfilename_to_wcscalcube(filename):
+def e3dfilename_to_wcscalcube(filename, suffix=''):
     """ """
-    return filename.replace(".fits", ".h5").replace("e3d", "wcube")
+    return filename.replace(".fits", ".h5").replace("e3d", "wcube"+suffix)
 
 
-def e3dfilename_to_hgspec(filename, which, extension='.txt'):
+def e3dfilename_to_hgspec(filename, which, extension='.txt', suffix=''):
     """ """
     if which == 'host':
-        return filename.replace(".fits", extension).replace("e3d", "hgspec_host")
+        return filename.replace(".fits", extension).replace("e3d", "hgspec_host"+suffix)
 
     if which in ['target', 'sn']:
-        return filename.replace(".fits", extension).replace("e3d", "hgspec_target")
+        return filename.replace(".fits", extension).replace("e3d", "hgspec_target"+suffix)
 
     raise ValueError(f"which can be host, sn or target ; {which} given")
 
 
-def e3dfilename_to_hgout(filename):
+def e3dfilename_to_hgout(filename, suffix=''):
     """ """
-    return filename.replace(".fits", ".h5").replace("e3d", "hgout")
+    return filename.replace(".fits", ".h5").replace("e3d", "hgout"+suffix)
 
 
-def e3dfilename_to_cubeint(filename):
+def e3dfilename_to_cubeint(filename, suffix=''):
     """ """
-    return filename.replace(".fits", ".h5").replace("e3d", "intcube")
+    return filename.replace(".fits", ".h5").replace("e3d", "intcube"+suffix)
 
 
-def e3dfilename_to_hgcubes(filename, which):
+def e3dfilename_to_hgcubes(filename, which, suffix=''):
     """ """
     if which in ["int", "intrinsic", "intcube", "cubeint"]:
         return e3dfilename_to_cubeint(filename)
 
     if which == "fitted":
-        return filename.replace(".fits", ".h5").replace("e3d", "hgfitted")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgfitted"+suffix)
 
     if which == "cutout":
-        return filename.replace(".fits", ".h5").replace("e3d", "hgcutout")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgcutout"+suffix)
 
     if which == "model":
-        return filename.replace(".fits", ".h5").replace("e3d", "hgmodel")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgmodel"+suffix)
 
     if which == "hostmodel":
-        return filename.replace(".fits", ".h5").replace("e3d", "hghostmodel")
+        return filename.replace(".fits", ".h5").replace("e3d", "hghostmodel"+suffix)
 
     if which == "snmodel":
-        return filename.replace(".fits", ".h5").replace("e3d", "hgsnmodel")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgsnmodel"+suffix)
 
     if which == "bkgdmodel":
-        return filename.replace(".fits", ".h5").replace("e3d", "hgbkgdmodel")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgbkgdmodel"+suffix)
 
     if which in ["residual", "res"]:
-        return filename.replace(".fits", ".h5").replace("e3d", "hgres")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgres"+suffix)
 
     if which in ["psfresidual", "host"]:
-        return filename.replace(".fits", ".h5").replace("e3d", "hgpsfres")
+        return filename.replace(".fits", ".h5").replace("e3d", "hgpsfres"+suffix)
 
     raise ValueError(
         f"which can be int, fitted, model, residual or host ; {which} given")
 
 
-def get_slicefit_datafile(filename, which=None):
+def get_slicefit_datafile(filename, which=None, suffix=''):
     """ """
     if which is None:
-        return e3dfilename_to_hgout(filename)
+        return e3dfilename_to_hgout(filename, suffix=suffix)
 
     if which in ["cutouts", "cutout"]:
-        return e3dfilename_to_hgout(filename), "cout_slicefit"
+        return e3dfilename_to_hgout(filename, suffix=suffix), "cout_slicefit"
 
     if which == "meta":
-        return e3dfilename_to_hgout(filename), "meta_slicefit"
+        return e3dfilename_to_hgout(filename, suffix=suffix), "meta_slicefit"
 
     if which == "full":
-        return e3dfilename_to_hgout(filename), "full_slicefit"
+        return e3dfilename_to_hgout(filename, suffix=suffix), "full_slicefit"
 
     raise ValueError(f"which can be cutout, meta or full, {which} given")
 
