@@ -55,7 +55,7 @@ class DaskHyperGal(base.DaskCube):
         # get sources cube
         wcsin = cout_cube.wcs
         if sn_only:
-            target_radius = 10
+            target_radius = 8
         if use_extsource:
             source_coutcube = cout_cube.get_extsource_cube(sourcedf=sources, wcsin=wcsin, radec=radec,
                                                            sourcescale=scale_cout, radius=target_radius*DEFAULT_SCALE_RATIO, boundingrect=True, sn_only=sn_only)
