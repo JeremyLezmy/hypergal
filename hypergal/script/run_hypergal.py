@@ -314,10 +314,10 @@ if __name__ == '__main__':
                     if os.path.exists(filepath):
 
                         targetspec = cubefile.replace(
-                            ".fits", ".txt").replace("e3d", "hgspec_target")
+                            ".fits", ".txt").replace("e3d", "hgspec_target" + args.suffix_savedata)
                         compspec = plotbase + '_' + name + '_all_comp_fit.png'
                         hostspec = cubefile.replace(
-                            ".fits", ".txt").replace("e3d", "hgspec_host")
+                            ".fits", ".txt").replace("e3d", "hgspec_host" + args.suffix_savedata)
 
                         if args.host_only or snidfile is None:
                             command = f"python /pbs/home/j/jlezmy/test_slack_push.py  -f {filepath} -mf {mf} --targetspec {targetspec} --hostspec {hostspec} --ver_plot {compspec} --channel {ch}"
