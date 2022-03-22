@@ -109,7 +109,7 @@ class DaskScene(DaskHyperGal):
                        filters_fit=["ps1.g", "ps1.r", "ps1.i", "ps1.z"],
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
-                       split=True, curved_bkgd=True, build_astro=True,
+                       split=True, curved_bkgd=True, build_astro=True, target_radius=10,
                        host_only=False, sn_only=False, apply_byecr=True, suffix_plot=None, suffix_savedata='', size=180):
         """ """
         info = io.parse_filename(cubefile)
@@ -176,7 +176,7 @@ class DaskScene(DaskHyperGal):
                                                                 source_filter=source_filter,
                                                                 source_thres=source_thres, hgfirst=hgfirst, scale_cout=scale_cout,
                                                                 scale_sedm=scale_sedm, use_extsource=use_extsource,
-                                                                rmtarget=rmtarget, sn_only=sn_only, size=size, apply_byecr=apply_byecr)
+                                                                rmtarget=rmtarget, sn_only=sn_only, size=size, target_radius=target_radius, apply_byecr=apply_byecr)
 
         source_coutcube = source_coutcube__source_sedmcube[0]
         source_sedmcube = source_coutcube__source_sedmcube[1]
