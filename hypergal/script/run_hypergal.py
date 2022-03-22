@@ -127,6 +127,9 @@ if __name__ == '__main__':
     parser.add_argument("--target_radius", type=float, default=10,
                         help="Target radius in spaxel unit which will be selected for extraction. Default is 10 (5 arcsec for SEDm)")
 
+    parser.add_argument("--limit_pos", type=float, default=5,
+                        help="limit freedom for position fit in spaxel unit. Default is 5 spaxels around guess/init position")
+
     parser.add_argument("--max_ratio", type=float, default=0.9,
                         help="Max ratio between host size and median PSF size for considering host component.")
 
@@ -247,7 +250,7 @@ if __name__ == '__main__':
                         sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, cubefiles_=path, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size, apply_byecr=args.apply_byecr, prefit_photo=args.prefit_photo, suffix_savedata=args.suffix_savedata, target_radius=args.target_radius)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size, apply_byecr=args.apply_byecr, prefit_photo=args.prefit_photo, suffix_savedata=args.suffix_savedata, target_radius=args.target_radius, limit_pos=args.limit_pos)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:

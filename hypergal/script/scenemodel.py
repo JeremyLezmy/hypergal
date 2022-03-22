@@ -110,7 +110,7 @@ class DaskScene(DaskHyperGal):
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True, target_radius=10,
-                       host_only=False, sn_only=False, apply_byecr=True, suffix_plot=None, suffix_savedata='', size=180):
+                       host_only=False, sn_only=False, apply_byecr=True, limit_pos=None, suffix_plot=None, suffix_savedata='', size=180):
         """ """
         info = io.parse_filename(cubefile)
         cubeid = info["sedmid"]
@@ -252,7 +252,7 @@ class DaskScene(DaskHyperGal):
         saveplot_structure = plotbase + '_' + name + '_metaslice_fit_'
         bestfit_mfit = self.fit_cube(mcube_sedm, mcube_intr, radec, nslices=nslices,
                                      saveplot_structure=saveplot_structure,
-                                     mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False, curved_bkgd=curved_bkgd,
+                                     mslice_param=cout_ms_param, psfmodel=psfmodel, pointsourcemodel=pointsourcemodel, jointfit=False, curved_bkgd=curved_bkgd, limit_pos=limit_pos,
                                      fix_params=['scale', 'rotation'], host_only=host_only, sn_only=sn_only, kind='metaslices', onlyvalid=True)
 
         # ---> Storing <--- # 4
@@ -401,7 +401,7 @@ class DaskScene(DaskHyperGal):
                  curved_bkgd=True,
                  jointfit=False,
                  fix_pos=False, fix_psf=False,
-                 fix_params=['scale', 'rotation'], host_only=False, sn_only=False, kind=None, onlyvalid=False):
+                 fix_params=['scale', 'rotation'], limit_pos=None, host_only=False, sn_only=False, kind=None, onlyvalid=False):
         """ """
         if jointfit:
             raise NotImplementedError(
@@ -440,6 +440,10 @@ class DaskScene(DaskHyperGal):
                 saveplot_structure + f"{i_}.pdf")
 
             #
+            if limit_pos is not None:
+                limit = {'pos_limits': limit_pos}
+            else:
+                limit = None
             # Update the guess
             if fix_pos:
                 fix_params += ["xoff", "yoff"]
@@ -466,6 +470,7 @@ class DaskScene(DaskHyperGal):
                                                                        xy_in=xy_in,
                                                                        xy_comp=xy_comp,
                                                                        guess=guess,
+                                                                       limit=limit,
                                                                        fix_params=fix_params,
                                                                        add_lbda=True, priors=Priors(),
                                                                        host_only=host_only, sn_only=sn_only,
