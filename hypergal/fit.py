@@ -581,8 +581,6 @@ class SceneFitter(object):
         -------
         List
         """
-        if hasattr(self.scene, "has_sn_only") and self.scene.has_sn_only:
-            pos_limits = 3
         param_names = self.free_parameters
         if param_guess is None:
             param_guess = self.get_guesses(free_only=True, as_array=True)
