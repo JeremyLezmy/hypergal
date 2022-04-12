@@ -74,6 +74,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--env", type=str, default='SLURM',
+                        help="Which cluster environment. Might be SGE or SLURM")
+
     parser.add_argument('-w', "--workers", type=int, default=10,
                         help="Scale the cluster to N workers/target. Default is 10.")
 
@@ -165,10 +168,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cluster = SGECluster(name="dask-worker",  walltime="12:00:00",
-                         memory="10GB", death_timeout=240,
-                         project="P_ztf", resource_spec="sps=1", local_directory='$TMPDIR',
-                         cores=1, processes=1)
+    if args.env == 'SGE':
+
+        cluster = SGECluster(name="dask-worker",  walltime="12:00:00",
+                             memory="10GB", death_timeout=240,
+                             project="P_ztf", resource_spec="sps=1", local_directory='$TMPDIR',
+                             cores=1, processes=1)
+    elif args.env == 'SLURM':
+
+        cluster = SGECluster(name="dask-worker",  walltime="12:00:00",
+                             memory="10GB", death_timeout=240,
+                             project="ztf", local_directory='$TMPDIR',
+                             cores=1, processes=1,
+                             job_extra=['-L sps'])
 
     if args.filename is not None:
         cubes = np.loadtxt(args.filename, dtype=str)
