@@ -176,11 +176,11 @@ if __name__ == '__main__':
                              cores=1, processes=1)
     elif args.env == 'SLURM':
 
-        cluster = SGECluster(name="dask-worker",  walltime="12:00:00",
-                             memory="10GB", death_timeout=240,
-                             project="ztf", local_directory='$TMPDIR',
-                             cores=1, processes=1,
-                             job_extra=['-L sps'])
+        cluster = SLURMCluster(name="dask-worker",  walltime="12:00:00",
+                               memory="10GB", death_timeout=240,
+                               project="ztf", local_directory='$TMPDIR',
+                               cores=1, processes=1,
+                               job_extra=['-L sps'])
 
     if args.filename is not None:
         cubes = np.loadtxt(args.filename, dtype=str)
