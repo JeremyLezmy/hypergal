@@ -6,7 +6,7 @@ import os
 import sys
 import numpy as np
 import dask
-from dask_jobqueue import SGECluster
+from dask_jobqueue import SGECluster, SLURMCluster
 from dask.distributed import Client
 from hypergal.script import scenemodel
 from pysedm.io import parse_filename
