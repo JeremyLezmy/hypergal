@@ -77,6 +77,9 @@ if __name__ == '__main__':
     parser.add_argument("--env", type=str, default='SLURM',
                         help="Which cluster environment. Might be SGE or SLURM")
 
+    parser.add_argument("--logsdir", type=str, default='/sps/ztf/users/jlezmy/dask/logs',
+                        help="logs directory for dask")
+
     parser.add_argument('-w', "--workers", type=int, default=10,
                         help="Scale the cluster to N workers/target. Default is 10.")
 
@@ -178,7 +181,7 @@ if __name__ == '__main__':
 
         cluster = SLURMCluster(name="dask-worker",  walltime="12:00:00",
                                memory="10GB", death_timeout=240,
-                               project="ztf", local_directory='$TMPDIR',
+                               project="ztf", log_directory=args.logsdir, local_directory='$TMPDIR',
                                cores=1, processes=1,
                                job_extra=['-L sps'])
 
