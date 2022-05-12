@@ -83,6 +83,9 @@ if __name__ == '__main__':
     parser.add_argument('-w', "--workers", type=int, default=10,
                         help="Scale the cluster to N workers/target. Default is 10.")
 
+    parser.add_argument('-wncores', "--wncores", type=int, default=1,
+                        help="Number of core to give to each worker.")
+
     parser.add_argument("--min_workers", type=int, default=8,
                         help="Scale the cluster to N workers/target. Default is 10.")
 
@@ -176,13 +179,13 @@ if __name__ == '__main__':
         cluster = SGECluster(name="dask-worker",  walltime="12:00:00",
                              memory="10GB", death_timeout=240,
                              project="P_ztf", resource_spec="sps=1", local_directory='$TMPDIR',
-                             cores=1, processes=1)
+                             cores=args.wncores, processes=1)
     elif args.env == 'SLURM':
 
         cluster = SLURMCluster(name="dask-worker",  walltime="12:00:00",
                                memory="10GB", death_timeout=240,
                                project="ztf", log_directory=args.logsdir, local_directory='$TMPDIR',
-                               cores=1, processes=1,
+                               cores=args.wncores, processes=1,
                                job_extra=['-L sps'])
 
     if args.filename is not None:
