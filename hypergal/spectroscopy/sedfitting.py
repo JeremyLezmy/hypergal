@@ -432,6 +432,7 @@ class Cigale(SEDFitter):
         config['sed_modules_params'][[k for k in config['sed_modules_params'].keys(
         ) if 'dustatt' in k][0]]['filters'] = ' & '.join(ele for ele in config['bands'] if ('err' not in ele))
 
+        config['analysis_params']['variables'] = ['sfh.sfr']
         config.write()
         self._config = config
 

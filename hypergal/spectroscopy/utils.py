@@ -311,7 +311,7 @@ def gauss_convolve_variable_width(a, sig, prec=10.):
 
     n = np.rint(prec * sig0/sig).astype(int)
     # print(n.min())
-    print('\tWarped array length: {}'.format(n.sum()))
+    #print('\tWarped array length: {}'.format(n.sum()))
     # define "warped" array a_w with n[i] instances of a[:,:,i]
     a_w = np.repeat(a, n, axis=-1)
     # now a "warped" array sig_w
