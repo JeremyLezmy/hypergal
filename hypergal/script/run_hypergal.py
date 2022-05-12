@@ -83,7 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('-w', "--workers", type=int, default=10,
                         help="Scale the cluster to N workers/target. Default is 10.")
 
-    parser.add_argument('-wncores', "--wncores", type=int, default=1,
+    parser.add_argument("--wncores", type=int, default=1,
                         help="Number of core to give to each worker.")
 
     parser.add_argument("--min_workers", type=int, default=8,

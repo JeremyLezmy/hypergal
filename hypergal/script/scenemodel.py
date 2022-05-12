@@ -228,7 +228,7 @@ class DaskScene(DaskHyperGal):
             saveplot_intcube = plotbase + '_' + name + '_intcube.png'
             int_cube = self.run_sedfitter(source_coutcube,
                                           redshift=redshift, working_dir=working_dir,
-                                          sedfitter="cigale", ncores=ncores, lbda=SEDM_LBDA,
+                                          sedfitter="cigale", lbda=SEDM_LBDA,
                                           testmode=testmode,
                                           saveplot_rmspull=saveplot_rmspull,
                                           saveplot_intcube=saveplot_intcube, sn_only=sn_only, ncores=ncores)
