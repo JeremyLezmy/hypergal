@@ -327,7 +327,7 @@ def gauss_convolve_variable_width(a, sig, prec=10.):
     # print a_w.shape, sig_w.shape # check against n.sum()
 
     # now convolve the whole thing with a Gaussian of width sig0
-    print('\tCONVOLVE...')
+    #print('\tCONVOLVE...')
     # account for the increased precision required
     a_w_f = np.empty_like(a_w)
     # have to iterate over the rows and columns, to avoid MemoryError
