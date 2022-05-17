@@ -518,19 +518,21 @@ class Cigale(SEDFitter):
         return data[columns]
 
     @staticmethod
-    def cigale_as_lbda(cigale_df, lbda, interp_kind="linear", res=10):
+    def cigale_as_lbda(cigale_df, lbda, interp_kind="linear", res=100):
         """ """
         f = interp1d(cigale_df["wavelength"].values,
                      cigale_df["flux"].values, kind=interp_kind)
 
         f_hres = f(np.linspace(lbda[0], lbda[-1], len(lbda)*res))
-        kerbox = Box1DKernel(res)
-        newflux = convolve(f_hres, kerbox, boundary='extend',
-                           normalize_kernel=True)[::res]
+        #kerbox = Box1DKernel(res)
+        window = (1.0 / res) * np.ones(res)
+        newflux = np.convolve(f_hres, window, mode='valid')[::res]
+        # newflux = convolve(f_hres, kerbox, boundary='extend',
+        #                   normalize_kernel=True)[::res]
         return pandas.DataFrame({"wavelength": lbda, "flux": newflux})
 
     def get_sample_spectra(self, bestmodel_dir=None, lbda_sample=None, interp_kind='linear',
-                           res=10, apply_sedm_lsf=True, client=None,
+                           res=100, apply_sedm_lsf=True, client=None,
                            saveplot_rmspull=None, saveplot_intcube=None, backcurrent_dir=True):
         """
         Get spectra fitted by Cigale in the wavelength space of your choice.
