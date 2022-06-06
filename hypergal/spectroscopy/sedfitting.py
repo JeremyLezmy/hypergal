@@ -616,7 +616,7 @@ class Cigale(SEDFitter):
                 spd = []
                 for id_ in range(newdatas.shape[0]):
                     fulldel = da.from_delayed(delayed(utils.gauss_convolve_variable_width)(
-                        newdatas[id_][None, ::], sig=sig, prec=10.), shape=(1, len(sig)), dtype='float')
+                        newdatas[id_][None, ::], sig=sig, prec=100.), shape=(1, len(sig)), dtype='float')
                     spd.append(fulldel)
 
                 ss = da.stack(spd)

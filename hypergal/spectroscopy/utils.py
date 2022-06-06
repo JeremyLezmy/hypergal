@@ -280,7 +280,7 @@ def spectra_to_3dcube(spectra, lbda, spx_map, spx_vert=None, **kwargs):
     pyifu.Cube
     """
 
-    if len(spec) != len(spx_map):
+    if len(spectra) != len(spx_map):
         raise ValueError("Shapes of spec and spaxel_mapping do not match.")
 
     return pyifu.spectroscopy.get_cube(data=spectra.T, lbda=lbda,
@@ -327,7 +327,7 @@ def gauss_convolve_variable_width(a, sig, prec=10.):
     # print a_w.shape, sig_w.shape # check against n.sum()
 
     # now convolve the whole thing with a Gaussian of width sig0
-    #print('\tCONVOLVE...')
+    # print('\tCONVOLVE...')
     # account for the increased precision required
     a_w_f = np.empty_like(a_w)
     # have to iterate over the rows and columns, to avoid MemoryError
@@ -361,7 +361,7 @@ def gauss_convolve_variable_width(a, sig, prec=10.):
 #    else:
 #        return (a*lbda/6000+b)
 
-def sedm_lsf(lbda, a0=19.100, a=24.629, b=8.202, slice_unit=True):
+def sedm_lsf(lbda, a0=19.650, a=26.0, b=7.30, slice_unit=True):
     """ """
     from pysedm.sedm import SEDM_LBDA
     lbda = np.atleast_1d(lbda)

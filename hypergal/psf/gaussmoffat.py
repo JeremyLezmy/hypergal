@@ -80,7 +80,7 @@ class GaussMoffat2D(PSF2D):
         """
         return self._profile_params["alpha"]
 
-    def get_beta(self, b0=1.51, b1=0.22):
+    def get_beta(self, b0=1.53, b1=0.22):
         """ 
         Return Moffat power. Beta is fixed by alpha value such as beta = b1*alpha + b0
 
@@ -98,7 +98,7 @@ class GaussMoffat2D(PSF2D):
         """
         return b0 + self.get_alpha() * b1
 
-    def get_sigma(self, sig0=0.38, sig1=0.40):
+    def get_sigma(self, sig0=0.42, sig1=0.39):
         """ 
         Return gaussian radius. Sigma is fixed by alpha value such as sigma = sig1*alpha + sig0
 
