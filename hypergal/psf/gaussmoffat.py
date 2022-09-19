@@ -127,7 +127,7 @@ class GaussMoffat2D(PSF2D):
         Default parameters (init for an eventual fit)
         """
         return {**{"a": 1., "b": 0.},
-                **{"alpha": 2, "eta": 0.8}
+                **{"alpha": 2.5, "eta": 0.7}
                 }
 
     # ============= #
