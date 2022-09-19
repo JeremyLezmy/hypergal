@@ -156,7 +156,10 @@ if __name__ == '__main__':
 
     parser.add_argument("--use_exist_intcube", type=str2bool, nargs='?', const=True, default=True,
                         help="Use existing intrinsic cube if it exists.")
-
+    
+    parser.add_argument("--intcube_to_use", type=str,  default=None,
+                        help="Path of existing intrinsic cube to use.")
+    
     parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=True,
                         help="Push to slack?")
 
@@ -270,7 +273,7 @@ if __name__ == '__main__':
                         sn_only = False
             stored = []
             to_stored, cubefiles = scenemodel.DaskScene.compute_targetcubes(name=targ, client=client, cubefiles_=path, contains=contain, manual_z=args.redshift, manual_radec=args.radec, return_cubefile=True, date_range=args.date_range,
-                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size, apply_byecr=args.apply_byecr, prefit_photo=args.prefit_photo, suffix_savedata=args.suffix_savedata, target_radius=args.target_radius, limit_pos=args.limit_pos, ncores=args.wncores)
+                                                                            rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size, apply_byecr=args.apply_byecr, prefit_photo=args.prefit_photo, suffix_savedata=args.suffix_savedata, target_radius=args.target_radius, limit_pos=args.limit_pos, ncores=args.wncores, intcube_to_use=args.intcube_to_use)
             stored.append(to_stored)
 
             if len(cubefiles) == 0 and args.push_to_slack:
