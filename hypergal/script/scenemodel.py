@@ -19,9 +19,14 @@ import pyifu
 import dask
 
 # GAL EMISSION LINES
+# http://astronomy.nmsu.edu/drewski/tableofemissionlines.html
+# http://classic.sdss.org/dr6/algorithms/linestable.html
 
 Mg = 5177
 Na = 5896
+# https://classic.sdss.org/dr3/products/spectra/vacwavelength.html Vaccum to Air wavelength
+Mg = Mg / (1.0 + 2.735182E-4 + 131.4182 / Mg**2 + 2.76249E8 / Mg**4)
+Na = Na / (1.0 + 2.735182E-4 + 131.4182 / Na**2 + 2.76249E8 / Na**4)
 
 Hbeta = 4861.333
 Halpha = 6562.819
@@ -31,6 +36,9 @@ N1 = 7468.310
 O3_a = 4932.603
 O3_b = 4958.911
 O3_c = 5006.843
+O3_a = O3_a / (1.0 + 2.735182E-4 + 131.4182 / O3_a**2 + 2.76249E8 / O3_a**4)
+O3_b = O3_b / (1.0 + 2.735182E-4 + 131.4182 / O3_b**2 + 2.76249E8 / O3_b**4)
+O3_c = O3_c / (1.0 + 2.735182E-4 + 131.4182 / O3_c**2 + 2.76249E8 / O3_c**4)
 
 all_em = np.array([Hbeta, Halpha, S2_2, N1])
 all_em_names = [r'$H_{\beta}$', r'$H_{\alpha}$', r'$S[II]$', r'$N[I]$']
@@ -110,7 +118,7 @@ class DaskScene(DaskHyperGal):
                        psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True, target_radius=10,
-                       host_only=False, sn_only=False, apply_byecr=True, limit_pos=None, suffix_plot=None, suffix_savedata='', size=180):
+                       host_only=False, sn_only=False, apply_byecr=True, limit_pos=None, suffix_plot=None, suffix_savedata='', size=180, intcube_to_use=None):
         """ """
         info = io.parse_filename(cubefile)
         cubeid = info["sedmid"]
@@ -217,11 +225,15 @@ class DaskScene(DaskHyperGal):
         #
         #   Step 1.2 Intrinsic Cube
         #
-        # ---> SED fitting of the cutouts
-        if use_exist_intcube and os.path.exists(io.e3dfilename_to_hgcubes(cubefile, "intcube")):
+        # ---> SED fitting of the cutouts        
+        if (use_exist_intcube and os.path.exists(io.e3dfilename_to_hgcubes(cubefile, "intcube"))) or intcube_to_use is not None:
             from ..spectroscopy import WCSCube
-            int_cube = delayed(WCSCube.read_hdf)(
-                io.e3dfilename_to_hgcubes(cubefile, "intcube"))
+            if intcube_to_use is not None and os.path.exists(intcube_to_use):
+                int_cube = delayed(WCSCube.read_hdf)(intcube_to_use)
+
+            elif os.path.exists(io.e3dfilename_to_hgcubes(cubefile, "intcube")):           
+                int_cube = delayed(WCSCube.read_hdf)(
+                    io.e3dfilename_to_hgcubes(cubefile, "intcube"))
 
         else:
             saveplot_rmspull = plotbase + '_' + name + '_cigale_pullrms.png'
@@ -425,7 +437,7 @@ class DaskScene(DaskHyperGal):
             slice_comp = cube_sedm.get_slice(index=i_, slice_object=True)
             # mpoly = delayed(slice_comp.get_spaxel_polygon)(
             #    format='multipolygon')
-            gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha': 2, 'eta': 1})
+            gm = psf.gaussmoffat.GaussMoffat2D(**{'alpha': 3, 'eta': 0.8})
             ps = delayed(PointSource)(gm, mpoly)
 
             if mslice_param is not None:
