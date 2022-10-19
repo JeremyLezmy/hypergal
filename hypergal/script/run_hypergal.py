@@ -74,8 +74,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--env", type=str, default='SLURM',
-                        help="Which cluster environment. Might be SGE or SLURM")
+    parser.add_argument("--env", type=str, default='local',
+                        help="Which cluster environment. Might be local, SGE or SLURM")
 
     parser.add_argument("--logsdir", type=str, default='/sps/ztf/users/jlezmy/dask/logs',
                         help="logs directory for dask")
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     parser.add_argument("--nslices", type=int, default=6,
                         help="Number of metaslices to consider for the fit process. Default is 6.")
 
-    parser.add_argument("--build_astro", type=str2bool, nargs='?', const=True, default=False,
+    parser.add_argument("--build_astro", type=str2bool, nargs='?', const=True, default=True,
                         help="If you want (need) to build astrometry, must be True. Default is False.")
 
     parser.add_argument("--prefit_photo", type=str2bool, nargs='?', const=True, default=True,
@@ -160,16 +160,16 @@ if __name__ == '__main__':
     parser.add_argument("--intcube_to_use", type=str,  default=None,
                         help="Path of existing intrinsic cube to use.")
     
-    parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=True,
+    parser.add_argument("--push_to_slack", type=str2bool, nargs='?', const=True, default=False,
                         help="Push to slack?")
 
-    parser.add_argument("--force_fullscene", type=str2bool, nargs='?', const=True, default=False,
+    parser.add_argument("--force_fullscene", type=str2bool, nargs='?', const=True, default=True,
                         help="Force full scene fit (Host + SN + Background) whatever the contrast")
 
     parser.add_argument("--is_simu", type=str2bool, nargs='?', const=True, default=False,
                         help="Is simulation?")
 
-    parser.add_argument("--apply_byecr", type=str2bool, nargs='?', const=True, default=False,
+    parser.add_argument("--apply_byecr", type=str2bool, nargs='?', const=True, default=True,
                         help="Apply byecr? Default is True.")
 
     parser.add_argument('--channel', type=str,
@@ -190,14 +190,16 @@ if __name__ == '__main__':
                                project="ztf", log_directory=args.logsdir, local_directory='$TMPDIR',
                                cores=args.wncores, processes=1,
                                job_extra=['-L sps'])
+    elif args.env == 'local':
+        client = Client()
 
     if args.filename is not None:
         cubes = np.loadtxt(args.filename, dtype=str)
         dates, sedmid, _, names = pd.DataFrame(
             [parse_filename(files) for files in cubes]).values.transpose()
-
-        cluster.scale(args.workers)
-        client = Client(cluster)
+        if args.env != 'local':
+            cluster.scale(args.workers)
+            client = Client(cluster)
 
         for (targ, date) in zip(names, dates):
 
@@ -208,30 +210,29 @@ if __name__ == '__main__':
             dask.distributed.wait(future)
 
     elif args.filename is None and len(args.target) > 0:
+        if args.env != 'local':
+            cluster.scale(args.workers)
+            client = Client(cluster)
+            curr_num_workers = 0
+            import time
+            start_time = time.time()
 
-        cluster.scale(args.workers)
-        client = Client(cluster)
-        curr_num_workers = 0
-        import time
-        start_time = time.time()
+            while curr_num_workers < np.min([args.workers, args.min_workers]):
+                curr_num_workers = get_num_workers(client)
+                time.sleep(1)
 
-        while curr_num_workers < np.min([args.workers, args.min_workers]):
-            curr_num_workers = get_num_workers(client)
-            time.sleep(1)
+            print(f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
 
-        print(
-            f'{time.time() - start_time} seconds to register {curr_num_workers} workers')
-
-        import pprint
-        print('Check os.getcwd on all workers: \n')
-        pprint.pprint(client.run(os.getcwd))
-        print('Check which python is used on all workers: \n')
-        import shutil
-        pprint.pprint(client.run(lambda: shutil.which("python")))
-        print('Check main packages versions on all workers: \n')
-        pprint.pprint(client.get_versions(packages=['shapely', 'pysedm',
-                                                    'hypergal', 'ztfquery',
-                                                    'pyifu', 'iminuit']))
+            import pprint
+            print('Check os.getcwd on all workers: \n')
+            pprint.pprint(client.run(os.getcwd))
+            print('Check which python is used on all workers: \n')
+            import shutil
+            pprint.pprint(client.run(lambda: shutil.which("python")))
+            print('Check main packages versions on all workers: \n')
+            pprint.pprint(client.get_versions(packages=['shapely', 'pysedm',
+                                                        'hypergal', 'ztfquery',
+                                                        'pyifu', 'iminuit']))
         if args.contains == None or len(args.contains) != len(args.target):
             contains = np.tile(None, len(args.target))
         else:
@@ -276,6 +277,9 @@ if __name__ == '__main__':
                                                                             rmtarget=None, testmode=False, split=True, lbda_range=args.lbdarange, xy_ifu_guess=args.xy, build_astro=args.build_astro, curved_bkgd=args.curved_bkgd, sn_only=sn_only, host_only=args.host_only, use_exist_intcube=args.use_exist_intcube, overwrite_workdir=args.ovwr_wd, suffix_plot=args.suffix_plot, size=args.size, apply_byecr=args.apply_byecr, prefit_photo=args.prefit_photo, suffix_savedata=args.suffix_savedata, target_radius=args.target_radius, limit_pos=args.limit_pos, ncores=args.wncores, intcube_to_use=args.intcube_to_use)
             stored.append(to_stored)
 
+            if len(cubefiles) == 0:
+                import warnings                       
+                warnings.warn(f"'HyperGal report: No e3d cubefile for {targ}!'")
             if len(cubefiles) == 0 and args.push_to_slack:
                 m = f"'HyperGal report: No e3d cubefile for {targ}!'"
                 if path is not None and not os.path.exists(path):

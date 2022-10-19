@@ -112,10 +112,10 @@ class DaskScene(DaskHyperGal):
                        hgfirst=True, binfactor=2,
                        filters=["ps1.g", "ps1.r", "ps1.i", "ps1.z", "ps1.y"],
                        source_filter="ps1.r", source_thres=2,
-                       scale_cout=15, scale_sedm=10, rmtarget=2,
+                       scale_cout=15, scale_sedm=10, rmtarget=None,
                        lbda_range=[5000, 8500], nslices=6,
                        filters_fit=["ps1.g", "ps1.r", "ps1.i", "ps1.z"],
-                       psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=True, xy_ifu_guess=None,
+                       psfmodel="Gauss2D", pointsourcemodel="GaussMoffat2D", ncores=1, testmode=False, xy_ifu_guess=None,
                        prefit_photo=True, use_exist_intcube=True, overwrite_workdir=True, use_extsource=True,
                        split=True, curved_bkgd=True, build_astro=True, target_radius=10,
                        host_only=False, sn_only=False, apply_byecr=True, limit_pos=None, suffix_plot=None, suffix_savedata='', size=180, intcube_to_use=None):
