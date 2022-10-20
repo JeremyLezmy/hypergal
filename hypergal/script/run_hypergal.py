@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import dask
 from dask_jobqueue import SGECluster, SLURMCluster
-from dask.distributed import Client
+from dask.distributed import Client, LocalCluster
 from hypergal.script import scenemodel
 from pysedm.io import parse_filename
 from hypergal import io as ioh
@@ -191,7 +191,10 @@ if __name__ == '__main__':
                                cores=args.wncores, processes=1,
                                job_extra=['-L sps'])
     elif args.env == 'local':
-        client = Client()
+        __spec__ = None
+        cluster = LocalCluster(n_workers=args.workers, threads_per_worker=1)
+        client = Client(cluster)
+        print(client)
 
     if args.filename is not None:
         cubes = np.loadtxt(args.filename, dtype=str)
@@ -408,3 +411,6 @@ if __name__ == '__main__':
 
         raise ValueError(
             'Target input has to be ZTF format as "ZTF21aamokak", or a .txt file with filename or filepath for each target')
+        
+    cluster.close()
+    client.close()
