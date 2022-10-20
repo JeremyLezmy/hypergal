@@ -47,7 +47,7 @@ Many arguments can be added such as:
 - If you only want to model the supernova ``` --sn_only```;
 - (... see ```run_hypergal.py -h```)
 
-### Run example
+### Run examples
 
 Local:
 ``` 
@@ -55,11 +55,11 @@ run_hypergal.py -t ZTF20abhrmxh -w 6 --redshift 0.066 --xy 2.9 0.8
 ```
 SLURM
 ``` 
-sbatch run_hypergal.sh -t ZTF20abhrmxh -w 20 --redshift  0.066 --xy 2.9 0.8
+sbatch run_hypergal.sh -t ZTF20abhrmxh --env SLURM -w 20 --redshift  0.066 --xy 2.9 0.8
 ```
 SGE
 ``` 
-qsubrun_hypergal.sh -t ZTF20abhrmxh -w 20 --redshift  0.066 --xy 2.9 0.8
+qsubrun_hypergal.sh -t ZTF20abhrmxh --env SGE -w 20 --redshift  0.066 --xy 2.9 0.8
 ```
 
 ***
