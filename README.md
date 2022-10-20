@@ -21,6 +21,49 @@ python setup.py install
 ``` pip ``` installation will be available soon.
 
 *** 
+
+# Main script: ```run_hypergal.py```
+
+### Target
+
+One mandatory argument : the target (supernova) ``` -t``` .  
+You can use the target name, for instance ```-t ZTF20abhrmxh``` : the corresponding data cube will be automatically downloaded if not available. 
+Otherwise, you can directly give a cube path:
+```-t /sps/ztf/data/sedm/redux/20200703/e3d_crr_b_ifu_20200703_09_58_56_ZTF20abhrmxh.fits```.
+
+### Cluster environment
+
+By default, a Dask ```LocalCluster``` is created with 10 workers, for a local use. If you use this pipeline with a specific job scheduler such as SGE or SLURM, you have to set the argument ``` --env SGE``` (or ``` --env SLURM```).
+Number of workers can be set with ```-w```.
+
+:warning: To submit a job in a SLURM or SGE environment, the **bash** script should be used. Please don't forget to change the ```run_hypergal.py``` absolute path in the ```run_hypergal.sh``` bash script.
+
+### Some arguments
+
+Many arguments can be added such as:
+- the redshift ``` --redshift```, otherwise the one from Fritz is used;
+- xy target position in the IFU ``` --xy```, otherwise an estimation is derived from the guiding camera data;
+- If you only want to model the host component ``` --host_only```;
+- If you only want to model the supernova ``` --sn_only```;
+- (... see ```run_hypergal.py -h```)
+
+### Run example
+
+Local:
+``` 
+run_hypergal.py -t ZTF20abhrmxh -w 6 --redshift 0.066 --xy 2.9 0.8
+```
+SLURM
+``` 
+sbatch run_hypergal.sh -t ZTF20abhrmxh -w 20 --redshift  0.066 --xy 2.9 0.8
+```
+SGE
+``` 
+qsubrun_hypergal.sh -t ZTF20abhrmxh -w 20 --redshift  0.066 --xy 2.9 0.8
+```
+
+***
+
 # Dependencies
 
 The following dependencies are automatically installed:
