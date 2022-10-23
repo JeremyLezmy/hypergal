@@ -108,7 +108,12 @@ future = client.compute(to_stored)
 > Main results (model cubes, supernova+host spectra, fitted params) are stored in the same directory of the input cube file. Plots and ```logfile.yml``` are stored in ```cubepath/hypergal/targetname/```.
 
 ***
+# Main HyperGal steps:
 
+See library details [here](hypergal)
+  
+![](examples/Dag_hypergal.png)
+***
 # Dependencies
 
 The following dependencies are automatically installed:
