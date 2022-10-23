@@ -14,8 +14,8 @@ If you are using HyperGal or a supernova spectrum obtained from it, please cite 
 # Installation
 
 ```bash
-git clone https://github.com/JeremyLezmy/HyperGal.git
-cd HyperGal
+git clone https://github.com/JeremyLezmy/hypergal.git
+cd hypergal
 python setup.py install
 ```
 ``` pip ``` installation will be available soon.
