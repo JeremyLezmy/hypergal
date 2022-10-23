@@ -61,6 +61,51 @@ SGE
 ``` 
 qsubrun_hypergal.sh -t ZTF20abhrmxh --env SGE -w 20 --redshift  0.066 --xy 2.9 0.8
 ```
+***
+# From notebook
+### Create the cluster
+```python
+# Local cluster
+from dask.distributed import Client, LocalCluster
+
+cluster = LocalCluster(n_workers=10, threads_per_worker=1)
+client = Client(cluster)
+```
+```python
+# SGE cluster
+from dask.distributed import Client
+from dask_jobqueue import SGECluster
+
+cluster = SGECluster(name="dask-worker", walltime="12:00:00",
+					 memory="4GB", death_timeout=240, project="P_ztf",
+					 resource_spec="sps=1", local_directory="$TMPDIR",
+					 cores=1, processes=1)
+					 
+cluster.scale(10) # How many workers?
+client = Client(cluster)
+```
+```python
+# SLURM cluster
+from dask.distributed import Client
+from dask_jobqueue import SLURMCluster
+
+cluster = SLURMCluster(name="dask-worker", walltime="12:00:00",
+					 memory="4GB", death_timeout=240, project="P_ztf",
+					 log_directory="/sps/ztf/users/jlezmy/dask/logs", local_directory="$TMPDIR",
+					 cores=1, processes=1, job_extra=["-L sps"])
+					 
+cluster.scale(10) # How many workers?
+client = Client(cluster)
+```
+
+### Run
+```python
+from hypergal.script import daskbasics,scenemodel
+to_stored = scenemodel.DaskScene.compute_targetcubes(name="ZTF20abhrmxh", client=client)
+future = client.compute(to_stored)
+```
+> Note: By calling ```client```, you can access to the dask dashboard and check for the computation progress.
+> Main results (model cubes, supernova+host spectra, fitted params) are stored in the same directory of the input cube file. Plots and ```logfile.yml``` are stored in ```cubepath/hypergal/targetname/```.
 
 ***
 
